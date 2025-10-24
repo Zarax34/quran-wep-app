@@ -2,6 +2,9 @@
 
 {% block content %}
 <div class="page-transition">
+    <!-- Announcements Modal Trigger -->
+    <div id="announcement-trigger" style="display: none;"></div>
+
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">مرحباً {{ session.name }} 👋</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -16,7 +19,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-light">إجمالي الطلاب</h6>
-                        <h2 class="mb-0">{{ total_students }}</h2>
+                        <h2 class="mb-0 counter" data-target="{{ total_students }}">0</h2>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-user-graduate fa-2x text-light"></i>
@@ -31,7 +34,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-light">إجمالي المعلمين</h6>
-                        <h2 class="mb-0">{{ total_teachers }}</h2>
+                        <h2 class="mb-0 counter" data-target="{{ total_teachers }}">0</h2>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-chalkboard-teacher fa-2x text-light"></i>
@@ -46,7 +49,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-light">عدد الحلقات</h6>
-                        <h2 class="mb-0">{{ total_circles }}</h2>
+                        <h2 class="mb-0 counter" data-target="{{ total_circles }}">0</h2>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-users fa-2x text-light"></i>
@@ -60,7 +63,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-light">التقارير اليوم</h6>
-                        <h2 class="mb-0">{{ recent_reports|length }}</h2>
+                        <h2 class="mb-0 counter" data-target="{{ recent_reports|length }}">0</h2>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-clipboard-list fa-2x text-light"></i>
@@ -243,4 +246,62 @@
         </div>
     </div>
 </div>
+
+<!-- Announcements Modal -->
+<div class="modal fade" id="announcementsModal" tabindex="-1" aria-labelledby="announcementsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="announcementsModalLabel"><i class="fas fa-bullhorn"></i> إعلانات الإدارة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="announcementsContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animated counters
+    const counters = document.querySelectorAll('.counter');
+    const speed = 200; // The lower the slower
+
+    counters.forEach(counter => {
+        const updateCount = () => {
+            const target = +counter.getAttribute('data-target');
+            const count = +counter.innerText;
+            const inc = target / speed;
+
+            if (count < target) {
+                counter.innerText = Math.ceil(count + inc);
+                setTimeout(updateCount, 1);
+            } else {
+                counter.innerText = target;
+            }
+        };
+        updateCount();
+    });
+
+    fetch('/api/active_announcements')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                const content = document.getElementById('announcementsContent');
+                data.forEach(ann => {
+                    const announcementElement = document.createElement('div');
+                    announcementElement.classList.add('alert', 'alert-info');
+                    announcementElement.innerHTML = `<h6>${ann.title}</h6><p>${ann.content}</p>`;
+                    content.appendChild(announcementElement);
+                });
+                var myModal = new bootstrap.Modal(document.getElementById('announcementsModal'), {});
+                myModal.show();
+            }
+        });
+});
+</script>
 {% endblock %}

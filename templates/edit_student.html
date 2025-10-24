@@ -89,11 +89,45 @@
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#moveStudentModal">
+                            <i class="fas fa-exchange-alt"></i> نقل الطالب
+                        </button>
                         <a href="{{ url_for('students') }}" class="btn btn-secondary me-md-2">إلغاء</a>
                         <button type="submit" class="btn btn-success">حفظ التعديلات</button>
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Move Student Modal -->
+<div class="modal fade" id="moveStudentModal" tabindex="-1" aria-labelledby="moveStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moveStudentModalLabel">نقل الطالب: {{ student.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('move_student', student_id=student.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new_circle_id" class="form-label">اختر الحلقة الجديدة</label>
+                        <select class="form-control" id="new_circle_id" name="new_circle_id" required>
+                            <option value="">-- اختر --</option>
+                            {% for circle in circles %}
+                                {% if circle.id != student.circle_id %}
+                                    <option value="{{ circle.id }}">{{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="submit" class="btn btn-primary">نقل</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

@@ -27,6 +27,7 @@ class User(db.Model):
     role = db.Column(db.String(20), nullable=False)  # admin, teacher, support, parent
     name = db.Column(db.String(100), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    fingerprint_id = db.Column(db.String(100), unique=True, nullable=True)
 
 class Parent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -57,6 +58,8 @@ class Student(db.Model):
     photo = db.Column(db.String(200))
     academic_year = db.Column(db.String(10), default='2025')
     pending_approval = db.Column(db.Boolean, default=True)
+    last_recitation_date = db.Column(db.Date)
+    total_verses_since_year_start = db.Column(db.Integer, default=0)
     circle = db.relationship('Circle', backref='students')
     parent = db.relationship('Parent', backref='students')
 
@@ -124,6 +127,59 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     user = db.relationship('User', backref='notifications')
+
+class Point(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    points = db.Column(db.Integer, nullable=False)
+    reason = db.Column(db.String(200))
+    date = db.Column(db.Date, default=datetime.now().date)
+    student = db.relationship('Student', backref='points')
+
+class Badge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200))
+    icon = db.Column(db.String(100))
+
+class StudentBadge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    badge_id = db.Column(db.Integer, db.ForeignKey('badge.id'), nullable=False)
+    date_awarded = db.Column(db.Date, default=datetime.now().date)
+    student = db.relationship('Student', backref='student_badges')
+    badge = db.relationship('Badge', backref='student_badges')
+
+class HonorBoard(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    rank = db.Column(db.Integer)
+    student = db.relationship('Student', backref='honor_board_entries')
+
+class UserLogin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    login_time = db.Column(db.DateTime, default=datetime.now)
+    ip_address = db.Column(db.String(50))
+    user = db.relationship('User', backref='logins')
+
+class EducationalNote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    note = db.Column(db.Text, nullable=False)
+    date = db.Column(db.Date, default=datetime.now().date)
+    student = db.relationship('Student', backref='educational_notes')
+    teacher = db.relationship('User', backref='educational_notes')
+
+class Announcement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    date_posted = db.Column(db.DateTime, default=datetime.now)
+    is_active = db.Column(db.Boolean, default=True)
 
 # ---------- 4.  CONTEXT PROCESSOR  ----------
 @app.context_processor
@@ -374,6 +430,66 @@ def send_bulk_reports(circle_id, report_type):
                 error_count += 1
     return sent_count, error_count
 
+def award_points(student_id, points, reason):
+    point_entry = Point(student_id=student_id, points=points, reason=reason)
+    db.session.add(point_entry)
+
+def award_badge(student_id, badge_id):
+    # Check if the student already has this badge
+    existing = StudentBadge.query.filter_by(student_id=student_id, badge_id=badge_id).first()
+    if not existing:
+        student_badge = StudentBadge(student_id=student_id, badge_id=badge_id)
+        db.session.add(student_badge)
+        flash(f'تهانينا! لقد حصلت على شارة جديدة!', 'success')
+
+def check_for_badges(student_id):
+    student = Student.query.get(student_id)
+    if not student:
+        return
+
+    # Badge 1: Excellent Reciter (10 'ممتاز' grades)
+    excellent_reports = Report.query.filter_by(student_id=student_id, grade='ممتاز').count()
+    if excellent_reports >= 10:
+        award_badge(student_id, 1) # Assuming badge with id 1 is "Excellent Reciter"
+
+    # Badge 2: Memorizer (500 verses memorized)
+    if student.total_verses_since_year_start >= 500:
+        award_badge(student_id, 2) # Assuming badge with id 2 is "Memorizer"
+
+def seed_badges():
+    if Badge.query.count() == 0:
+        badges = [
+            Badge(name='المتقن', description='الحصول على تقدير "ممتاز" 10 مرات', icon='fa-star'),
+            Badge(name='الحافظ', description='حفظ 500 وجه منذ بداية العام', icon='fa-award'),
+            Badge(name='الحضور المثالي', description='الحضور لمدة 30 يومًا متتاليًا', icon='fa-calendar-check')
+        ]
+        db.session.bulk_save_objects(badges)
+        db.session.commit()
+
+def compare_student_performance(student_id):
+    today = datetime.now().date()
+    # This week
+    start_of_this_week = today - timedelta(days=today.weekday())
+    end_of_this_week = start_of_this_week + timedelta(days=6)
+    # Last week
+    end_of_last_week = start_of_this_week - timedelta(days=1)
+    start_of_last_week = end_of_last_week - timedelta(days=6)
+
+    verses_this_week = db.session.query(func.sum(Report.to_verse - Report.from_verse + 1)).filter(
+        Report.student_id == student_id,
+        Report.type == 'حفظ',
+        Report.date.between(start_of_this_week, end_of_this_week)
+    ).scalar() or 0
+
+    verses_last_week = db.session.query(func.sum(Report.to_verse - Report.from_verse + 1)).filter(
+        Report.student_id == student_id,
+        Report.type == 'حفظ',
+        Report.date.between(start_of_last_week, end_of_last_week)
+    ).scalar() or 0
+
+    return verses_this_week, verses_last_week
+
+
 def requires_approval():
     settings = Settings.query.first() or Settings()
     return settings.teacher_requires_approval
@@ -459,6 +575,9 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username, is_active=True).first()
         if user and check_password_hash(user.password, password):
+            login_entry = UserLogin(user_id=user.id, ip_address=request.remote_addr)
+            db.session.add(login_entry)
+            db.session.commit()
             session['user_id'] = user.id
             session['username'] = user.username
             session['role'] = user.role
@@ -520,11 +639,21 @@ def dashboard():
 def students():
     view_mode = request.args.get('view_mode', 'table')
     selected_circle = request.args.get('circle_id', type=int)
+    search_query = request.args.get('search')
     
     query = Student.query.filter_by(is_active=True)
+
+    # Teacher can only see his students
+    if session['role'] == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        query = query.filter(Student.circle_id.in_(teacher_circles))
+
     if selected_circle:
         query = query.filter_by(circle_id=selected_circle)
     
+    if search_query:
+        query = query.filter(Student.name.ilike(f'%{search_query}%'))
+
     students = query.all()
     circles = Circle.query.filter_by(is_active=True).all()
     
@@ -579,10 +708,29 @@ def add_student():
     circles = Circle.query.filter_by(is_active=True).all()
     return render_template('add_student.html', circles=circles)
 
+@app.route('/move_student/<int:student_id>', methods=['POST'])
+@require_login
+def move_student(student_id):
+    student = Student.query.get_or_404(student_id)
+    new_circle_id = request.form.get('new_circle_id')
+    if new_circle_id:
+        student.circle_id = new_circle_id
+        db.session.commit()
+        flash('تم نقل الطالب بنجاح!', 'success')
+    else:
+        flash('يرجى اختيار حلقة جديدة.', 'error')
+    return redirect(url_for('edit_student', student_id=student_id))
+
 @app.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
 @require_login
 def edit_student(student_id):
     student = Student.query.get_or_404(student_id)
+    if session['role'] == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        if student.circle_id not in teacher_circles:
+            flash('ليس لديك الصلاحية لتعديل هذا الطالب', 'error')
+            return redirect(url_for('students'))
+
     if request.method == 'POST':
         student.name = request.form['name']
         student.age = request.form.get('age', type=int)
@@ -611,6 +759,12 @@ def edit_student(student_id):
 @require_login
 def delete_student(student_id):
     student = Student.query.get_or_404(student_id)
+    if session['role'] == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        if student.circle_id not in teacher_circles:
+            flash('ليس لديك الصلاحية لحذف هذا الطالب', 'error')
+            return redirect(url_for('students'))
+
     student.is_active = False
     db.session.commit()
     flash('تم حذف الطالب بنجاح', 'success')
@@ -624,6 +778,26 @@ def approve_student(student_id):
     db.session.commit()
     flash('تمت الموافقة على الطالب بنجاح', 'success')
     return redirect(url_for('students'))
+
+@app.route('/late_students')
+@require_login
+def late_students():
+    today = datetime.now().date()
+    late_threshold = today - timedelta(days=7)
+
+    # جلب جميع الطلاب النشطين مع تاريخ آخر تقرير لهم
+    subquery = db.session.query(
+        Report.student_id,
+        func.max(Report.date).label('last_report_date')
+    ).group_by(Report.student_id).subquery()
+
+    late_students_query = db.session.query(Student).outerjoin(
+        subquery, Student.id == subquery.c.student_id
+    ).filter(
+        (subquery.c.last_report_date == None) | (subquery.c.last_report_date < late_threshold)
+    ).filter(Student.is_active == True).all()
+
+    return render_template('late_students.html', students=late_students_query, today=today, late_threshold=late_threshold)
 
 @app.route('/reject_student/<int:student_id>')
 @require_role('admin')
@@ -710,6 +884,67 @@ def approve_circle(circle_id):
     flash('تمت الموافقة على الحلقة بنجاح', 'success')
     return redirect(url_for('circles'))
 
+def update_honor_board():
+    today = datetime.now().date()
+    current_month = today.month
+    current_year = today.year
+
+    # Delete old entries for the current month to avoid duplicates
+    HonorBoard.query.filter_by(month=current_month, year=current_year).delete()
+
+    # Get top 10 students based on points this month
+    top_students = db.session.query(
+        Student, func.sum(Point.points).label('total_points')
+    ).join(Point).filter(
+        func.extract('month', Point.date) == current_month,
+        func.extract('year', Point.date) == current_year
+    ).group_by(Student.id).order_by(func.sum(Point.points).desc()).limit(10).all()
+
+    for i, (student, total_points) in enumerate(top_students):
+        honor_entry = HonorBoard(
+            student_id=student.id,
+            month=current_month,
+            year=current_year,
+            rank=i + 1
+        )
+        db.session.add(honor_entry)
+
+    db.session.commit()
+    flash('تم تحديث لوحة الشرف بنجاح!', 'success')
+
+@app.route('/honor_board')
+@require_login
+def honor_board():
+    today = datetime.now().date()
+    current_month = today.month
+    current_year = today.year
+
+    honor_students = HonorBoard.query.filter_by(month=current_month, year=current_year).order_by(HonorBoard.rank).all()
+
+    return render_template('honor_board.html', honor_students=honor_students, month=current_month, year=current_year)
+
+@app.route('/update_honor_board_manual')
+@require_role('admin')
+def update_honor_board_manual():
+    update_honor_board()
+    return redirect(url_for('honor_board'))
+
+@app.route('/badges', methods=['GET', 'POST'])
+@require_role('admin')
+def badges():
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        icon = request.form['icon']
+        badge = Badge(name=name, description=description, icon=icon)
+        db.session.add(badge)
+        db.session.commit()
+        flash('تمت إضافة الشارة بنجاح!', 'success')
+        return redirect(url_for('badges'))
+
+    all_badges = Badge.query.all()
+    return render_template('badges.html', badges=all_badges)
+
 @app.route('/reject_circle/<int:circle_id>')
 @require_role('admin')
 def reject_circle(circle_id):
@@ -755,6 +990,12 @@ def add_report():
             flash('الطالب غير موجود', 'error')
             return redirect(url_for('add_report'))
         
+        if session['role'] == 'teacher':
+            teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+            if student.circle_id not in teacher_circles:
+                flash('ليس لديك الصلاحية لإضافة تقرير لهذا الطالب', 'error')
+                return redirect(url_for('add_report'))
+
         report = Report(
             student_id=student_id,
             teacher_id=session['user_id'],
@@ -768,10 +1009,27 @@ def add_report():
             notes=notes
         )
         db.session.add(report)
+
+        # Update last recitation date
+        student.last_recitation_date = date
         
+        # Update total verses
+        if report.type == 'حفظ':
+            student.total_verses_since_year_start += (to_verse - from_verse + 1)
+
+        # Award points based on grade
+        points_map = {'ممتاز': 10, 'جيد جدا': 7, 'جيد': 5, 'مقبول': 2}
+        points_to_award = points_map.get(grade, 0)
+        if points_to_award > 0:
+            award_points(student.id, points_to_award, f'تقدير {grade} في تسميع سورة {surah}')
+
         try:
             db.session.commit()
             
+            # Check for badges after committing points
+            check_for_badges(student.id)
+            db.session.commit()
+
             # إشعار لولي الأمر عند إضافة تقرير جديد
             if student.parent and student.parent.user_id:
                 notification = Notification(
@@ -787,8 +1045,13 @@ def add_report():
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة التقرير: {str(e)}', 'error')
-    
-    students = Student.query.filter_by(is_active=True).all()
+
+    if session['role'] == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        students = Student.query.filter(Student.circle_id.in_(teacher_circles), Student.is_active==True).all()
+    else:
+        students = Student.query.filter_by(is_active=True).all()
+
     return render_template('add_report.html', students=students)
 
 @app.route('/collective_report', methods=['GET', 'POST'])
@@ -1060,6 +1323,61 @@ def add_user():
     
     return render_template('add_user.html')
 
+@app.route('/announcements', methods=['GET', 'POST'])
+@require_role('admin')
+def announcements():
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        announcement = Announcement(title=title, content=content)
+        db.session.add(announcement)
+        db.session.commit()
+        flash('تم إضافة الإعلان بنجاح!', 'success')
+        return redirect(url_for('announcements'))
+
+    all_announcements = Announcement.query.all()
+    return render_template('announcements.html', announcements=all_announcements)
+
+@app.route('/api/fingerprint_login', methods=['POST'])
+def fingerprint_login():
+    fingerprint_id = request.json.get('fingerprint_id')
+    if not fingerprint_id:
+        return jsonify({'success': False, 'message': 'لم يتم توفير معرف البصمة'}), 400
+
+    user = User.query.filter_by(fingerprint_id=fingerprint_id).first()
+    if user:
+        # In a real application, you would handle session creation here
+        return jsonify({'success': True, 'message': f'أهلاً بك يا {user.name}!'})
+    else:
+        return jsonify({'success': False, 'message': 'البصمة غير مسجلة'}), 404
+
+@app.route('/api/student_reports/<int:student_id>')
+@require_login
+def api_student_reports(student_id):
+    student = Student.query.get_or_404(student_id)
+    reports = Report.query.filter_by(student_id=student_id).order_by(Report.date.desc()).all()
+    return jsonify([{
+        'date': report.date.strftime('%Y-%m-%d'),
+        'surah': report.surah,
+        'from_verse': report.from_verse,
+        'to_verse': report.to_verse,
+        'type': report.type,
+        'grade': report.grade
+    } for report in reports])
+
+@app.route('/api/active_announcements')
+@require_login
+def active_announcements():
+    announcements = Announcement.query.filter_by(is_active=True).all()
+    return jsonify([{'title': a.title, 'content': a.content} for a in announcements])
+
+
+@app.route('/user_logins')
+@require_role('admin')
+def user_logins():
+    logins = UserLogin.query.order_by(UserLogin.login_time.desc()).all()
+    return render_template('user_logins.html', logins=logins)
+
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @require_role('admin')
 def edit_user(user_id):
@@ -1273,6 +1591,40 @@ def parent_dashboard():
                          center_stats=center_stats)
 
 # ---------- 21.  STUDENT REPORTS ----------
+@app.route('/add_educational_note/<int:student_id>', methods=['POST'])
+@require_login
+def add_educational_note(student_id):
+    if session.get('role') not in ['admin', 'teacher']:
+        flash('ليس لديك صلاحية للقيام بهذا الإجراء', 'error')
+        return redirect(request.referrer)
+
+    student = Student.query.get_or_404(student_id)
+    note_text = request.form.get('note')
+
+    if note_text:
+        note = EducationalNote(
+            student_id=student_id,
+            teacher_id=session['user_id'],
+            note=note_text
+        )
+        db.session.add(note)
+
+        # Send notification to parent
+        if student.parent and student.parent.user_id:
+            notification = Notification(
+                user_id=student.parent.user_id,
+                title='ملاحظة تربوية جديدة',
+                message=f'أضاف المعلم ملاحظة تربوية جديدة لابنك "{student.name}".'
+            )
+            db.session.add(notification)
+
+        db.session.commit()
+        flash('تمت إضافة الملاحظة بنجاح!', 'success')
+    else:
+        flash('نص الملاحظة لا يمكن أن يكون فارغًا.', 'error')
+
+    return redirect(url_for('student_reports', student_id=student_id))
+
 @app.route('/student_reports/<int:student_id>')
 @require_login
 def student_reports(student_id):
@@ -1286,6 +1638,8 @@ def student_reports(student_id):
     weekly_reports = Report.query.filter(Report.student_id == student_id, Report.date >= start_date_weekly, Report.date <= end_date_weekly).all()
     monthly_reports = Report.query.filter(Report.student_id == student_id, Report.date >= start_date_monthly, Report.date <= end_date_monthly).all()
     
+    verses_this_week, verses_last_week = compare_student_performance(student_id)
+
     return render_template('student_reports.html',
                          student=student,
                          weekly_reports=weekly_reports,
@@ -1293,7 +1647,9 @@ def student_reports(student_id):
                          start_date_weekly=start_date_weekly,
                          end_date_weekly=end_date_weekly,
                          start_date_monthly=start_date_monthly,
-                         end_date_monthly=end_date_monthly)
+                         end_date_monthly=end_date_monthly,
+                         verses_this_week=verses_this_week,
+                         verses_last_week=verses_last_week)
 
 # ---------- 22.  PARENT STUDENT DETAILS ----------
 @app.route('/parent_student_details/<int:student_id>')
@@ -1394,6 +1750,7 @@ if __name__ == '__main__':
         
         # إنشاء مستخدم مسؤول افتراضي إذا لم يكن موجوداً
         if not User.query.filter_by(role='admin').first():
+            seed_badges()
             try:
                 admin_user = User(
                     username='admin',
