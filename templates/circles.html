@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إدارة الحلقات</h1>
+    <a href="{{ url_for('add_circle') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> إضافة حلقة جديدة
+    </a>
+</div>
+
+<div class="row">
+    {% for circle in circles %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">{{ circle.name }}</h5>
+                <div>
+                    {% if circle.requires_approval %}
+                    <span class="badge bg-warning">في انتظار الموافقة</span>
+                    {% else %}
+                    <span class="badge bg-success">نشطة</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-chalkboard-teacher text-primary me-2"></i>
+                    <strong>المعلم:</strong> {{ circle.teacher.name if circle.teacher else circle.teacher_name }}
+                </div>
+                <div class="mb-3">
+                    <i class="fas fa-user-graduate text-info me-2"></i>
+                    <strong>عدد الطلاب:</strong> {{ circle.students|length }}
+                </div>
+                <div class="mb-3">
+                    <i class="fas fa-clipboard-list text-warning me-2"></i>
+                    <strong>آخر تقرير:</strong> 
+                    {% if circle.reports %}
+                        {{ circle.reports[0].date.strftime('%Y-%m-%d') }}
+                    {% else %}
+                        لا يوجد
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="btn-group w-100 mb-2">
+                    <a href="{{ url_for('students', circle_id=circle.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list"></i> الطلاب
+                    </a>
+                    <a href="{{ url_for('edit_circle', circle_id=circle.id) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-edit"></i> تعديل
+                    </a>
+                </div>
+                <div class="btn-group w-100">
+                    <a href="{{ url_for('send_bulk_reports_route', circle_id=circle.id, report_type='أسبوعي') }}" 
+                       class="btn btn-outline-success btn-sm" 
+                       onclick="return confirm('هل تريد إرسال التقارير الأسبوعية لجميع الطلاب في هذه الحلقة؟')">
+                        <i class="fab fa-whatsapp"></i> أرسل أسبوعي
+                    </a>
+                    <a href="{{ url_for('send_bulk_reports_route', circle_id=circle.id, report_type='شهري') }}" 
+                       class="btn btn-outline-info btn-sm"
+                       onclick="return confirm('هل تريد إرسال التقارير الشهرية لجميع الطلاب في هذه الحلقة؟')">
+                        <i class="fab fa-whatsapp"></i> أرسل شهري
+                    </a>
+                </div>
+                {% if session.role == 'admin' and circle.requires_approval %}
+                <div class="mt-2">
+                    <a href="{{ url_for('approve_circle', circle_id=circle.id) }}" class="btn btn-success btn-sm w-100 mb-1">
+                        <i class="fas fa-check"></i> الموافقة على الحلقة
+                    </a>
+                    <a href="{{ url_for('reject_circle', circle_id=circle.id) }}" class="btn btn-danger btn-sm w-100" onclick="return confirm('هل أنت متأكد من رفض الحلقة؟')">
+                        <i class="fas fa-times"></i> رفض الحلقة
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle fa-2x mb-3"></i>
+            <h4>لا توجد حلقات</h4>
+            <p>يمكنك إضافة حلقة جديدة لبدء إدارة الطلاب والتقارير</p>
+            <a href="{{ url_for('add_circle') }}" class="btn btn-primary">إضافة حلقة جديدة</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="alert alert-warning mt-4">
+    <h6><i class="fas fa-info-circle"></i> معلومات:</h6>
+    <p class="mb-0">
+        يمكنك إرسال التقارير الأسبوعية أو الشهرية لجميع أولياء أمور الطلاب في الحلقة بضغطة واحدة.
+        سيتم إرسال التقرير تلقائياً عبر الواتساب للأرقام المسجلة.
+        {% if session.role == 'teacher' %}
+        <strong>الحلقات التي تضيفها تحتاج موافقة المسؤول قبل أن تصبح نشطة.</strong>
+        {% endif %}
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إضافة تقرير فردي</h1>
+    <a href="{{ url_for('collective_report') }}" class="btn btn-success">
+        <i class="fas fa-users"></i> التقرير الجماعي
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-plus-circle"></i> بيانات التقرير</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="student_id" class="form-label">الطالب</label>
+                                <select class="form-control" id="student_id" name="student_id" required>
+                                    <option value="">اختر الطالب</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.name }} - {{ student.circle.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="date" class="form-label">التاريخ</label>
+                                <input type="date" class="form-control" id="date" name="date" 
+                                       value="{{ now().strftime('%Y-%m-%d') }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="surah" class="form-label">السورة</label>
+                                <input type="text" class="form-control" id="surah" name="surah" 
+                                       placeholder="مثال: البقرة" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="from_verse" class="form-label">من الآية</label>
+                                <input type="number" class="form-control" id="from_verse" name="from_verse" 
+                                       min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="to_verse" class="form-label">إلى الآية</label>
+                                <input type="number" class="form-control" id="to_verse" name="to_verse" 
+                                       min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="type" class="form-label">نوع التسميع</label>
+                                <select class="form-control" id="type" name="type" required>
+                                    <option value="حفظ">حفظ</option>
+                                    <option value="مراجعة">مراجعة</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="grade" class="form-label">التقدير</label>
+                                <select class="form-control" id="grade" name="grade" required>
+                                    <option value="ممتاز">ممتاز</option>
+                                    <option value="جيد جدا">جيد جدا</option>
+                                    <option value="جيد">جيد</option>
+                                    <option value="مقبول">مقبول</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">ملاحظات</label>
+                                <input type="text" class="form-control" id="notes" name="notes" 
+                                       placeholder="ملاحظات إضافية">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('reports') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <button type="submit" class="btn btn-success">إضافة التقرير</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

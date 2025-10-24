@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">تقارير الطالب: {{ student.name }}</h1>
+    <div>
+        <a href="{{ url_for('send_whatsapp_report', student_id=student.id, report_type='أسبوعي') }}" 
+           class="btn btn-success me-2" target="_blank">
+            <i class="fab fa-whatsapp"></i> إرسال أسبوعي
+        </a>
+        <a href="{{ url_for('send_whatsapp_report', student_id=student.id, report_type='شهري') }}" 
+           class="btn btn-primary" target="_blank">
+            <i class="fab fa-whatsapp"></i> إرسال شهري
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">الحلقة</h6>
+                <h4 class="text-primary">{{ student.circle.name }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">المعلم</h6>
+                <h4 class="text-info">{{ student.circle.teacher.name }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">رقم ولي الأمر</h6>
+                <h4 class="text-success">
+                    {% if student.parent_phone %}
+                    <a href="https://wa.me/967{{ student.parent_phone }}" target="_blank">
+                        {{ student.parent_phone }}
+                    </a>
+                    {% else %}
+                    <span class="text-muted">غير متوفر</span>
+                    {% endif %}
+                </h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">إجمالي التقارير</h6>
+                <h4 class="text-info">{{ weekly_reports|length + monthly_reports|length }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- التقرير الأسبوعي -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">التقرير الأسبوعي</h5>
+                <div>
+                    <span class="badge bg-success">من {{ start_date_weekly.strftime('%Y-%m-%d') }} إلى {{ end_date_weekly.strftime('%Y-%m-%d') }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if weekly_reports %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>السورة</th>
+                                <th>بداية التسميع</th>
+                                <th>نهاية التسميع</th>
+                                <th>النوع</th>
+                                <th>التقدير</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in weekly_reports %}
+                            <tr>
+                                <td>{{ report.date.strftime('%m-%d') }}</td>
+                                <td>{{ report.surah }}</td>
+                                <td>الآية {{ report.from_verse }}</td>
+                                <td>الآية {{ report.to_verse }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if report.type == 'حفظ' else 'info' }}">
+                                        {{ report.type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if report.grade == 'ممتاز' else 'warning' if report.grade == 'جيد جدا' else 'info' }}">
+                                        {{ report.grade }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-clipboard-list fa-2x"></i>
+                    <p>لا توجد تقارير هذا الأسبوع</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- التقرير الشهري -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">التقرير الشهري</h5>
+                <div>
+                    <span class="badge bg-primary">من {{ start_date_monthly.strftime('%Y-%m-%d') }} إلى {{ end_date_monthly.strftime('%Y-%m-%d') }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if monthly_reports %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>السورة</th>
+                                <th>بداية التسميع</th>
+                                <th>نهاية التسميع</th>
+                                <th>النوع</th>
+                                <th>التقدير</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in monthly_reports %}
+                            <tr>
+                                <td>{{ report.date.strftime('%m-%d') }}</td>
+                                <td>{{ report.surah }}</td>
+                                <td>الآية {{ report.from_verse }}</td>
+                                <td>الآية {{ report.to_verse }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if report.type == 'حفظ' else 'info' }}">
+                                        {{ report.type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if report.grade == 'ممتاز' else 'warning' if report.grade == 'جيد جدا' else 'info' }}">
+                                        {{ report.grade }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-chart-bar fa-2x"></i>
+                    <p>لا توجد تقارير هذا الشهر</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-mobile-alt"></i> إرسال التقارير:</h6>
+            <p class="mb-0">
+                يمكنك إرسال التقرير الأسبوعي أو الشهري لولي الأمر عبر الواتساب تلقائياً.
+                سيتم إنشاء رسالة مفصلة تحتوي على جميع تقارير الطالب وإرسالها للرقم المسجل.
+                <strong>سيشمل التقرير: اسم المعلم، الفترة الزمنية، والتسميع مفصل (بداية ونهاية).</strong>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

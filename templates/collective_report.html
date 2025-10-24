@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">التقرير الجماعي اليومي</h1>
+    </div>
+
+    <div class="row fade-in">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-upload"></i> رفع التقرير</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="circle_id" class="form-label">الحلقة</label>
+                                <select class="form-control" id="circle_id" name="circle_id" required>
+                                    <option value="">اختر الحلقة</option>
+                                    {% for circle in circles %}
+                                    <option value="{{ circle.id }}">{{ circle.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="date" class="form-label">التاريخ</label>
+                                <input type="date" class="form-control" id="date" name="date" value="{{ now().strftime('%Y-%m-%d') }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="report_text" class="form-label">النص الجماعي</label>
+                            <textarea class="form-control" id="report_text" name="report_text" rows="15" 
+                                      placeholder="الصق النص الجماعي هنا... مثال:
+*   -  - 2025م*
+*🔹 حلقة عمر بن الخطاب*
+*1. معتز الشميري:*
+*2. محمد دغشر:* البقرة 1-10 
+*3. زياد الموجاني: ✖️
+*4. طه هناف: ❌
+*5. معتز الصرفي:* هروب
+*6. محمد عباد:* لم يسمع
+*7. مالك العامري:*"
+                                      required></textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> تعليمات:</h6>
+                            <ul class="mb-0">
+                                <li>الصق النص كما هو من الواتساب</li>
+                                <li>✖️ = غياب بعذر</li>
+                                <li>❌ = غياب بدون عذر</li>
+                                <li>🏃 أو كلمة "هروب" = حالة هروب</li>
+                                <li>كلمة "لم يسمع" = لم يقم بالتسميع</li>
+                                <li>سيتعرف النظام تلقائياً على نوع التسميع (حفظ/مراجعة)</li>
+                                <li><strong>النظام محسن الآن للتعرف على الأسماء بشكل أفضل</strong></li>
+                                <li><strong>كلمات مفتاحية جديدة:</strong> غائب، مستأذن، غياب</li>
+                            </ul>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg btn-hover">
+                            <i class="fas fa-cloud-upload-alt"></i> رفع التقرير
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card slide-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-lightbulb"></i> نصائح سريعة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>رموز الحضور:</h6>
+                        <span class="badge bg-success me-2">حاضر</span>
+                        <span class="badge bg-warning me-2">✖️ غائب بعذر</span>
+                        <span class="badge bg-danger me-2">❌ غائب بلا عذر</span>
+                        <span class="badge bg-dark me-2">🏃 هروب</span>
+                        <span class="badge bg-secondary">لم يسمع</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>أنواع التسميع:</h6>
+                        <span class="badge bg-primary me-2">حفظ</span>
+                        <span class="badge bg-info">مراجعة</span>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <small>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            تأكد من تطابق أسماء الطلاب مع المسجلة في النظام
+                        </small>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="card-title mb-0"><i class="fas fa-code"></i> مثال مفصل</h6>
+                        </div>
+                        <div class="card-body">
+                            <small>
+                                <code>
+                                    محمد أحمد: البقرة 1-10<br>
+                                    أحمد علي: ✖️<br>
+                                    سامي محمد: ❌<br>
+                                    خالد سالم: 🏃<br>
+                                    يوسف كامل: لم يسمع<br>
+                                    فادي ناصر: آل عمران 1-5+<br>
+                                </code>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

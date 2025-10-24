@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">تعديل بيانات الطالب</h1>
+    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للطلاب
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-edit"></i> تعديل بيانات {{ student.name }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">اسم الطالب</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ student.name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="age" class="form-label">العمر</label>
+                                <input type="number" class="form-control" id="age" name="age" 
+                                       value="{{ student.age or '' }}" min="5" max="20">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="student_phone" class="form-label">رقم هاتف الطالب</label>
+                                <input type="tel" class="form-control" id="student_phone" name="student_phone" 
+                                       value="{{ student.student_phone or '' }}" placeholder="7xxxxxxxx">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_phone" class="form-label">رقم ولي الأمر</label>
+                                <input type="tel" class="form-control" id="parent_phone" name="parent_phone" 
+                                       value="{{ student.parent_phone or '' }}" placeholder="7xxxxxxxx" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="circle_id" class="form-label">الحلقة</label>
+                        <select class="form-control" id="circle_id" name="circle_id" required>
+                            <option value="">اختر الحلقة</option>
+                            {% for circle in circles %}
+                            <option value="{{ circle.id }}" {% if circle.id == student.circle_id %}selected{% endif %}>
+                                {{ circle.name }} - {{ circle.teacher.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">صورة الطالب</label>
+                        {% if student.photo %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('uploaded_file', filename=student.photo) }}" 
+                                 class="student-photo" alt="صورة الطالب">
+                            <div class="form-text">الصورة الحالية</div>
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="photo" name="photo" 
+                               accept="image/*" onchange="previewImage(this)">
+                        <div class="form-text">اختر صورة جديدة لتغيير الصورة الحالية</div>
+                        <div id="imagePreview" class="mt-2 text-center"></div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> ملاحظة:</h6>
+                        <p class="mb-0">
+                            سيتم تحديث اسم ولي الأمر تلقائياً بناءً على اسم الطالب الجديد <strong>مع المسافات</strong>.
+                            سيتم نقل الطالب تلقائياً للحلقة الجديدة عند الحفظ.
+                            {% if session.role == 'teacher' %}
+                            <strong>سيتم إرسال التعديلات للمسؤول للموافقة عليها.</strong>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('students') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <button type="submit" class="btn btn-success">حفظ التعديلات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `<img src="${e.target.result}" class="student-photo" alt="معاينة الصورة">`;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

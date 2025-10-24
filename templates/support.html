@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-hand-holding-heart"></i> ادعم المركز</h1>
+    </div>
+
+    <div class="row fade-in">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-donate"></i> تبرع لدعم المركز</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> أهمية الدعم:</h6>
+                        <p class="mb-0">
+                            {{ settings.support_message or 'نورٌ نُهديه وجيل نربيه' }}
+                        </p>
+                    </div>
+
+                    <!-- معلومات الموقع -->
+                    <div class="mb-4">
+                        <h5><i class="fas fa-map-marker-alt"></i> موقع المركز</h5>
+                        <div class="card bg-light">
+                            <div class="card-body text-force-dark">
+                                <p class="mb-2 text-dark">
+                                    <i class="fas fa-location-dot text-primary"></i>
+                                    {{ settings.location_address or 'مأرب - شارع الأربعين - خلف مستشفى نيوم' }}
+                                </p>
+                                {% if settings.location_map_url %}
+                                <a href="{{ settings.location_map_url }}" target="_blank" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-map"></i> عرض على الخريطة
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if settings.support_bank_accounts %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-university"></i> حسابات البنوك</h5>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="bank-accounts text-dark" style="font-family: 'Courier New', monospace; line-height: 1.8;">
+                                    {{ settings.support_bank_accounts }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="copyBankAccounts()">
+                                <i class="fas fa-copy"></i> نسخ الحسابات
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card text-center mb-3 btn-hover">
+                                <div class="card-body">
+                                    <i class="fas fa-book-open fa-3x text-primary mb-3"></i>
+                                    <h5 class="text-dark">الكتب التعليمية</h5>
+                                    <p class="text-muted">توفير الكتب والمراجع للطلاب</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card text-center mb-3 btn-hover">
+                                <div class="card-body">
+                                    <i class="fas fa-laptop fa-3x text-info mb-3"></i>
+                                    <h5 class="text-dark">التجهيزات التقنية</h5>
+                                    <p class="text-muted">تطوير النظام والبنية التحتية</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card text-center mb-3 btn-hover">
+                                <div class="card-body">
+                                    <i class="fas fa-user-graduate fa-3x text-success mb-3"></i>
+                                    <h5 class="text-dark">المنح الدراسية</h5>
+                                    <p class="text-muted">دعم الطلاب المتفوقين</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card text-center mb-3 btn-hover">
+                                <div class="card-body">
+                                    <i class="fas fa-hands-helping fa-3x text-warning mb-3"></i>
+                                    <h5 class="text-dark">برامج التطوع</h5>
+                                    <p class="text-muted">المساهمة في الأنشطة والبرامج</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card slide-in-left">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-question-circle"></i> معلومات الدعم</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>طرق الدعم:</h6>
+                        <ul>
+                            <li>التحويل البنكي</li>
+                            <li>الدعم العيني</li>
+                            <li>التطوع</li>
+                            <li>نشر الخير</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>للاستفسار:</h6>
+                        {% if settings.contact_phone %}
+                        <p><i class="fas fa-phone"></i> {{ settings.contact_phone }}</p>
+                        {% endif %}
+                        {% if settings.contact_email %}
+                        <p><i class="fas fa-envelope"></i> {{ settings.contact_email }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="alert alert-success">
+                        <small>
+                            <i class="fas fa-lightbulb"></i>
+                            "{{ settings.support_message or 'نورٌ نُهديه وجيل نربيه' }}"
+                        </small>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-hover">
+                            <i class="fas fa-home me-2"></i>العودة للرئيسية
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4 slide-in-left">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-share-alt"></i> انشر الخير</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="mb-3">ساعد في نشر رسالة المركز بين معارفك وأصدقائك</p>
+                    <div class="btn-group w-100 mb-3">
+                        <button class="btn btn-success" onclick="shareOnWhatsApp()">
+                            <i class="fab fa-whatsapp"></i> واتساب
+                        </button>
+                        <button class="btn btn-primary" onclick="shareOnTelegram()">
+                            <i class="fab fa-telegram"></i> تليجرام
+                        </button>
+                    </div>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-primary" onclick="shareOnFacebook()">
+                            <i class="fab fa-facebook"></i> فيسبوك
+                        </button>
+                        <button class="btn btn-info" onclick="shareOnTwitter()">
+                            <i class="fab fa-twitter"></i> تويتر
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyBankAccounts() {
+    const accountsText = `{{ settings.support_bank_accounts }}`;
+    navigator.clipboard.writeText(accountsText).then(() => {
+        alert('تم نسخ حسابات البنوك بنجاح!');
+    });
+}
+function shareOnWhatsApp() {
+    const siteUrl = window.location.origin;
+    const text = `مرحباً! أدعوك لزيارة مركز {{ settings.site_name }} لتعليم القرآن الكريم 🌟
+
+📍 {{ settings.site_description }}
+
+📍 الموقع: {{ settings.location_address or 'مأرب - شارع الأربعين - خلف مستشفى نيوم' }}
+
+🌐 يمكنك زيارة الموقع عبر الرابط:
+${siteUrl}
+
+📞 للتواصل: {{ settings.contact_phone or '' }}
+
+🎯 رسالة المركز: {{ settings.support_message or 'نورٌ نُهديه وجيل نربيه' }}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+function shareOnTelegram() {
+    const siteUrl = window.location.origin;
+    const text = `مرحباً! أدعوك لزيارة مركز {{ settings.site_name }} لتعليم القرآن الكريم
+
+${siteUrl}
+
+{{ settings.site_description }}
+
+{{ settings.support_message or 'نورٌ نُهديه وجيل نربيه' }}`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(siteUrl)}&text=${encodeURIComponent(text)}`, '_blank');
+}
+function shareOnFacebook() {
+    const siteUrl = window.location.origin;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}&quote=${encodeURIComponent('مركز ' + '{{ settings.site_name }}' + ' - ' + '{{ settings.site_description }}')}`, '_blank');
+}
+function shareOnTwitter() {
+    const siteUrl = window.location.origin;
+    const text = `مركز {{ settings.site_name }} - {{ settings.site_description }} - {{ settings.support_message or 'نورٌ نُهديه وجيل نربيه' }}`;
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(siteUrl)}&text=${encodeURIComponent(text)}`, '_blank');
+}
+</script>
+
+<style>
+.bank-accounts {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    direction: ltr;
+    text-align: left;
+}
+/* ضمان ظهور النص باللون الأسود في البطاقات البيضاء */
+.card.bg-light,
+.card .bg-light {
+    color: #000 !important;
+}
+.card.bg-light .text-muted,
+.card .bg-light .text-muted {
+    color: #6c757d !important;
+}
+/* في الوضع الليلي، ضمان ظهور النص باللون الأبيض */
+.dark-mode .card.bg-light,
+.dark-mode .card .bg-light {
+    color: #fff !important;
+    background-color: #2d3748 !important;
+}
+.dark-mode .card.bg-light .text-muted,
+.dark-mode .card .bg-light .text-muted {
+    color: #a0aec0 !important;
+}
+.dark-mode .card.bg-light .text-dark,
+.dark-mode .card .bg-light .text-dark {
+    color: #fff !important;
+}
+.dark-mode .bank-accounts {
+    color: #fff !important;
+}
+</style>
+{% endblock %}

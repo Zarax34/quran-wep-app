@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ settings.site_name }} – لوحة الضيف</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Google Fonts (Tajawal) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #006466;
+            --secondary: #4d194d;
+            --accent: #ffb703;
+            --light-bg: #f8f9fa;
+            --dark-text: #212529;
+            --glass: rgba(255, 255, 255, 0.25);
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e9ecef 100%);
+            color: var(--dark-text);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 4rem 0 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><circle cx="30" cy="30" r="10" fill="rgba(255,255,255,.1)"/><circle cx="170" cy="80" r="15" fill="rgba(255,255,255,.1)"/><circle cx="90" cy="170" r="12" fill="rgba(255,255,255,.1)"/></svg>');
+            opacity: 0.3;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero .logo {
+            max-height: 120px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-weight: 900;
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, var(--accent) 0%, #fb8500 100%);
+            border: none;
+            border-radius: 30px;
+            padding: 0.75rem 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            color: #fff;
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            padding: 2rem 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            color: var(--dark-text);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .stat-card i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-card h3 {
+            font-weight: 900;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        /* Support Section */
+        .support-section {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-radius: 25px;
+            padding: 3rem 2rem;
+            margin: 3rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .support-section::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            animation: rotate 15s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .support-section h2 {
+            font-weight: 900;
+            margin-bottom: 1rem;
+        }
+
+        .support-section .lead {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+
+        .btn-support {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 25px;
+            padding: 0.6rem 1.8rem;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-support:hover {
+            background: white;
+            color: var(--primary);
+            border-color: white;
+        }
+
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        footer p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in-left {
+            animation: slideInLeft 1s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .stat-card {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero text-center">
+        <div class="container hero-content">
+            {% if settings.logo %}
+            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" alt="{{ settings.site_name }}" class="logo mb-3">
+            {% endif %}
+            <h1 class="display-4">{{ settings.site_name }}</h1>
+            <p class="lead">{{ settings.site_description }}</p>
+            <a href="{{ url_for('login') }}" class="btn btn-lg btn-login mt-3 pulse">
+                <i class="fas fa-sign-in-alt ms-2"></i>تسجيل الدخول
+            </a>
+        </div>
+    </section>
+
+    <!-- Statistics -->
+    <div class="container my-5">
+        <div class="row fade-in">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <i class="fas fa-user-graduate"></i>
+                    <h3>{{ total_students }}</h3>
+                    <p>إجمالي الطلاب</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h3>{{ total_teachers }}</h3>
+                    <p>المعلمين</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <h3>{{ total_circles }}</h3>
+                    <p>الحلقات</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <i class="fas fa-book-quran"></i>
+                    <h3>{{ total_reports }}</h3>
+                    <p>التقارير</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Stats -->
+    <div class="container mb-5">
+        <div class="row fade-in">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body text-center">
+                        <h5 class="card-title mb-4"><i class="fas fa-chart-pie text-primary"></i> إحصائيات الحضور لهذا الأسبوع</h5>
+                        {% if attendance_stats %}
+                        <div class="row">
+                            {% for status, count in attendance_stats %}
+                            <div class="col-6 col-md-3 mb-3">
+                                <div class="border rounded-3 py-3">
+                                    {% if status == 'حاضر' %}
+                                    <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                                    {% elif status == 'غائب بعذر' %}
+                                    <i class="fas fa-exclamation-circle text-warning fa-2x mb-2"></i>
+                                    {% elif status == 'غائب بلا عذر' %}
+                                    <i class="fas fa-times-circle text-danger fa-2x mb-2"></i>
+                                    {% else %}
+                                    <i class="fas fa-info-circle text-secondary fa-2x mb-2"></i>
+                                    {% endif %}
+                                    <h6 class="mb-0">{{ status }}</h6>
+                                    <span class="badge bg-primary">{{ count }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">لا توجد بيانات حضور لهذا الأسبوع</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Section -->
+    <div class="container mb-5">
+        <div class="support-section text-center fade-in">
+            <h2><i class="fas fa-hand-holding-heart"></i> ادعم المركز</h2>
+            <p class="lead">{{ settings.support_message or 'نورٌ نُهديه وجيل نربيه' }}</p>
+
+            <div class="row justify-content-center mt-4">
+                <div class="col-md-6">
+                    <div class="card border-0 rounded-4">
+                        <div class="card-body text-dark">
+                            <h6><i class="fas fa-map-marker-alt text-primary"></i> موقع المركز</h6>
+                            <p class="mb-2">{{ settings.location_address or 'مأرب - شارع الأربعين - خلف مستشفى ونيوم' }}</p>
+                            {% if settings.location_map_url %}
+                            <a href="{{ settings.location_map_url }}" target="_blank" class="btn btn-sm btn-primary">
+                                <i class="fas fa-map ms-1"></i> عرض على الخريطة
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if settings.support_bank_accounts %}
+            <div class="row justify-content-center mt-4">
+                <div class="col-md-8">
+                    <div class="card border-0 rounded-4">
+                        <div class="card-body text-dark">
+                            <h6><i class="fas fa-university text-success"></i> حسابات البنوك</h6>
+                            <div class="bank-accounts text-start" style="font-family: 'Courier New', monospace; white-space: pre-wrap;">{{ settings.support_bank_accounts }}</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-support mt-3" onclick="copyBankAccounts()">
+                        <i class="fas fa-copy ms-1"></i> نسخ الحسابات
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="{{ url_for('login') }}" class="btn btn-light btn-lg me-2">
+                    <i class="fas fa-user-plus ms-1"></i> انضم إلينا
+                </a>
+                <a href="{{ url_for('support') }}" class="btn btn-support btn-lg">
+                    <i class="fas fa-info-circle ms-1"></i> المزيد عن الدعم
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Info -->
+    <div class="container mb-5">
+        <div class="row slide-in-left">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body text-center">
+                        <h5 class="card-title mb-3"><i class="fas fa-info-circle text-primary"></i> معلومات الاتصال</h5>
+                        {% if settings.contact_phone %}
+                        <p class="mb-2"><i class="fas fa-phone text-success"></i> {{ settings.contact_phone }}</p>
+                        {% endif %}
+                        {% if settings.contact_email %}
+                        <p class="mb-0"><i class="fas fa-envelope text-info"></i> {{ settings.contact_email }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <p class="mb-0">&copy; {{ current_year }} {{ settings.site_name }}. جميع الحقوق محفوظة.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function copyBankAccounts() {
+            const accountsText = `{{ settings.support_bank_accounts }}`;
+            navigator.clipboard.writeText(accountsText).then(() => {
+                alert('تم نسخ حسابات البنوك بنجاح!');
+            }).catch(err => {
+                console.error('فشل النسخ:', err);
+            });
+        }
+    </script>
+</body>
+</html>

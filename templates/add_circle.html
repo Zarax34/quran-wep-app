@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إضافة حلقة جديدة</h1>
+    <a href="{{ url_for('circles') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للحلقات
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-plus-circle"></i> بيانات الحلقة الجديدة</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">اسم الحلقة</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               placeholder="مثال: حلقة عمر بن الخطاب" required>
+                        <div class="form-text">اختر اسماً مميزاً للحلقة</div>
+                    </div>
+                    
+                    {% if session.role == 'admin' %}
+                    <div class="mb-3">
+                        <label for="teacher_id" class="form-label">المعلم المسؤول (اختياري)</label>
+                        <select class="form-control" id="teacher_id" name="teacher_id">
+                            <option value="">اختر المعلم من القائمة</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">يمكنك اختيار معلم من القائمة أو إدخال اسم معلم جديد أدناه</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="teacher_name" class="form-label">أو أدخل اسم المعلم يدوياً</label>
+                        <input type="text" class="form-control" id="teacher_name" name="teacher_name" 
+                               placeholder="مثال: المعلم أحمد">
+                        <div class="form-text">استخدم هذا الحقل إذا لم يكن للمعلم حساب في النظام</div>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label">المعلم المسؤول</label>
+                        <p class="form-control-plaintext">{{ session.name }}</p>
+                        <input type="hidden" name="teacher_id" value="{{ session.user_id }}">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb"></i> ملاحظات:</h6>
+                        <ul class="mb-0">
+                            <li>سيتم ربط الحلقة تلقائياً بحسابك إذا كنت معلم</li>
+                            <li>يمكنك لاحقاً إضافة الطلاب للحلقة</li>
+                            <li>سيتم ربط جميع تقارير الحلقة بهذه الحلقة</li>
+                            {% if session.role == 'admin' %}
+                            <li>يمكنك اختيار معلم من القائمة أو إدخال اسم معلم جديد</li>
+                            {% else %}
+                            <li><strong>سيتم إرسال الحلقة للمسؤول للموافقة عليها</strong></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('circles') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <button type="submit" class="btn btn-success">إضافة الحلقة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const teacherSelect = document.getElementById('teacher_id');
+    const teacherNameInput = document.getElementById('teacher_name');
+    
+    if (teacherSelect && teacherNameInput) {
+        // إذا تم اختيار معلم من القائمة، امسح الحقل اليدوي
+        teacherSelect.addEventListener('change', function() {
+            if (this.value) {
+                teacherNameInput.value = '';
+            }
+        });
+        
+        // إذا تم إدخال اسم يدوي، امسح الاختيار من القائمة
+        teacherNameInput.addEventListener('input', function() {
+            if (this.value) {
+                teacherSelect.value = '';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

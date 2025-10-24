@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إدارة أولياء الأمور</h1>
+    <div>
+        <a href="{{ url_for('add_parents') }}" class="btn btn-primary me-2">
+            <i class="fas fa-plus"></i> إضافة جماعية
+        </a>
+        <a href="{{ url_for('link_students_to_parents') }}" class="btn btn-success">
+            <i class="fas fa-link"></i> ربط الطلاب
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-users"></i> قائمة أولياء الأمور</h5>
+    </div>
+    <div class="card-body">
+        {% if parents %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>اسم ولي الأمر</th>
+                        <th>رقم الهاتف</th>
+                        <th>عدد الأبناء</th>
+                        <th>اسم المستخدم</th>
+                        <th>كلمة المرور</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parent in parents %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <strong>{{ parent.name }}</strong>
+                        </td>
+                        <td>
+                            <a href="https://wa.me/967{{ parent.phone }}" target="_blank" class="text-success">
+                                <i class="fab fa-whatsapp"></i> {{ parent.phone }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ parent.students|length }}</span>
+                        </td>
+                        <td>
+                            <code>{{ parent.name.replace(' ', '').lower() }}</code>
+                        </td>
+                        <td>
+                            <code>{{ parent.phone }}</code>
+                        </td>
+                        <td>
+                            <span class="badge bg-success">نشط</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-users-slash fa-2x mb-3"></i>
+            <h4>لا يوجد أولياء أمور</h4>
+            <p>يمكنك إضافة أولياء أمور بشكل جماعي</p>
+            <a href="{{ url_for('add_parents') }}" class="btn btn-primary">إضافة أولياء أمور</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-info-circle fa-2x text-primary mb-3"></i>
+                <h5>معلومات التسجيل</h5>
+                <p class="text-muted">اسم المستخدم: اسم ولي الأمر بدون مسافات</p>
+                <p class="text-muted">كلمة المرور: رقم الهاتف</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-check fa-2x text-success mb-3"></i>
+                <h5>إحصائيات سريعة</h5>
+                <p class="mb-1">إجمالي أولياء الأمور: <strong>{{ parents|length }}</strong></p>
+                <p class="mb-1">إجمالي الطلاب المرتبطين: <strong>{{ total_linked_students }}</strong></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

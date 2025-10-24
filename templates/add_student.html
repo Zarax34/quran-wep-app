@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إضافة طالب جديد</h1>
+    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للطلاب
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-user-plus"></i> بيانات الطالب الجديد</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">الاسم الكامل للطالب</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="مثال: محمد أحمد علي" required>
+                                <div class="form-text">يرجى إدخال الاسم الثلاثي مع اللقب</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="age" class="form-label">العمر</label>
+                                <input type="number" class="form-control" id="age" name="age" min="5" max="20">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="student_phone" class="form-label">رقم هاتف الطالب</label>
+                                <input type="tel" class="form-control" id="student_phone" name="student_phone" 
+                                       placeholder="7xxxxxxxx">
+                                <div class="form-text">رقم اليمن بدون +967</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_phone" class="form-label">رقم ولي الأمر</label>
+                                <input type="tel" class="form-control" id="parent_phone" name="parent_phone" 
+                                       placeholder="7xxxxxxxx" required>
+                                <div class="form-text">لإرسال التقارير عبر الواتساب</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="circle_id" class="form-label">الحلقة</label>
+                        <select class="form-control" id="circle_id" name="circle_id" required>
+                            <option value="">اختر الحلقة</option>
+                            {% for circle in circles %}
+                            <option value="{{ circle.id }}">{{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">صورة الطالب</label>
+                        <input type="file" class="form-control" id="photo" name="photo" 
+                               accept="image/*" onchange="previewImage(this)">
+                        <div class="form-text">الصور المسموح بها: PNG, JPG, JPEG, GIF (الحد الأقصى 2MB)</div>
+                        <div id="imagePreview" class="mt-2 text-center"></div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> معلومات مهمة:</h6>
+                        <ul class="mb-0">
+                            <li>سيتم استخراج اسم ولي الأمر تلقائياً من اسم الطالب (الجزء الثاني والثالث واللقب) <strong>مع المسافات</strong>.</li>
+                            <li>سيتم إنشاء حساب ولي الأمر تلقائياً بناءً على الاسم المستخرج ورقم الهاتف.</li>
+                            <li>اسم المستخدم لولي الأمر: اسم الأب مع المسافات (مثال: أحمد_علي).</li>
+                            <li>كلمة المرور لولي الأمر: رقم الهاتف.</li>
+                            <li>رقم ولي الأمر مطلوب لإرسال التقارير الأسبوعية.</li>
+                            <li>سيتم ربط الطالب بالحلقة المحددة.</li>
+                            {% if session.role == 'teacher' %}
+                            <li><strong>سيتم إرسال الطالب للمسؤول للموافقة عليه.</strong></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('students') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <button type="submit" class="btn btn-success">إضافة الطالب</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `<img src="${e.target.result}" class="student-photo" alt="معاينة الصورة">`;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

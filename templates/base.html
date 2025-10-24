@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="{% if session.get('dark_mode') or settings.dark_mode_enabled %}dark-mode{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ settings.site_name }}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: {{ settings.primary_color or '#2c5aa0' }};
+            --secondary-color: {{ settings.secondary_color or '#28a745' }};
+            --background-color: {{ settings.background_color or '#f8f9fa' }};
+            --text-color: {{ settings.text_color or '#2c3e50' }};
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+        }
+
+        .dark-mode {
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --card-bg: #2d3748;
+            --border-color: #4a5568;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        /* شعار المركز في الأعلى - حجم أكبر بدون خلفية */
+        .header-logo {
+            text-align: center;
+            padding: 35px 0; /* زيادة المساحة */
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            margin-bottom: 0;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-logo img {
+            max-height: 130px; /* حجم أكبر للشعار */
+            max-width: 100%;
+            border-radius: 0; /* إزالة الزوايا المستديرة */
+            margin-bottom: 15px;
+            box-shadow: none; /* إزالة الظل */
+            background: transparent; /* خلفية شفافة */
+            border: none; /* إزالة الحدود */
+        }
+
+        .header-logo h4 {
+            margin: 15px 0 8px 0;
+            font-weight: bold;
+            font-size: 2.8rem; /* حجم أكبر للنص */
+        }
+
+        .header-logo small {
+            opacity: 0.9;
+            font-size: 1.4rem; /* حجم أكبر للوصف */
+        }
+
+        /* إصلاح القائمة الجانبية */
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: -2px 0 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            position: fixed;
+            z-index: 1050;
+            width: 280px;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            transform: translateX(100%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        /* زر تبديل القائمة في الجانب الأيمن */
+        .sidebar-toggle {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 1060;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 90px;
+            right: 30px;
+            z-index: 1060;
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
+        }
+
+        .dark-mode-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .sidebar .nav-link {
+            color: #fff;
+            padding: 12px 15px;
+            margin: 5px 10px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: rgba(255,255,255,0.15);
+            transform: translateX(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: rgba(255,255,255,0.2);
+            border-right: 4px solid #fff;
+            transform: translateX(-5px);
+        }
+
+        /* المحتوى الرئيسي */
+        .main-content {
+            background-color: var(--background-color);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-right: 0;
+            padding: 30px;
+            margin-top: 0;
+        }
+
+        /* إخفاء القائمة على الهواتف افتراضياً */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(100%);
+                width: 85vw !important; /* عرض أفضل على الهواتف */
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                padding: 20px 15px;
+            }
+
+            .header-logo {
+                padding: 25px 0;
+            }
+
+            .header-logo img {
+                max-height: 100px; /* حجم مناسب للهواتف */
+            }
+
+            .header-logo h4 {
+                font-size: 2.2rem;
+            }
+
+            .header-logo small {
+                font-size: 1.2rem;
+            }
+
+            .sidebar-toggle, .dark-mode-toggle {
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+
+            .dark-mode-toggle {
+                top: 85px;
+            }
+
+            .student-photo {
+                width: 50px !important;
+                height: 50px !important;
+            }
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--secondary-color), #20c997);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        /* الأنيميشن */
+        .page-transition {
+            animation: pageFadeIn 0.6s ease-in;
+        }
+
+        @keyframes pageFadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+
+        .btn-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(25px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in-left {
+            animation: slideInLeft 0.8s ease-out;
+        }
+        
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            to { transform: scale(1); }
+        }
+
+        /* تصميم متجاوب */
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none;
+            }
+            
+            .mobile-only {
+                display: block;
+            }
+            
+            .mobile-menu {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                background: var(--card-bg);
+                border-top: 2px solid var(--border-color);
+                padding: 12px;
+                z-index: 1040;
+                box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+            }
+            
+            .mobile-menu .btn {
+                flex: 1;
+                margin: 0 5px;
+                font-size: 0.8rem;
+                border-radius: 10px;
+                padding: 10px 5px;
+            }
+
+            /* تحسين عرض الجداول على الهواتف */
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+        }
+
+        .logo-container {
+            text-align: center;
+            padding: 25px 20px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            max-height: 80px;
+            max-width: 100%;
+            border-radius: 0; /* إزالة الزوايا المستديرة */
+            margin-bottom: 15px;
+            background: transparent; /* خلفية شفافة */
+            border: none; /* إزالة الحدود */
+        }
+
+        .student-photo {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #e9ecef;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .mobile-menu {
+            display: none;
+        }
+
+        .academic-year-selector {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 15px;
+            width: calc(100% - 30px);
+            font-weight: 500;
+        }
+        
+        .academic-year-selector option {
+            color: #000;
+            background: white;
+        }
+
+        /* إصلاح زر تسجيل الخروج */
+        .logout-btn {
+            color: #ffc107 !important;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            margin: 20px 15px;
+            text-align: center;
+            padding: 12px;
+            background: rgba(255,193,7,0.1);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #ffc107;
+            color: #000 !important;
+            transform: translateY(-2px);
+        }
+
+        /* زر إغلاق القائمة */
+        .sidebar-close {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+            z-index: 1060;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-close:hover {
+            background: rgba(255,255,255,0.3);
+            transform: rotate(90deg);
+        }
+
+        /* حجب الخلفية عند فتح القائمة */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+            backdrop-filter: blur(5px);
+        }
+
+        .sidebar.open ~ .sidebar-overlay {
+            display: block;
+        }
+
+        /* إصلاح تمرير القائمة */
+        .sidebar-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* تحسين التنبيهات */
+        .alert {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-weight: 500;
+        }
+
+        /* تحسين الجداول */
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 15px;
+            font-weight: 600;
+        }
+
+        .table td {
+            padding: 12px 15px;
+            border-color: var(--border-color);
+            vertical-align: middle;
+        }
+
+        /* تحسين النماذج */
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(44, 90, 160, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* تحسين البادجات */
+        .badge {
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        /* مبدل الواجهات في القائمة الجانبية */
+        .view-switcher-sidebar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .view-switcher-sidebar .btn-group {
+            width: 100%;
+        }
+
+        .view-switcher-sidebar .btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .view-switcher-sidebar .btn.active {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .view-switcher-sidebar .btn:hover:not(.active) {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* مؤشر التحميل */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* عدادات الإشعارات */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* تحسينات للأزرار في القائمة الجانبية */
+        .sidebar .nav-link {
+            margin: 5px 10px !important;
+            padding: 12px 15px !important;
+        }
+
+        /* إصلاح ألوان النص في البطاقات البيضاء */
+        .card .text-dark,
+        .card .text-black,
+        .card-body .text-dark,
+        .card-body .text-black,
+        .bg-light .text-dark,
+        .bg-light .text-black {
+            color: #000 !important;
+        }
+
+        /* إصلاح ألوان النص في الوضع الليلي */
+        .dark-mode .card .text-dark,
+        .dark-mode .card .text-black,
+        .dark-mode .card-body .text-dark,
+        .dark-mode .card-body .text-black,
+        .dark-mode .bg-light .text-dark,
+        .dark-mode .bg-light .text-black {
+            color: #fff !important;
+        }
+
+        /* تحسين عرض النص في البطاقات البيضاء */
+        .card.bg-light,
+        .card .bg-light {
+            color: #000 !important;
+        }
+
+        .card.bg-light .text-muted,
+        .card .bg-light .text-muted {
+            color: #6c757d !important;
+        }
+
+        /* ضمان ظهور النص باللون الأسود في المناطق البيضاء */
+        .text-force-dark {
+            color: #000 !important;
+        }
+
+        .dark-mode .text-force-dark {
+            color: #fff !important;
+        }
+    </style>
+</head>
+<body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %}">
+    
+    <!-- شعار المركز في الأعلى -->
+    {% if settings.logo or settings.site_name %}
+    <div class="header-logo">
+        <div class="container">
+            {% if settings.logo %}
+            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="mb-2" alt="{{ settings.site_name }}" style="background: transparent; border: none;">
+            {% endif %}
+            <h4>{{ settings.site_name }}</h4>
+            {% if settings.site_description %}
+            <small>{{ settings.site_description }}</small>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- زر تبديل القائمة الجانبية -->
+    {% if session.user_id %}
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- زر الوضع الليلي -->
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()">
+        <i class="fas {% if session.get('dark_mode') or settings.dark_mode_enabled %}fa-sun{% else %}fa-moon{% endif %}"></i>
+    </button>
+    {% endif %}
+
+    {% if session.user_id %}
+    <!-- شريط التنقل للكمبيوتر -->
+    <nav class="sidebar {% if session.get('view_type') == 'mobile' %}collapsed{% endif %}">
+        <button class="sidebar-close" onclick="toggleSidebar()">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="sidebar-content">
+            <div class="logo-container">
+                {% if settings.logo %}
+                <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo" alt="{{ settings.site_name }}" style="background: transparent; border: none;">
+                {% else %}
+                <h4 class="text-white">
+                    <i class="fas fa-mosque"></i>
+                    {{ settings.site_name }}
+                </h4>
+                {% endif %}
+                <small class="text-light">{{ settings.site_description }}</small>
+            </div>
+            
+            <!-- اختيار السنة الدراسية للمسؤول -->
+            {% if session.role == 'admin' %}
+            <div class="px-3 mt-3">
+                <select class="form-select academic-year-selector" onchange="setAcademicYear(this.value)">
+                    <option value="2025" {% if session.get('academic_year', '2025') == '2025' %}selected{% endif %}>2025</option>
+                </select>
+                <small class="text-light" style="padding: 0 15px;">السنة الدراسية</small>
+            </div>
+            {% endif %}
+            
+            <!-- قائمة التنقل الخاصة بولي الأمر -->
+            {% if session.role == 'parent' %}
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_dashboard' }}" href="{{ url_for('parent_dashboard') }}">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        لوحة التحكم
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
+                        <i class="fas fa-hand-holding-heart me-2"></i>
+                        ادعم المركز
+                    </a>
+                </li>
+                
+                <!-- مبدل الواجهات في القائمة الجانبية -->
+                <li class="nav-item">
+                    <div class="view-switcher-sidebar">
+                        <small class="text-light d-block mb-2">تبديل الواجهة:</small>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('set_view', view_type='desktop') }}" class="btn {% if session.get('view_type') == 'desktop' %}active{% endif %}">
+                                <i class="fas fa-desktop"></i>
+                            </a>
+                            <a href="{{ url_for('set_view', view_type='mobile') }}" class="btn {% if session.get('view_type') == 'mobile' %}active{% endif %}">
+                                <i class="fas fa-mobile-alt"></i>
+                            </a>
+                            <a href="{{ url_for('set_view', view_type='auto') }}" class="btn {% if session.get('view_type') == 'auto' or not session.get('view_type') %}active{% endif %}">
+                                <i class="fas fa-sync-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+                
+                <li class="nav-item mt-4">
+                    <a class="nav-link logout-btn text-white" href="{{ url_for('parent_logout') }}">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        تسجيل الخروج
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- قائمة التنقل للمستخدمين الآخرين -->
+            {% else %}
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        لوحة التحكم
+                    </a>
+                </li>
+                {% if session.role in ['admin', 'teacher', 'support'] %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'circles' }}" href="{{ url_for('circles') }}">
+                        <i class="fas fa-users me-2"></i>
+                        إدارة الحلقات
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'students' }}" href="{{ url_for('students') }}">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        إدارة الطلاب
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'attendance' }}" href="{{ url_for('attendance') }}">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        الحضور والغياب
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint in ['add_report', 'collective_report'] }}" href="{{ url_for('add_report') }}">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        إضافة تقارير
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'reports' }}" href="{{ url_for('reports') }}">
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        التقارير
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'holidays' }}" href="{{ url_for('holidays') }}">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        إدارة العطل
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if session.role == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'parents' }}" href="{{ url_for('parents') }}">
+                        <i class="fas fa-user-friends me-2"></i>
+                        أولياء الأمور
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'users' }}" href="{{ url_for('users') }}">
+                        <i class="fas fa-users-cog me-2"></i>
+                        إدارة المستخدمين
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'settings' }}" href="{{ url_for('settings') }}">
+                        <i class="fas fa-cog me-2"></i>
+                        إعدادات الموقع
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
+                        <i class="fas fa-hand-holding-heart me-2"></i>
+                        ادعم المركز
+                    </a>
+                </li>
+                
+                <!-- مبدل الواجهات في القائمة الجانبية -->
+                <li class="nav-item">
+                    <div class="view-switcher-sidebar">
+                        <small class="text-light d-block mb-2">تبديل الواجهة:</small>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('set_view', view_type='desktop') }}" class="btn {% if session.get('view_type') == 'desktop' %}active{% endif %}">
+                                <i class="fas fa-desktop"></i>
+                            </a>
+                            <a href="{{ url_for('set_view', view_type='mobile') }}" class="btn {% if session.get('view_type') == 'mobile' %}active{% endif %}">
+                                <i class="fas fa-mobile-alt"></i>
+                            </a>
+                            <a href="{{ url_for('set_view', view_type='auto') }}" class="btn {% if session.get('view_type') == 'auto' or not session.get('view_type') %}active{% endif %}">
+                                <i class="fas fa-sync-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+                
+                <li class="nav-item mt-4">
+                    <a class="nav-link logout-btn text-white" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        تسجيل الخروج
+                    </a>
+                </li>
+            </ul>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- حجب الخلفية -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="main-content">
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show mt-3">
+                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-transition">
+            {% block content %}{% endblock %}
+        </div>
+
+        {% if session.user_id %}
+    </main>
+    {% endif %}
+
+    <!-- مؤشر التحميل -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="loading-spinner mb-3"></div>
+            <div>جاري التحميل...</div>
+        </div>
+    </div>
+
+    {% if session.user_id %}
+    <!-- شريط التنقل للهواتف -->
+    <div class="mobile-menu mobile-only">
+        {% if session.role == 'parent' %}
+        <a href="{{ url_for('parent_dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-home"></i>
+            <small>الرئيسية</small>
+        </a>
+        <a href="{{ url_for('support') }}" class="btn btn-outline-info">
+            <i class="fas fa-heart"></i>
+            <small>الدعم</small>
+        </a>
+        <a href="{{ url_for('parent_logout') }}" class="btn btn-outline-warning">
+            <i class="fas fa-sign-out-alt"></i>
+            <small>خروج</small>
+        </a>
+        
+        {% else %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-home"></i>
+            <small>الرئيسية</small>
+        </a>
+        <a href="{{ url_for('students') }}" class="btn btn-outline-info">
+            <i class="fas fa-users"></i>
+            <small>الطلاب</small>
+        </a>
+        <a href="{{ url_for('add_report') }}" class="btn btn-outline-success">
+            <i class="fas fa-plus"></i>
+            <small>إضافة</small>
+        </a>
+        <a href="{{ url_for('attendance') }}" class="btn btn-outline-warning">
+            <i class="fas fa-clipboard-check"></i>
+            <small>الحضور</small>
+        </a>
+        <a href="{{ url_for('support') }}" class="btn btn-outline-danger">
+            <i class="fas fa-heart"></i>
+            <small>الدعم</small>
+        </a>
+        {% if session.role == 'admin' %}
+        <a href="{{ url_for('settings') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-cog"></i>
+            <small>الإعدادات</small>
+        </a>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // تبديل القائمة الجانبية
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const icon = document.querySelector('.sidebar-toggle i');
+            
+            sidebar.classList.toggle('open');
+            
+            if (sidebar.classList.contains('open')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+                document.body.style.overflow = 'hidden';
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // إغلاق القائمة عند النقر على رابط
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    toggleSidebar();
+                }
+            });
+        });
+
+        // تبديل الوضع الليلي
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.querySelector('.dark-mode-toggle i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+            // حفظ التفضيل في localStorage
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // تعيين السنة الدراسية
+        function setAcademicYear(year) {
+            showLoading();
+            window.location.href = `/set_academic_year/${year}`;
+        }
+
+        // تحميل تفضيل الوضع الليلي
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+                const icon = document.querySelector('.dark-mode-toggle i');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+
+            // إغلاق القائمة تلقائياً على الهواتف
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            }
+
+            // تحميل تلقائي للإحصائيات
+            if (document.getElementById('dashboard-stats')) {
+                loadDashboardStats();
+            }
+            
+            // تحديث تلقائي للإشعارات
+            setInterval(updateNotifications, 30000); // كل 30 ثانية
+        });
+
+        // معاينة الصورة قبل الرفع
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${e.target.result}" class="student-photo" alt="معاينة الصورة">`;
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // معاينة الشعار قبل الرفع
+        function previewLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('logoPreview');
+                    if (preview) {
+                        preview.innerHTML = `
+                            <p class="mb-1">معاينة الشعار الجديد:</p>
+                            <img src="${e.target.result}" class="logo-preview" alt="معاينة الشعار" style="background: transparent; border: none;">
+                        `;
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // نسخ النص إلى الحافظة
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('تم النسخ بنجاح!');
+            }, function(err) {
+                console.error('فشل النسخ: ', err);
+                // طريقة بديلة للنسخ
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('تم النسخ بنجاح!');
+            });
+        }
+
+        // تأكيد قبل الحذف
+        function confirmDelete(message = 'هل أنت متأكد من الحذف؟') {
+            return confirm(message);
+        }
+
+        // إظهار مؤشر التحميل
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        // إخفاء مؤشر التحميل
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // تحميل إحصائيات لوحة التحكم
+        function loadDashboardStats() {
+            fetch('/api/dashboard_stats')
+                .then(response => response.json())
+                .then(data => {
+                    // يمكنك تحديث الإحصائيات في الصفحة هنا إذا كانت ديناميكية
+                    console.log('إحصائيات لوحة التحكم:', data);
+                })
+                .catch(error => console.error('خطأ في تحميل الإحصائيات:', error));
+        }
+
+        // تحديث عدد الإشعارات غير المقروءة
+        function updateNotifications() {
+            fetch('/api/unread_notifications_count')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.querySelector('.notification-badge');
+                    if (badge && data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'flex';
+                    } else if (badge) {
+                        badge.style.display = 'none';
+                    }
+                });
+        }
+
+        // إظهار مؤشر التحميل عند النقر على الروابط
+        document.addEventListener('DOMContentLoaded', function() {
+            const links = document.querySelectorAll('a[href]:not([href^="#"]):not([href^="javascript"]):not([target="_blank"])');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (this.getAttribute('href') && !this.getAttribute('href').startsWith('#')) {
+                        showLoading();
+                    }
+                });
+            });
+
+            // إخفاء مؤشر التحميل عند اكتمال تحميل الصفحة
+            window.addEventListener('load', function() {
+                hideLoading();
+            });
+        });
+
+        // معالجة الأخطاء
+        window.addEventListener('error', function() {
+            hideLoading();
+        });
+    </script>
+</body>
+</html>

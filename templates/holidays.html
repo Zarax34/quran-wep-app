@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إدارة العطل</h1>
+    <a href="{{ url_for('add_holiday') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> إضافة عطلة
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-calendar-alt"></i> العطل المبرمجة</h5>
+    </div>
+    <div class="card-body">
+        {% if holidays %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المناسبة</th>
+                        <th>نوع اليوم</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for holiday in holidays %}
+                    <tr>
+                        <td>{{ holiday.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ holiday.reason }}</td>
+                        <td>
+                            {% if holiday.has_attendance %}
+                            <span class="badge bg-success">يوم نشاط</span>
+                            {% else %}
+                            <span class="badge bg-secondary">عطلة بدون حضور</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if holiday.date < datetime.now().date() %}
+                            <span class="badge bg-secondary">منتهية</span>
+                            {% elif holiday.date == datetime.now().date() %}
+                            <span class="badge bg-warning">اليوم</span>
+                            {% else %}
+                            <span class="badge bg-success">قادمة</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_holiday', holiday_id=holiday.id) }}" 
+                               class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('هل أنت متأكد من حذف هذه العطلة؟')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+            <h5>لا توجد عطل مبرمجة</h5>
+            <p>يمكنك إضافة عطل للتحكم في أيام الحضور</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-2x text-success mb-3"></i>
+                <h5>أيام النشاط</h5>
+                <p class="text-muted">يتم تسجيل الحضور فيها</p>
+                <small>مثل: دروس إضافية، أنشطة، مراجعات</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-times fa-2x text-secondary mb-3"></i>
+                <h5>عطل بدون حضور</h5>
+                <p class="text-muted">لا يتم تسجيل الحضور فيها</p>
+                <small>مثل: إجازات رسمية، عطل</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <h6><i class="fas fa-info-circle"></i> معلومات:</h6>
+    <ul class="mb-0">
+        <li><strong>أيام النشاط:</strong> يتم تسجيل الحضور والغياب كالمعتاد</li>
+        <li><strong>عطل بدون حضور:</strong> لا يتم تسجيل أي حضور أو غياب في هذا اليوم</li>
+        <li>يمكن حذف العطل المبرمجة إذا لم تعد مطلوبة</li>
+    </ul>
+</div>
+{% endblock %}

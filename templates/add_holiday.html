@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إضافة عطلة جديدة</h1>
+    <a href="{{ url_for('holidays') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للعطل
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-plus-circle"></i> بيانات العطلة</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="date" class="form-label">تاريخ العطلة</label>
+                        <input type="date" class="form-control" id="date" name="date" 
+                               min="{{ now().strftime('%Y-%m-%d') }}" required>
+                        <div class="form-text">اختر تاريخ العطلة</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">سبب العطلة</label>
+                        <input type="text" class="form-control" id="reason" name="reason" 
+                               placeholder="مثال: إجازة منتصف الفصل" required>
+                        <div class="form-text">اذكر سبب العطلة أو المناسبة</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="has_attendance" name="has_attendance">
+                            <label class="form-check-label" for="has_attendance">
+                                يوم نشاط (يتم تسجيل الحضور)
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            إذا لم يتم اختيار هذا الخيار، سيكون اليوم عطلة بدون حضور
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
+                            <label class="form-check-label" for="is_recurring">
+                                عطلة دورية (تتكرر كل سنة)
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            سيتم تطبيق هذه العطلة تلقائياً في نفس التاريخ كل سنة
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> معلومات:</h6>
+                        <ul class="mb-0">
+                            <li><strong>عطلة بدون حضور:</strong> لا يتم تسجيل أي حضور أو غياب</li>
+                            <li><strong>يوم نشاط:</strong> يتم تسجيل الحضور كالمعتاد</li>
+                            <li><strong>عطلة دورية:</strong> تتكرر تلقائياً كل سنة في نفس التاريخ</li>
+                            <li>يمكن استخدام أيام النشاط للدروس الإضافية أو الأنشطة</li>
+                            <li>لا يمكن إضافة عطلة في تاريخ مضى</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('holidays') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <button type="submit" class="btn btn-success">إضافة العطلة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

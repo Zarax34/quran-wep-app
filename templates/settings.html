@@ -1,0 +1,704 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-cog"></i> إعدادات الموقع</h1>
+    </div>
+
+    <!-- مبدل الواجهات في الأعلى -->
+    <div class="row mb-4 fade-in">
+        <div class="col-12">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-mobile-alt"></i> تبديل الواجهة</h5>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('set_view', view_type='desktop') }}" 
+                           class="btn btn-outline-primary {% if session.get('view_type') == 'desktop' %}active{% endif %} btn-hover">
+                            <i class="fas fa-desktop"></i> كمبيوتر
+                        </a>
+                        <a href="{{ url_for('set_view', view_type='mobile') }}" 
+                           class="btn btn-outline-primary {% if session.get('view_type') == 'mobile' %}active{% endif %} btn-hover">
+                            <i class="fas fa-mobile-alt"></i> هاتف
+                        </a>
+                        <a href="{{ url_for('set_view', view_type='auto') }}" 
+                           class="btn btn-outline-primary {% if session.get('view_type') == 'auto' or not session.get('view_type') %}active{% endif %} btn-hover">
+                            <i class="fas fa-sync-alt"></i> تلقائي
+                        </a>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">الواجهة الحالية: 
+                            {% if session.get('view_type') == 'desktop' %}
+                            <span class="badge bg-primary">كمبيوتر</span>
+                            {% elif session.get('view_type') == 'mobile' %}
+                            <span class="badge bg-info">هاتف</span>
+                            {% else %}
+                            <span class="badge bg-success">تلقائي</span>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> المعلومات الأساسية</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="site_name" class="form-label">اسم الموقع</label>
+                                    <input type="text" class="form-control" id="site_name" name="site_name" 
+                                           value="{{ settings.site_name }}" required>
+                                    <div class="form-text">الاسم الذي يظهر في أعلى الموقع</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="site_description" class="form-label">وصف الموقع</label>
+                                    <input type="text" class="form-control" id="site_description" name="site_description" 
+                                           value="{{ settings.site_description }}" required>
+                                    <div class="form-text">وصف قصير يظهر تحت اسم الموقع</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact_phone" class="form-label">رقم التواصل</label>
+                                    <input type="tel" class="form-control" id="contact_phone" name="contact_phone" 
+                                           value="{{ settings.contact_phone or '' }}" placeholder="7xxxxxxxx">
+                                    <div class="form-text">رقم هاتف المركز للتواصل</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact_email" class="form-label">البريد الإلكتروني</label>
+                                    <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                                           value="{{ settings.contact_email or '' }}" placeholder="info@example.com">
+                                    <div class="form-text">البريد الإلكتروني للتواصل</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الشعار والألوان -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="logo" class="form-label">شعار المركز</label>
+                                    <input type="file" class="form-control" id="logo" name="logo" accept="image/*" onchange="previewLogo(this)">
+                                    <div class="form-text">الصور المسموح بها: PNG, JPG, JPEG, GIF (الحد الأقصى 2MB)</div>
+                                    {% if settings.logo %}
+                                    <div class="mt-2">
+                                        <p class="mb-1">الشعار الحالي:</p>
+                                        <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo-preview" alt="شعار المركز">
+                                        <div class="form-text">
+                                            <a href="{{ url_for('delete_logo') }}" onclick="return confirm('هل تريد حذف الشعار الحالي؟')" class="text-danger">
+                                                <i class="fas fa-trash"></i> حذف الشعار
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div id="logoPreview" class="mt-2 text-center"></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="primary_color" class="form-label">اللون الرئيسي</label>
+                                    <input type="color" class="form-control form-control-color" id="primary_color" name="primary_color" 
+                                           value="{{ settings.primary_color or '#2c5aa0' }}" title="اختر اللون الرئيسي">
+                                    <div class="form-text">لون الشريط الجانبي والأزرار</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="secondary_color" class="form-label">اللون الثانوي</label>
+                                    <input type="color" class="form-control form-control-color" id="secondary_color" name="secondary_color" 
+                                           value="{{ settings.secondary_color or '#28a745' }}" title="اختر اللون الثانوي">
+                                    <div class="form-text">لون أزرار النجاح والإجراءات</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- معلومات الموقع -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location_address" class="form-label">عنوان المركز</label>
+                                    <input type="text" class="form-control" id="location_address" name="location_address" 
+                                           value="{{ settings.location_address or 'مأرب - شارع الأربعين - خلف مستشفى نيوم' }}">
+                                    <div class="form-text">عنوان المركز الجغرافي</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location_map_url" class="form-label">رابط الخريطة</label>
+                                    <input type="url" class="form-control" id="location_map_url" name="location_map_url" 
+                                           value="{{ settings.location_map_url or '' }}" placeholder="https://maps.google.com/...">
+                                    <div class="form-text">رابط خرائط جوجل للمركز</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- حسابات البنوك للدعم -->
+                        <div class="mb-3">
+                            <label for="support_bank_accounts" class="form-label">حسابات البنوك للدعم</label>
+                            <textarea class="form-control" id="support_bank_accounts" name="support_bank_accounts" rows="4" 
+                                      placeholder="بنك الكريمي: 123456789&#10;بنك الشرق: 987654321&#10;بنك التضامن: 456789123">{{ settings.support_bank_accounts or '' }}</textarea>
+                            <div class="form-text">
+                                أدخل حسابات البنوك للدعم (سطر لكل حساب)<br>
+                                مثال: بنك الكريمي: 123456789
+                            </div>
+                        </div>
+
+                        <!-- رسالة الدعم -->
+                        <div class="mb-3">
+                            <label for="support_message" class="form-label">رسالة الدعم</label>
+                            <input type="text" class="form-control" id="support_message" name="support_message" 
+                                   value="{{ settings.support_message or 'نورٌ نُهديه وجيل نربيه' }}">
+                            <div class="form-text">رسالة تشجيعية تظهر في صفحة الدعم</div>
+                        </div>
+
+                        <!-- معاينة الألوان -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0"><i class="fas fa-palette"></i> معاينة الألوان</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-md-6">
+                                                <div class="color-preview primary-preview p-3 rounded mb-2">
+                                                    <strong>اللون الرئيسي</strong>
+                                                </div>
+                                                <small>الشريط الجانبي - الأزرار الرئيسية</small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="color-preview secondary-preview p-3 rounded mb-2">
+                                                    <strong>اللون الثانوي</strong>
+                                                </div>
+                                                <small>أزرار النجاح - الإحصائيات</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- قالب رسالة الواتساب -->
+                        <div class="mb-3">
+                            <label for="whatsapp_message_template" class="form-label">قالب رسالة الواتساب</label>
+                            <textarea class="form-control" id="whatsapp_message_template" name="whatsapp_message_template" 
+                                      rows="8" required>{{ settings.whatsapp_message_template }}</textarea>
+                            <div class="form-text">
+                                يمكنك استخدام المتغيرات التالية في القالب:
+                                <ul class="mb-0">
+                                    <li><code>{report_type}</code> - نوع التقرير (أسبوعي/شهري)</li>
+                                    <li><code>{student_name}</code> - اسم الطالب</li>
+                                    <li><code>{circle_name}</code> - اسم الحلقة</li>
+                                    <li><code>{teacher_name}</code> - اسم المعلم</li>
+                                    <li><code>{start_date}</code> - تاريخ بداية الفترة</li>
+                                    <li><code>{end_date}</code> - تاريخ نهاية الفترة</li>
+                                    <li><code>{reports_details}</code> - تفاصيل التسميع</li>
+                                    <li><code>{attendance_stats}</code> - إحصائيات الحضور</li>
+                                    <li><code>{site_name}</code> - اسم الموقع</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- خيارات النظام -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0"><i class="fas fa-sliders-h"></i> خيارات النظام</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="teacher_requires_approval" name="teacher_requires_approval" {% if settings.teacher_requires_approval %}checked{% endif %}>
+                                                <label class="form-check-label" for="teacher_requires_approval">
+                                                    الموافقة على الطلاب والحلقات من المسؤول
+                                                </label>
+                                            </div>
+                                            <div class="form-text">
+                                                عند التفعيل، يحتاج الطلاب والحلقات الجديدة موافقة المسؤول
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="allow_custom_teacher_name" name="allow_custom_teacher_name" {% if settings.allow_custom_teacher_name %}checked{% endif %}>
+                                                <label class="form-check-label" for="allow_custom_teacher_name">
+                                                    السماح بتخصيص اسم المعلم بدون حساب
+                                                </label>
+                                            </div>
+                                            <div class="form-text">
+                                                عند التفعيل، يمكن كتابة اسم المعلم يدوياً في حال عدم وجود حساب له في النظام
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="dark_mode_enabled" name="dark_mode_enabled" {% if settings.dark_mode_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="dark_mode_enabled">
+                                                    تفعيل الوضع الليلي افتراضياً
+                                                </label>
+                                            </div>
+                                            <div class="form-text">
+                                                عرض الموقع بالوضع الليلي لجميع المستخدمين
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-secondary me-md-2 btn-hover" onclick="resetForm()">
+                                <i class="fas fa-undo"></i> إعادة تعيين
+                            </button>
+                            <button type="submit" class="btn btn-success btn-hover">
+                                <i class="fas fa-save"></i> حفظ الإعدادات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- معلومات النظام -->
+            <div class="card slide-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> معلومات النظام</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>عدد المستخدمين:</strong> 
+                        <span class="badge bg-primary">{{ user_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>عدد الحلقات:</strong> 
+                        <span class="badge bg-info">{{ circle_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>عدد الطلاب:</strong> 
+                        <span class="badge bg-success">{{ student_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>عدد التقارير:</strong> 
+                        <span class="badge bg-warning">{{ report_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>عدد المعلمين:</strong> 
+                        <span class="badge bg-primary">{{ teacher_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>مسؤولي التواصل:</strong> 
+                        <span class="badge bg-secondary">{{ support_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>أولياء الأمور:</strong> 
+                        <span class="badge bg-success">{{ parent_count }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- إحصائيات سريعة -->
+            <div class="card mt-4 slide-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-tachometer-alt"></i> إحصائيات سريعة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>التقارير هذا الأسبوع:</strong> 
+                        <span class="badge bg-info">
+                            {{ weekly_reports_count }}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>سجلات الحضور:</strong> 
+                        <span class="badge bg-success">{{ attendance_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>العطل المبرمجة:</strong> 
+                        <span class="badge bg-warning">{{ holiday_count }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>الطلاب المرتبطين:</strong> 
+                        <span class="badge bg-primary">
+                            {{ student_count - (students_without_parents or 0) }}/{{ student_count }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- إجراءات سريعة -->
+            <div class="card mt-4 slide-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-bolt"></i> إجراءات سريعة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('parents') }}" class="btn btn-outline-primary btn-sm btn-hover">
+                            <i class="fas fa-user-friends"></i> إدارة أولياء الأمور
+                        </a>
+                        <a href="{{ url_for('users') }}" class="btn btn-outline-info btn-sm btn-hover">
+                            <i class="fas fa-users-cog"></i> إدارة المستخدمين
+                        </a>
+                        <a href="{{ url_for('circles') }}" class="btn btn-outline-success btn-sm btn-hover">
+                            <i class="fas fa-users"></i> إدارة الحلقات
+                        </a>
+                        <a href="{{ url_for('students') }}" class="btn btn-outline-warning btn-sm btn-hover">
+                            <i class="fas fa-user-graduate"></i> إدارة الطلاب
+                        </a>
+                        <a href="{{ url_for('support') }}" class="btn btn-outline-danger btn-sm btn-hover">
+                            <i class="fas fa-hand-holding-heart"></i> صفحة الدعم
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- معلومات التخصيص -->
+            <div class="card mt-4 slide-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-paint-brush"></i> تخصيص المظهر</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>الحالة الحالية:</strong>
+                        {% if settings.logo %}
+                        <span class="badge bg-success">مخصص</span>
+                        {% else %}
+                        <span class="badge bg-secondary">افتراضي</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-2">
+                        <strong>اللون الرئيسي:</strong>
+                        <span class="badge" style="background-color: {{ settings.primary_color or '#2c5aa0' }}; color: white;">
+                            {{ settings.primary_color or '#2c5aa0' }}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>اللون الثانوي:</strong>
+                        <span class="badge" style="background-color: {{ settings.secondary_color or '#28a745' }}; color: white;">
+                            {{ settings.secondary_color or '#28a745' }}
+                        </span>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <small>
+                            <i class="fas fa-lightbulb"></i>
+                            يمكنك تخصيص مظهر الموقع من خلال تغيير الشعار والألوان أعلاه
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- إدارة أسماء المستخدمين -->
+            <div class="card mt-4 slide-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-user-edit"></i> إدارة أسماء المستخدمين</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">يمكنك تعديل أسماء المستخدمين وكلمات المرور من خلال:</p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('users') }}" class="btn btn-outline-primary btn-sm btn-hover">
+                            <i class="fas fa-users-cog"></i> قائمة المستخدمين
+                        </a>
+                        <a href="{{ url_for('parents') }}" class="btn btn-outline-info btn-sm btn-hover">
+                            <i class="fas fa-user-friends"></i> أولياء الأمور
+                        </a>
+                    </div>
+                    <div class="alert alert-warning mt-3">
+                        <small>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            سيتم استخدام المسافات في أسماء مستخدمي أولياء الأمور بدلاً من الشرطة السفلية
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- معاينة الموقع -->
+    <div class="row mt-4 fade-in">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-eye"></i> معاينة الموقع</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="preview-sidebar p-3 rounded mb-3">
+                                <div class="text-center text-white mb-3">
+                                    {% if settings.logo %}
+                                    <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo-preview-sm" alt="شعار المعاينة">
+                                    {% else %}
+                                    <h6 class="mb-0">{{ settings.site_name }}</h6>
+                                    {% endif %}
+                                    <small>{{ settings.site_description }}</small>
+                                </div>
+                                <div class="nav-preview">
+                                    <div class="nav-item-preview active">لوحة التحكم</div>
+                                    <div class="nav-item-preview">إدارة الحلقات</div>
+                                    <div class="nav-item-preview">إدارة الطلاب</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="preview-content p-3 rounded mb-3">
+                                <div class="btn btn-primary mb-2">زر رئيسي</div>
+                                <div class="btn btn-success mb-2">زر نجاح</div>
+                                <div class="stat-card-preview text-white p-2 rounded mb-2">
+                                    بطاقة إحصائيات
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <small class="text-muted">هذه معاينة تقريبية للمظهر بعد التطبيق</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color), #1e3a8a);
+    color: white;
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.btn-group .btn.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.badge {
+    font-size: 0.9em;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(44, 90, 160, 0.25);
+}
+
+.form-control-color {
+    height: 45px;
+    padding: 0;
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--secondary-color), #20c997);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 30px;
+}
+
+.color-preview {
+    color: white;
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primary-preview {
+    background: linear-gradient(135deg, var(--primary-color), #1e3a8a);
+}
+
+.secondary-preview {
+    background: linear-gradient(135deg, var(--secondary-color), #20c997);
+}
+
+.logo-preview {
+    max-height: 100px;
+    border-radius: 10px;
+    border: 2px solid #dee2e6;
+}
+
+.logo-preview-sm {
+    max-height: 40px;
+    border-radius: 5px;
+}
+
+/* معاينة الموقع */
+.preview-sidebar {
+    background: linear-gradient(135deg, var(--primary-color), #1e3a8a);
+    min-height: 200px;
+}
+
+.nav-item-preview {
+    color: white;
+    padding: 8px 15px;
+    margin: 5px 0;
+    border-radius: 5px;
+    background-color: rgba(255,255,255,0.1);
+}
+
+.nav-item-preview.active {
+    background-color: rgba(255,255,255,0.2);
+    border-right: 3px solid white;
+}
+
+.preview-content {
+    background-color: #f8f9fa;
+    min-height: 200px;
+    border: 2px dashed #dee2e6;
+}
+
+.stat-card-preview {
+    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+}
+
+/* تخصيص ألوان البادجات */
+.bg-primary { background-color: var(--primary-color) !important; }
+.bg-success { background-color: var(--secondary-color) !important; }
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحديث معاينة الألوان عند التغيير
+    const primaryColor = document.getElementById('primary_color');
+    const secondaryColor = document.getElementById('secondary_color');
+    
+    function updateColorPreview() {
+        document.documentElement.style.setProperty('--primary-color', primaryColor.value);
+        document.documentElement.style.setProperty('--secondary-color', secondaryColor.value);
+        
+        // تحديث معاينة الألوان
+        document.querySelectorAll('.primary-preview').forEach(el => {
+            el.style.background = `linear-gradient(135deg, ${primaryColor.value}, #1e3a8a)`;
+        });
+        
+        document.querySelectorAll('.secondary-preview').forEach(el => {
+            el.style.background = `linear-gradient(135deg, ${secondaryColor.value}, #20c997)`;
+        });
+        
+        // تحديث معاينة الشريط الجانبي
+        document.querySelectorAll('.preview-sidebar').forEach(el => {
+            el.style.background = `linear-gradient(135deg, ${primaryColor.value}, #1e3a8a)`;
+        });
+        
+        // تحديث معاينة بطاقة الإحصائيات
+        document.querySelectorAll('.stat-card-preview').forEach(el => {
+            el.style.background = `linear-gradient(135deg, ${primaryColor.value}, #764ba2)`;
+        });
+        
+        // تحديث ألوان البادجات
+        document.querySelectorAll('.bg-primary').forEach(el => {
+            el.style.backgroundColor = primaryColor.value + ' !important';
+        });
+        
+        document.querySelectorAll('.bg-success').forEach(el => {
+            el.style.backgroundColor = secondaryColor.value + ' !important';
+        });
+
+        // تحديث ألوان الأزرار
+        document.querySelectorAll('.btn-primary').forEach(el => {
+            el.style.background = `linear-gradient(135deg, ${primaryColor.value}, #1e3a8a)`;
+            el.style.borderColor = primaryColor.value;
+        });
+
+        document.querySelectorAll('.btn-success').forEach(el => {
+            el.style.background = `linear-gradient(135deg, ${secondaryColor.value}, #20c997)`;
+            el.style.borderColor = secondaryColor.value;
+        });
+    }
+    
+    primaryColor.addEventListener('input', updateColorPreview);
+    secondaryColor.addEventListener('input', updateColorPreview);
+    
+    // التهيئة الأولية
+    updateColorPreview();
+});
+
+// معاينة الشعار
+function previewLogo(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('logoPreview');
+            if (preview) {
+                preview.innerHTML = `
+                    <p class="mb-1">معاينة الشعار الجديد:</p>
+                    <img src="${e.target.result}" class="logo-preview" alt="معاينة الشعار">
+                `;
+            }
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// إعادة تعيين النموذج
+function resetForm() {
+    if (confirm('هل تريد إعادة تعيين جميع الإعدادات إلى القيم الافتراضية؟')) {
+        document.getElementById('site_name').value = 'مركز الإمام حفص';
+        document.getElementById('site_description').value = 'لتعليم القرآن الكريم';
+        document.getElementById('contact_phone').value = '';
+        document.getElementById('contact_email').value = '';
+        document.getElementById('location_address').value = 'مأرب - شارع الأربعين - خلف مستشفى نيوم';
+        document.getElementById('location_map_url').value = '';
+        document.getElementById('primary_color').value = '#2c5aa0';
+        document.getElementById('secondary_color').value = '#28a745';
+        document.getElementById('support_bank_accounts').value = 'بنك الكريمي: 123456789\nبنك الشرق: 987654321\nبنك التضامن: 456789123';
+        document.getElementById('support_message').value = 'نورٌ نُهديه وجيل نربيه';
+        document.getElementById('whatsapp_message_template').value = `تقرير {report_type} للتسميع\n\nالطالب: {student_name}\nالحلقة: {circle_name}\nالمعلم: {teacher_name}\nالفترة: من {start_date} إلى {end_date}\n\nالتسميع:\n{reports_details}\n\nإحصائيات الحضور:\n{attendance_stats}\n\n{site_name}`;
+        document.getElementById('teacher_requires_approval').checked = true;
+        document.getElementById('allow_custom_teacher_name').checked = true;
+        document.getElementById('dark_mode_enabled').checked = false;
+        
+        // تحديث المعاينة
+        const event = new Event('input');
+        document.getElementById('primary_color').dispatchEvent(event);
+        document.getElementById('secondary_color').dispatchEvent(event);
+        
+        alert('تم إعادة تعيين الإعدادات إلى القيم الافتراضية');
+    }
+}
+
+// تأكيد الحذف
+function confirmDelete(message) {
+    return confirm(message);
+}
+</script>
+{% endblock %}

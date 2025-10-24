@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0"><i class="fas fa-user-plus"></i> تسجيل ولي أمر جديد</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">اسم المستخدم</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                        <div class="form-text">سيستخدم لتسجيل الدخول</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">كلمة المرور</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">الاسم (الأب والجد فقط)</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                        <div class="form-text">أدخل اسم الأب والجد فقط بدون "ابن" أو "ولد"</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">رقم الجوال</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="student_name" class="form-label">اسم الطالب/الابنة</label>
+                        <input type="text" class="form-control" id="student_name" name="student_name" required>
+                        <div class="form-text">اسم الطالب أو الابنة المسجل في المركز</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> تسجيل الحساب
+                        </button>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-right"></i> العودة لتسجيل الدخول
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

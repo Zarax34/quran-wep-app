@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">تعديل المستخدم: {{ user.name }}</h1>
+    <a href="{{ url_for('users') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للمستخدمين
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-user-edit"></i> تعديل بيانات المستخدم</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">الاسم الكامل</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ user.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">الدور</label>
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>معلم</option>
+                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>مسؤول</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">كلمة المرور الجديدة</label>
+                        <input type="password" class="form-control" id="password" name="password">
+                        <div class="form-text">اترك الحقل فارغاً إذا لم ترد تغيير كلمة المرور</div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> معلومات:</h6>
+                        <ul class="mb-0">
+                            <li><strong>المسؤول:</strong> صلاحيات كاملة على النظام</li>
+                            <li><strong>المعلم:</strong> إدارة الحلقات والطلاب والتقارير الخاصة به</li>
+                            <li>يمكن تغيير كلمة المرور عند الحاجة</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('users') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <button type="submit" class="btn btn-success">حفظ التعديلات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

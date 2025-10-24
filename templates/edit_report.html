@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">تعديل التقرير</h1>
+        <a href="{{ url_for('reports') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للتقارير
+        </a>
+    </div>
+
+    <div class="row justify-content-center fade-in">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-edit"></i> تعديل التقرير</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="date" class="form-label">التاريخ</label>
+                                    <input type="date" class="form-control" id="date" name="date" 
+                                           value="{{ report.date.strftime('%Y-%m-%d') }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">الطالب</label>
+                                    <p class="form-control-plaintext">{{ report.student.name }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="surah" class="form-label">السورة</label>
+                                    <input type="text" class="form-control" id="surah" name="surah" 
+                                           value="{{ report.surah }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="from_verse" class="form-label">من الآية</label>
+                                    <input type="number" class="form-control" id="from_verse" name="from_verse" 
+                                           value="{{ report.from_verse }}" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="to_verse" class="form-label">إلى الآية</label>
+                                    <input type="number" class="form-control" id="to_verse" name="to_verse" 
+                                           value="{{ report.to_verse }}" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="type" class="form-label">نوع التسميع</label>
+                                    <select class="form-control" id="type" name="type" required>
+                                        <option value="حفظ" {% if report.type == 'حفظ' %}selected{% endif %}>حفظ</option>
+                                        <option value="مراجعة" {% if report.type == 'مراجعة' %}selected{% endif %}>مراجعة</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="grade" class="form-label">التقدير</label>
+                                    <select class="form-control" id="grade" name="grade" required>
+                                        <option value="ممتاز" {% if report.grade == 'ممتاز' %}selected{% endif %}>ممتاز</option>
+                                        <option value="جيد جدا" {% if report.grade == 'جيد جدا' %}selected{% endif %}>جيد جدا</option>
+                                        <option value="جيد" {% if report.grade == 'جيد' %}selected{% endif %}>جيد</option>
+                                        <option value="مقبول" {% if report.grade == 'مقبول' %}selected{% endif %}>مقبول</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">ملاحظات</label>
+                                    <input type="text" class="form-control" id="notes" name="notes" 
+                                           value="{{ report.notes or '' }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> ملاحظة:</h6>
+                            <p class="mb-0">سيتم تحديث التقرير فور حفظ التعديلات. يمكنك تعديل أي حقل من الحقول أعلاه.</p>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('reports') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                            <button type="submit" class="btn btn-success">حفظ التعديلات</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

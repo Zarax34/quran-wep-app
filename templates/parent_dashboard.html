@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">مرحباً {{ parent.name }} 👋</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <span class="badge bg-primary fs-6">ولي أمر</span>
+        </div>
+    </div>
+
+    <!-- إحصائيات سريعة -->
+    <div class="row mb-4 fade-in">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-light">عدد الأبناء</h6>
+                        <h2 class="mb-0">{{ total_children }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-light">متوسط الحضور</h6>
+                        <h2 class="mb-0">{{ "%.1f"|format(total_attendance_rate) }}%</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line fa-2x text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-light">التقارير الشهرية</h6>
+                        <h2 class="mb-0">{{ total_monthly_reports }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-2x text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-light">إجمالي الآيات</h6>
+                        <h2 class="mb-0">{{ children_stats|sum(attribute='total_verses') }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-book-quran fa-2x text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- أبناء ولي الأمر -->
+    <div class="row fade-in">
+        {% for stats in children_stats %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 btn-hover">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ stats.student.name }}</h5>
+                    <span class="badge bg-info">{{ stats.student.circle.name }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <i class="fas fa-chalkboard-teacher text-primary me-2"></i>
+                        <strong>المعلم:</strong> {{ stats.student.circle.teacher.name if stats.student.circle.teacher else stats.student.circle.teacher_name }}
+                    </div>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-1">الحضور</h6>
+                                <h4 class="text-{{ 'success' if stats.attendance_rate >= 80 else 'warning' if stats.attendance_rate >= 60 else 'danger' }} mb-0">
+                                    {{ "%.1f"|format(stats.attendance_rate) }}%
+                                </h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-1">التقارير</h6>
+                                <h4 class="text-primary mb-0">{{ stats.monthly_reports }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-1">الآيات</h6>
+                                <h4 class="text-info mb-0">{{ stats.total_verses }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- تقدم الطالب -->
+                    <div class="mb-3">
+                        <strong>مستوى التقدم:</strong>
+                        <div class="progress mt-1" style="height: 10px;">
+                            {% set progress = (stats.attendance_rate * 0.4) + (stats.monthly_reports * 2) %}
+                            <div class="progress-bar bg-success" style="width: {{ progress if progress <= 100 else 100 }}%"></div>
+                        </div>
+                        <small class="text-muted">
+                            {% if progress >= 80 %}
+                            ممتاز 👍
+                            {% elif progress >= 60 %}
+                            جيد جداً 👌
+                            {% elif progress >= 40 %}
+                            جيد 
+                            {% else %}
+                            يحتاج تحسين 📈
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <!-- إحصائيات الحضور -->
+                    <div class="mb-2">
+                        <small><strong>إحصائيات الحضور (شهري):</strong></small>
+                        <div class="d-flex justify-content-between">
+                            <span class="badge bg-success">حاضر: {{ stats.monthly_attendance['حاضر'] }}</span>
+                            <span class="badge bg-warning">بعذر: {{ stats.monthly_attendance['غائب بعذر'] }}</span>
+                            <span class="badge bg-danger">بلا عذر: {{ stats.monthly_attendance['غائب بلا عذر'] }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{{ url_for('parent_student_details', student_id=stats.student.id) }}" class="btn btn-primary btn-sm w-100 btn-hover">
+                        <i class="fas fa-chart-bar"></i> عرض التفاصيل الكاملة
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-user-slash fa-3x mb-3"></i>
+                <h4>لا يوجد أبناء مسجلين</h4>
+                <p>لم يتم ربط أي طلاب بحسابك بعد</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- مقارنة بين الأبناء -->
+    {% if children_stats|length > 1 %}
+    <div class="row mt-4 slide-in-left">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> مقارنة بين الأبناء</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>الطالب</th>
+                                    <th>الحلقة</th>
+                                    <th>نسبة الحضور</th>
+                                    <th>التقارير الشهرية</th>
+                                    <th>إجمالي الآيات</th>
+                                    <th>مستوى التقدم</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stats in children_stats %}
+                                <tr>
+                                    <td>{{ stats.student.name }}</td>
+                                    <td>{{ stats.student.circle.name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if stats.attendance_rate >= 80 else 'warning' if stats.attendance_rate >= 60 else 'danger' }}">
+                                            {{ "%.1f"|format(stats.attendance_rate) }}%
+                                        </span>
+                                    </td>
+                                    <td>{{ stats.monthly_reports }}</td>
+                                    <td>{{ stats.total_verses }}</td>
+                                    <td>
+                                        {% set progress = (stats.attendance_rate * 0.4) + (stats.monthly_reports * 2) %}
+                                        {% if progress >= 80 %}
+                                        <span class="badge bg-success">ممتاز</span>
+                                        {% elif progress >= 60 %}
+                                        <span class="badge bg-primary">جيد جداً</span>
+                                        {% elif progress >= 40 %}
+                                        <span class="badge bg-warning">جيد</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">يحتاج تحسين</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- مقارنة مع إحصائيات المركز -->
+    {% if center_stats %}
+    <div class="row mt-4 fade-in">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-line"></i> مقارنة مع إحصائيات المركز</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h6>متوسط الحضور</h6>
+                                <h3 class="text-{{ 'success' if total_attendance_rate >= center_stats.average_attendance else 'warning' }}">
+                                    {{ "%.1f"|format(total_attendance_rate) }}%
+                                </h3>
+                                <small>متوسط المركز: {{ "%.1f"|format(center_stats.average_attendance) }}%</small>
+                                {% if total_attendance_rate >= center_stats.average_attendance %}
+                                <div class="text-success mt-2">
+                                    <i class="fas fa-arrow-up"></i> أعلى من المتوسط
+                                </div>
+                                {% else %}
+                                <div class="text-warning mt-2">
+                                    <i class="fas fa-arrow-down"></i> أقل من المتوسط
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h6>إجمالي الآيات</h6>
+                                <h3 class="text-info">{{ children_stats|sum(attribute='total_verses') }}</h3>
+                                <small>متوسط المركز: {{ center_stats.total_verses_this_month }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h6>عدد الأبناء</h6>
+                                <h3 class="text-primary">{{ total_children }}</h3>
+                                <small>إجمالي طلاب المركز: {{ center_stats.total_students }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.progress {
+    background-color: #e9ecef;
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    transition: width 0.6s ease;
+}
+
+.stat-card {
+    border-radius: 15px;
+    color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إضافة أولياء أمور بشكل جماعي</h1>
+    <a href="{{ url_for('parents') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للأولياء
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-upload"></i> رفع بيانات أولياء الأمور</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="parents_text" class="form-label">بيانات أولياء الأمور</label>
+                        <textarea class="form-control" id="parents_text" name="parents_text" rows="15" 
+                                  placeholder="أدخل بيانات أولياء الأمور بالشكل التالي:
+اسم ولي الأمر: رقم الهاتف
+مثال:
+أحمد محمد: 777123456
+محمد علي: 777123457
+سالم عبدالله: 777123458
+..."
+                                  required></textarea>
+                        <div class="form-text">
+                            كل سطر يمثل ولي أمر واحد بالشكل: الاسم: رقم الهاتف
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-users"></i> إنشاء الحسابات
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-lightbulb"></i> تعليمات</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>📝 تنسيق البيانات:</h6>
+                    <p class="mb-2">• اسم ولي الأمر: رقم الهاتف</p>
+                    <p class="mb-2">• كل سطر يمثل ولي أمر واحد</p>
+                    <p class="mb-2">• لا مسافات قبل أو بعد النقطتين</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>🔐 معلومات التسجيل:</h6>
+                    <p class="mb-1"><strong>اسم المستخدم:</strong> اسم الأب مع المسافات (مثال: أحمد علي)</p>
+                    <p class="mb-1"><strong>كلمة المرور:</strong> رقم الهاتف</p>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <small>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        سيتم إنشاء حسابات تلقائية لأولياء الأمور مع المسافات في أسماء المستخدمين
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-download"></i> نموذج جاهز</h5>
+            </div>
+            <div class="card-body">
+                <textarea class="form-control" rows="8" readonly>أحمد محمد: 777123456
+محمد علي: 777123457
+سالم عبدالله: 777123458
+علي أحمد: 777123459
+خالد محمد: 777123460
+عبدالله سعيد: 777123461
+محمود حسن: 777123462
+يوسف أحمد: 777123463</textarea>
+                <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="copyTemplate()">
+                    <i class="fas fa-copy"></i> نسخ النموذج
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyTemplate() {
+    const templateText = document.querySelector('.card textarea').value;
+    navigator.clipboard.writeText(templateText).then(function() {
+        alert('تم نسخ النموذج بنجاح!');
+    }, function(err) {
+        console.error('فشل النسخ: ', err);
+    });
+}
+</script>
+{% endblock %}

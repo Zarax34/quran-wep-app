@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">ربط الطلاب بأولياء الأمور</h1>
+    <a href="{{ url_for('parents') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للأولياء
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-link"></i> ربط طالب بولي أمر</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">الطالب</label>
+                        <select class="form-control" id="student_id" name="student_id" required>
+                            <option value="">اختر الطالب</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">
+                                {{ student.name }} - {{ student.circle.name }} 
+                                {% if student.parent %}
+                                (مرتبط: {{ student.parent.name }})
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="parent_id" class="form-label">ولي الأمر</label>
+                        <select class="form-control" id="parent_id" name="parent_id" required>
+                            <option value="">اختر ولي الأمر</option>
+                            {% for parent in parents %}
+                            <option value="{{ parent.id }}">
+                                {{ parent.name }} ({{ parent.phone }})
+                                - {{ parent.students|length }} أبناء
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-link"></i> ربط الطالب بولي الأمر
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> معلومات سريعة</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>الطلاب غير المرتبطين:</h6>
+                    <span class="badge bg-warning">
+                        {{ students|selectattr('parent', 'none')|list|length }}
+                    </span>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>أولياء الأمور بدون أبناء:</h6>
+                    <span class="badge bg-info">
+                        {{ parents|selectattr('students|length', 'equalto', 0)|list|length }}
+                    </span>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>إجمالي الطلاب:</h6>
+                    <span class="badge bg-primary">{{ students|length }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>إجمالي أولياء الأمور:</h6>
+                    <span class="badge bg-success">{{ parents|length }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-list"></i> أحدث عمليات الربط</h5>
+            </div>
+            <div class="card-body">
+                {% set linked_students = students|selectattr('parent')|list %}
+                {% if linked_students %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>ولي الأمر</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in linked_students[:5] %}
+                            <tr>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.parent.name }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">لا توجد عمليات ربط</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
