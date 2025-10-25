@@ -2,9 +2,6 @@
 
 {% block content %}
 <div class="page-transition">
-    <!-- Announcements Modal Trigger -->
-    <div id="announcement-trigger" style="display: none;"></div>
-
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">مرحباً {{ session.name }} 👋</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -178,6 +175,32 @@
         </div>
     </div>
 
+    <!-- Announcements -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-bullhorn"></i> الإعلانات</h5>
+                </div>
+                <div class="card-body">
+                    {% if announcements %}
+                        {% for announcement in announcements %}
+                            <div class="alert alert-info">
+                                <h6>{{ announcement.title }}</h6>
+                                <p>{{ announcement.content }}</p>
+                                {% if announcement.image %}
+                                    <img src="{{ url_for('uploaded_file', filename=announcement.image) }}" class="img-fluid rounded">
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">لا توجد إعلانات حاليًا.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- آخر التقارير -->
     <div class="row slide-in-left">
         <div class="col-12">
@@ -246,66 +269,4 @@
         </div>
     </div>
 </div>
-
-<!-- Announcements Modal -->
-<div class="modal fade" id="announcementsModal" tabindex="-1" aria-labelledby="announcementsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="announcementsModalLabel"><i class="fas fa-bullhorn"></i> إعلانات الإدارة</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="announcementsContent"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Animated counters
-    const counters = document.querySelectorAll('.counter');
-    const speed = 200; // The lower the slower
-
-    counters.forEach(counter => {
-        const updateCount = () => {
-            const target = +counter.getAttribute('data-target');
-            const count = +counter.innerText;
-            const inc = target / speed;
-
-            if (count < target) {
-                counter.innerText = Math.ceil(count + inc);
-                setTimeout(updateCount, 1);
-            } else {
-                counter.innerText = target;
-            }
-        };
-        updateCount();
-    });
-
-    fetch('/api/active_announcements')
-        .then(response => response.json())
-        .then(data => {
-            if (data.length > 0) {
-                const content = document.getElementById('announcementsContent');
-                data.forEach(ann => {
-                    const announcementElement = document.createElement('div');
-                    announcementElement.classList.add('alert', 'alert-info');
-                    let innerHTML = `<h6>${ann.title}</h6><p>${ann.content}</p>`;
-                    if (ann.image) {
-                        innerHTML += `<img src="/uploads/${ann.image}" class="img-fluid rounded">`;
-                    }
-                    announcementElement.innerHTML = innerHTML;
-                    content.appendChild(announcementElement);
-                });
-                var myModal = new bootstrap.Modal(document.getElementById('announcementsModal'), {});
-                myModal.show();
-            }
-        });
-});
-</script>
 {% endblock %}

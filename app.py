@@ -781,6 +781,7 @@ def dashboard():
     new_students = Student.query.filter_by(is_active=True).order_by(Student.id.desc()).limit(5).all()
     center_attendance_rate = get_center_attendance_stats()
     active_circles = Circle.query.filter_by(is_active=True).all()
+    announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
     
     return render_template('dashboard.html',
                          total_students=total_students,
@@ -791,7 +792,8 @@ def dashboard():
                          recent_reports=recent_reports,
                          new_students=new_students,
                          center_attendance_rate=center_attendance_rate,
-                         active_circles=active_circles)
+                         active_circles=active_circles,
+                         announcements=announcements)
 
 # ---------- 8.  STUDENTS ----------
 @app.route('/students')
@@ -1589,13 +1591,6 @@ def api_student_details(student_id):
     }
     return jsonify(student_data)
 
-@app.route('/api/active_announcements')
-@require_login
-def active_announcements():
-    announcements = Announcement.query.filter_by(is_active=True).all()
-    return jsonify([{'title': a.title, 'content': a.content, 'image': a.image} for a in announcements])
-
-
 @app.route('/user_logins')
 @require_role('admin')
 def user_logins():
@@ -1879,6 +1874,9 @@ def student_reports(student_id):
     
     verses_this_week, verses_last_week = compare_student_performance(student_id)
 
+    total_verses_in_quran = 6236
+    progress_percentage = (student.total_verses_since_year_start / total_verses_in_quran) * 100
+
     return render_template('student_reports.html',
                          student=student,
                          weekly_reports=weekly_reports,
@@ -1888,7 +1886,8 @@ def student_reports(student_id):
                          start_date_monthly=start_date_monthly,
                          end_date_monthly=end_date_monthly,
                          verses_this_week=verses_this_week,
-                         verses_last_week=verses_last_week)
+                         verses_last_week=verses_last_week,
+                         progress_percentage=progress_percentage)
 
 @app.route('/export_student_report/<int:student_id>')
 @require_login
@@ -2192,7 +2191,8 @@ def student_dashboard():
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
 
-    student = Student.query.filter_by(name=session['name']).first()
+    user = User.query.get(session['user_id'])
+    student = Student.query.filter_by(name=user.name).first()
     if not student:
         flash('لم يتم العثور على بيانات الطالب', 'error')
         return redirect(url_for('logout'))
@@ -2252,7 +2252,7 @@ def student_details(student_id):
 
     educational_notes = EducationalNote.query.filter_by(student_id=student_id).order_by(EducationalNote.date.desc()).all()
 
-    return render_template('parent_student_details.html',
+    return render_template('student_details.html',
                          student=student,
                          stats=stats,
                          recent_reports=recent_reports,
