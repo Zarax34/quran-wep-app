@@ -2,10 +2,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">الطلاب المتأخرون</h1>
-    <div class="alert alert-warning" role="alert">
-        الطلاب الذين لم يقدموا تقريرًا منذ تاريخ: <strong>{{ late_threshold.strftime('%Y-%m-%d') }}</strong>
-    </div>
+    <h1 class="h2">الطلاب المتأخرون اليوم ({{ today.strftime('%Y-%m-%d') }})</h1>
 </div>
 
 <div class="table-responsive">
@@ -15,8 +12,6 @@
                 <th>اسم الطالب</th>
                 <th>الحلقة</th>
                 <th>المعلم</th>
-                <th>تاريخ آخر تقرير</th>
-                <th>أيام التأخير</th>
                 <th>الإجراءات</th>
             </tr>
         </thead>
@@ -27,29 +22,15 @@
                 <td>{{ student.circle.name }}</td>
                 <td>{{ student.circle.teacher.name if student.circle.teacher else student.circle.teacher_name }}</td>
                 <td>
-                    {% if student.reports %}
-                        {{ student.reports[0].date.strftime('%Y-%m-%d') }}
-                    {% else %}
-                        <span class="text-danger">لا يوجد تقارير</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if student.reports %}
-                        {{ (today - student.reports[0].date).days }}
-                    {% else %}
-                        <span class="text-danger">غير محدد</span>
-                    {% endif %}
-                </td>
-                <td>
                     <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-sm btn-info">عرض التقارير</a>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="text-center">
+                <td colspan="4" class="text-center">
                     <div class="alert alert-success">
                         <i class="fas fa-check-circle fa-2x mb-2"></i>
-                        <p>لا يوجد طلاب متأخرون حاليًا.</p>
+                        <p>لا يوجد طلاب متأخرون اليوم.</p>
                     </div>
                 </td>
             </tr>

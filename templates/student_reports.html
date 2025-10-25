@@ -78,32 +78,40 @@
                 <h5 class="card-title mb-0"><i class="fas fa-chart-line"></i> تقدم الطالب</h5>
             </div>
             <div class="card-body">
-                {% set attendance_rate = student.attendances|selectattr('status', 'equalto', 'حاضر')|list|length / (student.attendances|length if student.attendances|length > 0 else 1) * 100 %}
-                {% set progress = (attendance_rate * 0.4) + (monthly_reports|length * 2) %}
                 <div class="progress" style="height: 25px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress if progress <= 100 else 100 }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">{{ "%.1f"|format(progress) }}%</div>
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress_percentage }}%;" aria-valuenow="{{ progress_percentage }}" aria-valuemin="0" aria-valuemax="100">{{ "%.2f"|format(progress_percentage) }}%</div>
                 </div>
                 <div class="row mt-3 text-center">
-                    <div class="col-4">
-                        <small>نسبة الحضور: {{ "%.1f"|format(attendance_rate) }}%</small>
+                    <div class="col-6">
+                        <small>إجمالي الآيات المحفوظة: {{ student.total_verses_since_year_start }}</small>
                     </div>
-                    <div class="col-4">
-                        <small>التقارير الشهرية: {{ monthly_reports|length }}</small>
-                    </div>
-                    <div class="col-4">
-                        <small>المستوى:
-                            {% if progress >= 80 %}
-                            ممتاز
-                            {% elif progress >= 60 %}
-                            جيد جداً
-                            {% elif progress >= 40 %}
-                            جيد
-                            {% else %}
-                            مبتدئ
-                            {% endif %}
-                        </small>
+                    <div class="col-6">
+                        <small>الآيات المتبقية: {{ 6236 - student.total_verses_since_year_start }}</small>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Notes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-edit"></i> ملاحظات تربوية</h5>
+            </div>
+            <div class="card-body">
+                {% if educational_notes %}
+                    {% for note in educational_notes %}
+                        <div class="alert alert-info">
+                            <p class="mb-1">{{ note.note }}</p>
+                            <small class="text-muted">بواسطة: {{ note.teacher.name }} - بتاريخ: {{ note.date.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">لا توجد ملاحظات تربوية حاليًا.</p>
+                {% endif %}
             </div>
         </div>
     </div>

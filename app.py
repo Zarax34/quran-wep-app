@@ -1,12 +1,15 @@
 # ---------- 1.  IMPORTS  ----------
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory, make_response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
-from sqlalchemy import inspect, func, text
+from sqlalchemy import inspect, func, text, or_
 from functools import wraps
 import re, os, urllib.parse
+from fpdf import FPDF
+from flask_mail import Mail, Message as MailMessage
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # ---------- 2.  FLASK INIT  ----------
 app = Flask(__name__)
@@ -19,6 +22,47 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 db = SQLAlchemy(app)
 
+# Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+mail = Mail(app)
+
+# Scheduler for automatic emails
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+def send_weekly_progress_reports():
+    with app.app_context():
+        parents = Parent.query.filter(Parent.user.has(email=None)).all()
+        for parent in parents:
+            students = parent.students
+            if not students:
+                continue
+
+            # Create a summary for each student
+            summary = ""
+            for student in students:
+                stats = get_student_stats(student.id)
+                summary += f"<h3>Progress for {student.name}</h3>"
+                summary += f"<p><strong>Monthly Reports:</strong> {stats['monthly_reports']}</p>"
+                summary += f"<p><strong>Attendance Rate:</strong> {stats['attendance_rate']}%</p>"
+                summary += f"<p><strong>Total Verses Memorized:</strong> {stats['total_verses']}</p>"
+
+            # Send the email
+            msg = MailMessage(
+                'Weekly Progress Report',
+                sender='your-email@gmail.com',
+                recipients=[parent.user.email]
+            )
+            msg.html = f"<h1>Weekly Progress Report</h1>{summary}"
+            mail.send(msg)
+
+# Schedule the job to run every Sunday at 6 PM
+scheduler.add_job(send_weekly_progress_reports, 'cron', day_of_week='sun', hour=18)
+
 # ---------- 3.  MODELS  ----------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,6 +70,7 @@ class User(db.Model):
     password = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # admin, teacher, support, parent
     name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     fingerprint_id = db.Column(db.String(100), unique=True, nullable=True)
 
@@ -43,6 +88,7 @@ class Circle(db.Model):
     teacher_name = db.Column(db.String(100))
     is_active = db.Column(db.Boolean, default=True)
     academic_year = db.Column(db.String(10), default='2025')
+    category = db.Column(db.String(50), default='شباب') # شباب or أشبال
     requires_approval = db.Column(db.Boolean, default=True)
     teacher = db.relationship('User', backref='circles')
 
@@ -60,6 +106,12 @@ class Student(db.Model):
     pending_approval = db.Column(db.Boolean, default=True)
     last_recitation_date = db.Column(db.Date)
     total_verses_since_year_start = db.Column(db.Integer, default=0)
+    current_address = db.Column(db.String(200))
+    previous_address = db.Column(db.String(200))
+    governorate = db.Column(db.String(100))
+    date_of_birth = db.Column(db.Date)
+    previous_memorization = db.Column(db.String(200))
+    enrollment_date = db.Column(db.Date, default=datetime.now().date)
     circle = db.relationship('Circle', backref='students')
     parent = db.relationship('Parent', backref='students')
 
@@ -178,8 +230,75 @@ class Announcement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    image = db.Column(db.String(200))
     date_posted = db.Column(db.DateTime, default=datetime.now)
     is_active = db.Column(db.Boolean, default=True)
+
+class Conversation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    messages = db.relationship('Message', backref='conversation', lazy=True)
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+
+# ===================
+# Courses and Tests Models
+# ===================
+class Course(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+
+    teacher = db.relationship('User', backref='courses_taught')
+    enrollments = db.relationship('CourseEnrollment', backref='course', lazy='dynamic', cascade="all, delete-orphan")
+    tests = db.relationship('Test', backref='course', lazy='dynamic', cascade="all, delete-orphan")
+
+class CourseEnrollment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    enrollment_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+    student = db.relationship('Student', backref='course_enrollments')
+
+class Test(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    test_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    max_score = db.Column(db.Float, nullable=False)
+
+    scores = db.relationship('TestScore', backref='test', lazy='dynamic', cascade="all, delete-orphan")
+
+class TestScore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
+    score = db.Column(db.Float, nullable=False)
+    recorded_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    student = db.relationship('Student', backref='test_scores')
+    recorder = db.relationship('User', backref='recorded_scores')
+
+class Certificate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    issue_date = db.Column(db.DateTime, default=datetime.utcnow)
+    certificate_file = db.Column(db.String(255), nullable=False) # Stores the path to the PDF file
+
+    student = db.relationship('Student', backref='certificates')
+    course_info = db.relationship('Course', backref='certificates')
 
 # ---------- 4.  CONTEXT PROCESSOR  ----------
 @app.context_processor
@@ -188,7 +307,7 @@ def inject_globals():
     current_year = datetime.now().year
     unread_notifications = 0
     if 'user_id' in session and session.get('role') == 'parent':
-        parent = Parent.query.filter_by(name=session['name']).first()
+        parent = Parent.query.filter_by(user_id=session['user_id']).first()
         if parent and parent.user_id:
             unread_notifications = Notification.query.filter_by(user_id=parent.user_id, is_read=False).count()
     return dict(
@@ -225,11 +344,20 @@ def require_role(role):
 
 def create_parent_username(full_name):
     # استخدام مسافات بدلاً من الشرطة السفلية
-    username = full_name.strip().replace(' ', ' ')
+    username = full_name.strip().replace(' ', '_')
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username} {counter}"
+        username = f"{base_username}_{counter}"
+        counter += 1
+    return username
+
+def create_student_username(full_name):
+    username = full_name.strip().replace(' ', '_')
+    base_username = username
+    counter = 1
+    while User.query.filter_by(username=username).first():
+        username = f"{base_username}_{counter}"
         counter += 1
     return username
 
@@ -303,6 +431,8 @@ def improved_parse_collective_report(text, circle_id, date):
             attendance_status = 'هروب'
         elif 'لم يسمع' in line.lower():
             attendance_status = 'لم يسمع'
+        elif 'متأخر' in line.lower():
+            attendance_status = 'متأخر'
         if ':' in clean_line:
             name_part, recitation_part = clean_line.split(':', 1)
             student_name = name_part.strip()
@@ -456,12 +586,40 @@ def check_for_badges(student_id):
     if student.total_verses_since_year_start >= 500:
         award_badge(student_id, 2) # Assuming badge with id 2 is "Memorizer"
 
+    # Badge 3: Perfect Attendance (30 consecutive days)
+    thirty_days_ago = datetime.now().date() - timedelta(days=30)
+    attendance_count = Attendance.query.filter(
+        Attendance.student_id == student_id,
+        Attendance.date >= thirty_days_ago,
+        Attendance.status == 'حاضر'
+    ).count()
+    if attendance_count >= 30:
+        award_badge(student_id, 3)
+
+    # Badge 4: Course Graduate
+    completed_courses = CourseEnrollment.query.join(Course).filter(
+        CourseEnrollment.student_id == student_id,
+        Course.is_active == False # Assuming inactive courses are completed
+    ).count()
+    if completed_courses > 0:
+        award_badge(student_id, 4)
+
+    # Badge 5: Top Student
+    top_scores = TestScore.query.join(Test).filter(
+        TestScore.student_id == student_id,
+        (TestScore.score / Test.max_score) >= 0.9
+    ).count()
+    if top_scores > 0:
+        award_badge(student_id, 5)
+
 def seed_badges():
     if Badge.query.count() == 0:
         badges = [
             Badge(name='المتقن', description='الحصول على تقدير "ممتاز" 10 مرات', icon='fa-star'),
             Badge(name='الحافظ', description='حفظ 500 وجه منذ بداية العام', icon='fa-award'),
-            Badge(name='الحضور المثالي', description='الحضور لمدة 30 يومًا متتاليًا', icon='fa-calendar-check')
+            Badge(name='الحاضر المثالي', description='الحضور لمدة 30 يومًا متتاليًا', icon='fa-calendar-check'),
+            Badge(name='خريج الدورة', description='إكمال دورة تدريبية بنجاح', icon='fa-graduation-cap'),
+            Badge(name='الطالب المتفوق', description='الحصول على درجة أعلى من 90% في اختبار', icon='fa-trophy')
         ]
         db.session.bulk_save_objects(badges)
         db.session.commit()
@@ -585,6 +743,8 @@ def login():
             flash('تم تسجيل الدخول بنجاح', 'success')
             if user.role == 'parent':
                 return redirect(url_for('parent_dashboard'))
+            elif user.role == 'student':
+                return redirect(url_for('student_dashboard'))
             return redirect(url_for('dashboard'))
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'error')
@@ -652,9 +812,16 @@ def students():
         query = query.filter_by(circle_id=selected_circle)
     
     if search_query:
-        query = query.filter(Student.name.ilike(f'%{search_query}%'))
+        query = query.join(Parent, Student.parent_id == Parent.id, isouter=True).filter(
+            or_(
+                Student.name.ilike(f'%{search_query}%'),
+                Student.student_phone.ilike(f'%{search_query}%'),
+                Student.parent_phone.ilike(f'%{search_query}%'),
+                Parent.name.ilike(f'%{search_query}%')
+            )
+        )
 
-    students = query.all()
+    students = query.all() or []
     circles = Circle.query.filter_by(is_active=True).all()
     
     return render_template('students.html', 
@@ -686,6 +853,12 @@ def add_student():
             parent_phone=parent_phone,
             circle_id=circle_id,
             photo=filename,
+            current_address=request.form.get('current_address'),
+            previous_address=request.form.get('previous_address'),
+            governorate=request.form.get('governorate'),
+            date_of_birth=datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form.get('date_of_birth') else None,
+            previous_memorization=request.form.get('previous_memorization'),
+            enrollment_date=datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date() if request.form.get('enrollment_date') else datetime.now().date(),
             pending_approval=requires_approval()
         )
         db.session.add(student)
@@ -695,6 +868,11 @@ def add_student():
         if parent:
             student.parent_id = parent.id
         
+        # Create user account for student
+        student_username = create_student_username(name)
+        student_user = User(username=student_username, password=generate_password_hash(parent_phone), name=name, role='student')
+        db.session.add(student_user)
+
         try:
             db.session.commit()
             flash('تم إضافة الطالب بنجاح', 'success')
@@ -737,7 +915,13 @@ def edit_student(student_id):
         student.student_phone = request.form.get('student_phone')
         student.parent_phone = request.form['parent_phone']
         student.circle_id = request.form['circle_id']
-        
+        student.current_address = request.form.get('current_address')
+        student.previous_address = request.form.get('previous_address')
+        student.governorate = request.form.get('governorate')
+        student.date_of_birth = datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form.get('date_of_birth') else None
+        student.previous_memorization = request.form.get('previous_memorization')
+        student.enrollment_date = datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date() if request.form.get('enrollment_date') else student.enrollment_date
+
         photo = request.files.get('photo')
         if photo and allowed_file(photo.filename):
             filename = secure_filename(photo.filename)
@@ -779,25 +963,15 @@ def approve_student(student_id):
     flash('تمت الموافقة على الطالب بنجاح', 'success')
     return redirect(url_for('students'))
 
-@app.route('/late_students')
+@app.route('/delayed_students')
 @require_login
-def late_students():
+def delayed_students():
     today = datetime.now().date()
-    late_threshold = today - timedelta(days=7)
-
-    # جلب جميع الطلاب النشطين مع تاريخ آخر تقرير لهم
-    subquery = db.session.query(
-        Report.student_id,
-        func.max(Report.date).label('last_report_date')
-    ).group_by(Report.student_id).subquery()
-
-    late_students_query = db.session.query(Student).outerjoin(
-        subquery, Student.id == subquery.c.student_id
-    ).filter(
-        (subquery.c.last_report_date == None) | (subquery.c.last_report_date < late_threshold)
-    ).filter(Student.is_active == True).all()
-
-    return render_template('late_students.html', students=late_students_query, today=today, late_threshold=late_threshold)
+    delayed_students = Student.query.join(Attendance).filter(
+        Attendance.status == 'متأخر',
+        func.date(Attendance.date) == today
+    ).all()
+    return render_template('delayed_students.html', students=delayed_students, today=today)
 
 @app.route('/reject_student/<int:student_id>')
 @require_role('admin')
@@ -833,11 +1007,13 @@ def add_circle():
         name = request.form['name']
         teacher_id = request.form.get('teacher_id', type=int) or None
         teacher_name = request.form.get('teacher_name') or None
+        category = request.form.get('category')
         
         circle = Circle(
             name=name,
             teacher_id=teacher_id,
             teacher_name=teacher_name,
+            category=category,
             requires_approval=requires_approval()
         )
         db.session.add(circle)
@@ -863,6 +1039,7 @@ def edit_circle(circle_id):
         circle.name = request.form['name']
         circle.teacher_id = request.form.get('teacher_id', type=int) or None
         circle.teacher_name = request.form.get('teacher_name') or None
+        circle.category = request.form.get('category')
         
         try:
             db.session.commit()
@@ -976,14 +1153,26 @@ def reports():
 @require_login
 def add_report():
     if request.method == 'POST':
-        student_id = request.form['student_id']
-        date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
-        surah = request.form['surah']
-        from_verse = int(request.form['from_verse'])
-        to_verse = int(request.form['to_verse'])
-        type_ = request.form['type']
-        grade = request.form['grade']
+        student_id = request.form.get('student_id')
+        date_str = request.form.get('date')
+        surah = request.form.get('surah')
+        from_verse_str = request.form.get('from_verse')
+        to_verse_str = request.form.get('to_verse')
+        type_ = request.form.get('type')
+        grade = request.form.get('grade')
         notes = request.form.get('notes')
+
+        if not all([student_id, date_str, surah, from_verse_str, to_verse_str, type_, grade]):
+            flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
+            return redirect(url_for('add_report'))
+
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            from_verse = int(from_verse_str)
+            to_verse = int(to_verse_str)
+        except (ValueError, TypeError):
+            flash('تنسيق التاريخ أو أرقام الآيات غير صالح.', 'error')
+            return redirect(url_for('add_report'))
         
         student = Student.query.get(student_id)
         if not student:
@@ -1309,8 +1498,9 @@ def add_user():
         password = generate_password_hash(request.form['password'])
         name = request.form['name']
         role = request.form['role']
+        email = request.form.get('email')
         
-        user = User(username=username, password=password, name=name, role=role)
+        user = User(username=username, password=password, name=name, role=role, email=email)
         db.session.add(user)
         
         try:
@@ -1329,7 +1519,14 @@ def announcements():
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
-        announcement = Announcement(title=title, content=content)
+        image = request.files.get('image')
+
+        filename = None
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        announcement = Announcement(title=title, content=content, image=filename)
         db.session.add(announcement)
         db.session.commit()
         flash('تم إضافة الإعلان بنجاح!', 'success')
@@ -1347,29 +1544,50 @@ def fingerprint_login():
     user = User.query.filter_by(fingerprint_id=fingerprint_id).first()
     if user:
         # In a real application, you would handle session creation here
+        login_entry = UserLogin(user_id=user.id, ip_address=request.remote_addr)
+        db.session.add(login_entry)
+        db.session.commit()
+        session['user_id'] = user.id
+        session['username'] = user.username
+        session['role'] = user.role
+        session['name'] = user.name
         return jsonify({'success': True, 'message': f'أهلاً بك يا {user.name}!'})
     else:
         return jsonify({'success': False, 'message': 'البصمة غير مسجلة'}), 404
 
-@app.route('/api/student_reports/<int:student_id>')
+@app.route('/api/student_details/<int:student_id>')
 @require_login
-def api_student_reports(student_id):
+def api_student_details(student_id):
     student = Student.query.get_or_404(student_id)
     reports = Report.query.filter_by(student_id=student_id).order_by(Report.date.desc()).all()
-    return jsonify([{
-        'date': report.date.strftime('%Y-%m-%d'),
-        'surah': report.surah,
-        'from_verse': report.from_verse,
-        'to_verse': report.to_verse,
-        'type': report.type,
-        'grade': report.grade
-    } for report in reports])
+
+    student_data = {
+        'name': student.name,
+        'age': student.age,
+        'circle': student.circle.name,
+        'teacher': student.circle.teacher.name if student.circle.teacher else student.circle.teacher_name,
+        'current_address': student.current_address,
+        'previous_address': student.previous_address,
+        'governorate': student.governorate,
+        'date_of_birth': student.date_of_birth.strftime('%Y-%m-%d') if student.date_of_birth else None,
+        'previous_memorization': student.previous_memorization,
+        'enrollment_date': student.enrollment_date.strftime('%Y-%m-%d') if student.enrollment_date else None,
+        'reports': [{
+            'date': report.date.strftime('%Y-%m-%d'),
+            'surah': report.surah,
+            'from_verse': report.from_verse,
+            'to_verse': report.to_verse,
+            'type': report.type,
+            'grade': report.grade
+        } for report in reports]
+    }
+    return jsonify(student_data)
 
 @app.route('/api/active_announcements')
 @require_login
 def active_announcements():
     announcements = Announcement.query.filter_by(is_active=True).all()
-    return jsonify([{'title': a.title, 'content': a.content} for a in announcements])
+    return jsonify([{'title': a.title, 'content': a.content, 'image': a.image} for a in announcements])
 
 
 @app.route('/user_logins')
@@ -1385,6 +1603,7 @@ def edit_user(user_id):
     if request.method == 'POST':
         user.name = request.form['name']
         user.role = request.form['role']
+        user.email = request.form.get('email')
         new_password = request.form.get('password')
         
         if new_password:
@@ -1498,7 +1717,7 @@ def notifications():
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
     
-    parent = Parent.query.filter_by(name=session['name']).first()
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if parent and parent.user_id:
         notifs = Notification.query.filter_by(user_id=parent.user_id).order_by(Notification.created_at.desc()).all()
         return render_template('notifications.html', notifications=notifs)
@@ -1550,7 +1769,7 @@ def parent_dashboard():
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
     
-    parent = Parent.query.filter_by(name=session['name']).first()
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if not parent:
         flash('لم يتم العثور على بيانات ولي الأمر', 'error')
         return redirect(url_for('logout'))
@@ -1651,21 +1870,310 @@ def student_reports(student_id):
                          verses_this_week=verses_this_week,
                          verses_last_week=verses_last_week)
 
-# ---------- 22.  PARENT STUDENT DETAILS ----------
-@app.route('/parent_student_details/<int:student_id>')
+# ---------- 22.  COURSES AND TESTS ----------
+@app.route('/courses')
 @require_login
-def parent_student_details(student_id):
-    if session.get('role') != 'parent':
+def courses():
+    # Admin sees all courses, teacher sees only their own
+    if session['role'] == 'admin':
+        courses_list = Course.query.order_by(Course.created_at.desc()).all()
+    else: # teacher
+        courses_list = Course.query.filter_by(teacher_id=session['user_id']).order_by(Course.created_at.desc()).all()
+    return render_template('courses.html', courses=courses_list)
+
+@app.route('/add_course', methods=['GET', 'POST'])
+@require_login
+def add_course():
+    if session.get('role') not in ['admin', 'teacher']:
+        flash('ليس لديك الصلاحية لإضافة دورات', 'error')
+        return redirect(url_for('courses'))
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        teacher_id = request.form.get('teacher_id') if session['role'] == 'admin' else session['user_id']
+
+        new_course = Course(
+            name=name,
+            description=description,
+            teacher_id=teacher_id
+        )
+        db.session.add(new_course)
+        try:
+            db.session.commit()
+            flash('تم إنشاء الدورة بنجاح!', 'success')
+            return redirect(url_for('courses'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء إنشاء الدورة: {e}', 'error')
+
+    teachers = User.query.filter_by(role='teacher', is_active=True).all()
+    return render_template('add_course.html', teachers=teachers)
+
+@app.route('/edit_course/<int:course_id>', methods=['GET', 'POST'])
+@require_login
+def edit_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    # Authorization check
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتعديل هذه الدورة', 'error')
+        return redirect(url_for('courses'))
+
+    if request.method == 'POST':
+        course.name = request.form.get('name')
+        course.description = request.form.get('description')
+        if session['role'] == 'admin':
+            course.teacher_id = request.form.get('teacher_id')
+        course.is_active = 'is_active' in request.form
+
+        try:
+            db.session.commit()
+            flash('تم تحديث الدورة بنجاح!', 'success')
+            return redirect(url_for('courses'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تحديث الدورة: {e}', 'error')
+
+    teachers = User.query.filter_by(role='teacher', is_active=True).all()
+    return render_template('edit_course.html', course=course, teachers=teachers)
+
+@app.route('/delete_course/<int:course_id>')
+@require_login
+def delete_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    # Authorization check
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لحذف هذه الدورة', 'error')
+        return redirect(url_for('courses'))
+
+    try:
+        # This will also delete related enrollments and tests due to cascading
+        db.session.delete(course)
+        db.session.commit()
+        flash('تم حذف الدورة بنجاح.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف الدورة: {e}', 'error')
+
+    return redirect(url_for('courses'))
+
+@app.route('/course/<int:course_id>')
+@require_login
+def course_details(course_id):
+    course = Course.query.get_or_404(course_id)
+    # Authorization check
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لعرض تفاصيل هذه الدورة', 'error')
+        return redirect(url_for('courses'))
+
+    enrolled_students = Student.query.join(CourseEnrollment).filter(CourseEnrollment.course_id == course.id).all()
+
+    # Students not yet enrolled in this course
+    enrolled_student_ids = [s.id for s in enrolled_students]
+    available_students = Student.query.filter(Student.id.notin_(enrolled_student_ids), Student.is_active==True).all()
+
+    return render_template('course_details.html', course=course, enrolled_students=enrolled_students, available_students=available_students)
+
+@app.route('/enroll_student/<int:course_id>', methods=['POST'])
+@require_login
+def enroll_student(course_id):
+    course = Course.query.get_or_404(course_id)
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتسجيل طلاب في هذه الدورة', 'error')
+        return redirect(url_for('courses'))
+
+    student_ids = request.form.getlist('student_ids')
+    if not student_ids:
+        flash('لم يتم تحديد أي طالب.', 'warning')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    for student_id in student_ids:
+        # Check if already enrolled
+        is_enrolled = CourseEnrollment.query.filter_by(course_id=course_id, student_id=student_id).first()
+        if not is_enrolled:
+            enrollment = CourseEnrollment(course_id=course_id, student_id=student_id)
+            db.session.add(enrollment)
+
+    try:
+        db.session.commit()
+        flash(f'تم تسجيل {len(student_ids)} طالب بنجاح!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء تسجيل الطلاب: {e}', 'error')
+
+    return redirect(url_for('course_details', course_id=course_id))
+
+@app.route('/unenroll_student/<int:course_id>/<int:student_id>')
+@require_login
+def unenroll_student(course_id, student_id):
+    enrollment = CourseEnrollment.query.filter_by(course_id=course_id, student_id=student_id).first_or_404()
+    course = enrollment.course
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لإزالة طلاب من هذه الدورة', 'error')
+        return redirect(url_for('courses'))
+
+    try:
+        db.session.delete(enrollment)
+        db.session.commit()
+        flash('تم إلغاء تسجيل الطالب بنجاح.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء إلغاء التسجيل: {e}', 'error')
+
+    return redirect(url_for('course_details', course_id=course_id))
+
+@app.route('/course/<int:course_id>/tests')
+@require_login
+def manage_tests(course_id):
+    course = Course.query.get_or_404(course_id)
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لإدارة اختبارات هذه الدورة', 'error')
+        return redirect(url_for('courses'))
+
+    return render_template('manage_tests.html', course=course)
+
+@app.route('/add_test/<int:course_id>', methods=['POST'])
+@require_login
+def add_test(course_id):
+    course = Course.query.get_or_404(course_id)
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لإضافة اختبارات لهذه الدورة', 'error')
+        return redirect(url_for('courses'))
+
+    name = request.form.get('name')
+    test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
+    max_score = float(request.form.get('max_score'))
+
+    new_test = Test(name=name, course_id=course.id, test_date=test_date, max_score=max_score)
+    db.session.add(new_test)
+    try:
+        db.session.commit()
+        flash('تم إضافة الاختبار بنجاح!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء إضافة الاختبار: {e}', 'error')
+
+    return redirect(url_for('manage_tests', course_id=course_id))
+
+@app.route('/edit_test/<int:test_id>', methods=['POST'])
+@require_login
+def edit_test(test_id):
+    test = Test.query.get_or_404(test_id)
+    # Authorization
+    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتعديل هذا الاختبار', 'error')
+        return redirect(url_for('courses'))
+
+    test.name = request.form.get('name')
+    test.test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
+    test.max_score = float(request.form.get('max_score'))
+
+    try:
+        db.session.commit()
+        flash('تم تعديل الاختبار بنجاح!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء تعديل الاختبار: {e}', 'error')
+
+    return redirect(url_for('manage_tests', course_id=test.course_id))
+
+@app.route('/delete_test/<int:test_id>')
+@require_login
+def delete_test(test_id):
+    test = Test.query.get_or_404(test_id)
+    course_id = test.course_id
+    # Authorization
+    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لحذف هذا الاختبار', 'error')
+        return redirect(url_for('courses'))
+
+    try:
+        db.session.delete(test)
+        db.session.commit()
+        flash('تم حذف الاختبار بنجاح.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف الاختبار: {e}', 'error')
+
+    return redirect(url_for('manage_tests', course_id=course_id))
+
+@app.route('/record_scores/<int:test_id>', methods=['GET', 'POST'])
+@require_login
+def record_scores(test_id):
+    test = Test.query.get_or_404(test_id)
+    # Authorization
+    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتسجيل درجات لهذا الاختبار', 'error')
+        return redirect(url_for('courses'))
+
+    if request.method == 'POST':
+        for student in test.course.enrollments:
+            score_val = request.form.get(f'score_{student.student.id}')
+            if score_val:
+                # Check for existing score
+                existing_score = TestScore.query.filter_by(test_id=test.id, student_id=student.student.id).first()
+                if existing_score:
+                    existing_score.score = float(score_val)
+                else:
+                    new_score = TestScore(
+                        test_id=test.id,
+                        student_id=student.student.id,
+                        score=float(score_val),
+                        recorded_by_id=session['user_id']
+                    )
+                    db.session.add(new_score)
+        try:
+            db.session.commit()
+            flash('تم حفظ الدرجات بنجاح!', 'success')
+            return redirect(url_for('manage_tests', course_id=test.course_id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء حفظ الدرجات: {e}', 'error')
+
+    # Get existing scores to populate the form
+    existing_scores = {score.student_id: score for score in test.scores}
+    return render_template('record_scores.html', test=test, existing_scores=existing_scores)
+
+# ---------- 22.  PARENT STUDENT DETAILS ----------
+@app.route('/student_dashboard')
+@require_login
+def student_dashboard():
+    if session.get('role') != 'student':
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
-    
+
+    student = Student.query.filter_by(name=session['name']).first()
+    if not student:
+        flash('لم يتم العثور على بيانات الطالب', 'error')
+        return redirect(url_for('logout'))
+
+    return redirect(url_for('student_details', student_id=student.id))
+
+@app.route('/student_details/<int:student_id>')
+@require_login
+def student_details(student_id):
     student = Student.query.get_or_404(student_id)
-    parent = Parent.query.filter_by(name=session['name']).first()
     
-    if not parent or student.parent_id != parent.id:
-        flash('ليس لديك صلاحية لعرض تفاصيل هذا الطالب', 'error')
-        return redirect(url_for('parent_dashboard'))
-    
+    # Authorization check
+    if session['role'] == 'parent':
+        parent = Parent.query.filter_by(user_id=session['user_id']).first()
+        if not parent or student.parent_id != parent.id:
+            flash('ليس لديك صلاحية لعرض تفاصيل هذا الطالب', 'error')
+            return redirect(url_for('parent_dashboard'))
+    elif session['role'] == 'student':
+        if student.name != session['name']:
+            flash('ليس لديك صلاحية لعرض تفاصيل هذا الطالب', 'error')
+            return redirect(url_for('student_dashboard'))
+    elif session['role'] == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        if student.circle_id not in teacher_circles:
+            flash('ليس لديك صلاحية لعرض تفاصيل هذا الطالب', 'error')
+            return redirect(url_for('dashboard'))
+
     stats = get_student_stats(student_id)
     recent_reports = Report.query.filter_by(student_id=student_id).order_by(Report.date.desc()).limit(10).all()
     recent_attendance = Attendance.query.filter_by(student_id=student_id).order_by(Attendance.date.desc()).limit(10).all()
@@ -1693,12 +2201,92 @@ def parent_student_details(student_id):
         circle_stats['average_attendance'] = total_attendance / students_with_stats
         circle_stats['average_verses'] = total_verses / students_with_stats
     
+    total_verses_in_quran = 6236
+    progress_percentage = (student.total_verses_since_year_start / total_verses_in_quran) * 100
+
+    educational_notes = EducationalNote.query.filter_by(student_id=student_id).order_by(EducationalNote.date.desc()).all()
+
     return render_template('parent_student_details.html',
                          student=student,
                          stats=stats,
                          recent_reports=recent_reports,
                          recent_attendance=recent_attendance,
-                         circle_stats=circle_stats)
+                         circle_stats=circle_stats,
+                         progress_percentage=progress_percentage,
+                         educational_notes=educational_notes)
+
+@app.route('/grades', methods=['GET', 'POST'])
+@require_login
+def grades():
+    if request.method == 'POST':
+        test_id = request.form.get('test_id')
+        student_id = request.form.get('student_id')
+        score = request.form.get('score')
+
+        if not all([test_id, student_id, score]):
+            flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
+            return redirect(url_for('grades'))
+
+        try:
+            score = float(score)
+        except ValueError:
+            flash('الدرجة يجب أن تكون رقمًا.', 'error')
+            return redirect(url_for('grades'))
+
+        test_score = TestScore(
+            test_id=test_id,
+            student_id=student_id,
+            score=score,
+            recorded_by_id=session['user_id']
+        )
+        db.session.add(test_score)
+        db.session.commit()
+        flash('تم حفظ الدرجة بنجاح.', 'success')
+        return redirect(url_for('grades'))
+
+    tests = Test.query.all()
+    students = Student.query.all()
+    return render_template('grades.html', tests=tests, students=students)
+
+@app.route('/certificates', methods=['GET', 'POST'])
+@require_role('admin')
+def certificates():
+    if request.method == 'POST':
+        course_id = request.form.get('course_id')
+        student_id = request.form.get('student_id')
+
+        if not all([course_id, student_id]):
+            flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
+            return redirect(url_for('certificates'))
+
+        student = Student.query.get(student_id)
+        course = Course.query.get(course_id)
+
+        # Create PDF certificate
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, 'Certificate of Completion', 1, 1, 'C')
+        pdf.cell(0, 10, f'This is to certify that {student.name} has successfully completed the course:', 0, 1, 'C')
+        pdf.cell(0, 10, course.name, 0, 1, 'C')
+
+        certificate_filename = f"certificate_{student.id}_{course.id}.pdf"
+        certificate_path = os.path.join(app.config['UPLOAD_FOLDER'], certificate_filename)
+        pdf.output(certificate_path)
+
+        certificate = Certificate(
+            student_id=student_id,
+            course_id=course_id,
+            certificate_file=certificate_filename
+        )
+        db.session.add(certificate)
+        db.session.commit()
+        flash('تم إنشاء الشهادة بنجاح.', 'success')
+        return redirect(url_for('certificates'))
+
+    courses = Course.query.all()
+    students = Student.query.all()
+    return render_template('certificates.html', courses=courses, students=students)
 
 # ---------- 23.  RUN ----------
 if __name__ == '__main__':

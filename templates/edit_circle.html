@@ -49,6 +49,15 @@
                     </div>
                     {% endif %}
                     
+                    <div class="mb-3">
+                        <label for="category" class="form-label">فئة الحلقة</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="شباب" {% if circle.category == 'شباب' %}selected{% endif %}>شباب</option>
+                            <option value="أشبال" {% if circle.category == 'أشبال' %}selected{% endif %}>أشبال</option>
+                        </select>
+                        <div class="form-text">اختر الفئة المناسبة للحلقة (يؤثر على نظام النقاط).</div>
+                    </div>
+
                     <div class="alert alert-info">
                         <h6><i class="fas fa-lightbulb"></i> ملاحظات:</h6>
                         <ul class="mb-0">

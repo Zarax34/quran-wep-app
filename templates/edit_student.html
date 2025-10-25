@@ -50,6 +50,50 @@
                         </div>
                     </div>
                     
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="current_address" class="form-label">السكن الحالي</label>
+                                <input type="text" class="form-control" id="current_address" name="current_address" value="{{ student.current_address or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="previous_address" class="form-label">السكن السابق</label>
+                                <input type="text" class="form-control" id="previous_address" name="previous_address" value="{{ student.previous_address or '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="governorate" class="form-label">المحافظة</label>
+                                <input type="text" class="form-control" id="governorate" name="governorate" value="{{ student.governorate or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="date_of_birth" class="form-label">تاريخ الميلاد</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ student.date_of_birth.strftime('%Y-%m-%d') if student.date_of_birth else '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="previous_memorization" class="form-label">مقدار الحفظ السابق</label>
+                                <input type="text" class="form-control" id="previous_memorization" name="previous_memorization" value="{{ student.previous_memorization or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="enrollment_date" class="form-label">تاريخ الالتحاق</label>
+                                <input type="date" class="form-control" id="enrollment_date" name="enrollment_date" value="{{ student.enrollment_date.strftime('%Y-%m-%d') if student.enrollment_date else '' }}">
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="circle_id" class="form-label">الحلقة</label>
                         <select class="form-control" id="circle_id" name="circle_id" required>

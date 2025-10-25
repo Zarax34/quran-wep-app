@@ -295,7 +295,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.forEach(ann => {
                     const announcementElement = document.createElement('div');
                     announcementElement.classList.add('alert', 'alert-info');
-                    announcementElement.innerHTML = `<h6>${ann.title}</h6><p>${ann.content}</p>`;
+                    let innerHTML = `<h6>${ann.title}</h6><p>${ann.content}</p>`;
+                    if (ann.image) {
+                        innerHTML += `<img src="/uploads/${ann.image}" class="img-fluid rounded">`;
+                    }
+                    announcementElement.innerHTML = innerHTML;
                     content.appendChild(announcementElement);
                 });
                 var myModal = new bootstrap.Modal(document.getElementById('announcementsModal'), {});

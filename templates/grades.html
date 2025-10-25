@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إدخال الدرجات</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">إدخال درجات الاختبار</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('grades') }}">
+                    <div class="mb-3">
+                        <label for="test_id" class="form-label">الاختبار</label>
+                        <select class="form-control" id="test_id" name="test_id" required>
+                            <option value="">اختر الاختبار</option>
+                            {% for test in tests %}
+                            <option value="{{ test.id }}">{{ test.name }} - {{ test.course.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">الطالب</label>
+                        <select class="form-control" id="student_id" name="student_id" required>
+                            <option value="">اختر الطالب</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="score" class="form-label">الدرجة</label>
+                        <input type="number" class="form-control" id="score" name="score" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">حفظ الدرجة</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
