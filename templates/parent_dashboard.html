@@ -70,7 +70,7 @@
 
     <!-- أبناء ولي الأمر -->
     <div class="row fade-in">
-        {% for stats in children_stats %}
+        {% for stats in student_stats %}
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card h-100 btn-hover">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -78,66 +78,43 @@
                     <span class="badge bg-info">{{ stats.student.circle.name }}</span>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <i class="fas fa-chalkboard-teacher text-primary me-2"></i>
-                        <strong>المعلم:</strong> {{ stats.student.circle.teacher.name if stats.student.circle.teacher else stats.student.circle.teacher_name }}
-                    </div>
-                    
-                    <div class="row text-center mb-3">
-                        <div class="col-4">
-                            <div class="border rounded p-2">
-                                <h6 class="mb-1">الحضور</h6>
-                                <h4 class="text-{{ 'success' if stats.attendance_rate >= 80 else 'warning' if stats.attendance_rate >= 60 else 'danger' }} mb-0">
-                                    {{ "%.1f"|format(stats.attendance_rate) }}%
-                                </h4>
-                            </div>
+                    <!-- Gamification -->
+                    <div class="d-flex justify-content-around mb-3">
+                        <div class="text-center">
+                            <i class="fas fa-star fa-2x text-warning"></i>
+                            <h5 class="mb-0">{{ stats.points }}</h5>
+                            <small>نقاط</small>
                         </div>
-                        <div class="col-4">
-                            <div class="border rounded p-2">
-                                <h6 class="mb-1">التقارير</h6>
-                                <h4 class="text-primary mb-0">{{ stats.monthly_reports }}</h4>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="border rounded p-2">
-                                <h6 class="mb-1">الآيات</h6>
-                                <h4 class="text-info mb-0">{{ stats.total_verses }}</h4>
-                            </div>
+                        <div class="text-center">
+                            <i class="fas fa-medal fa-2x text-primary"></i>
+                            <h5 class="mb-0">{{ stats.badges|length }}</h5>
+                            <small>شارات</small>
                         </div>
                     </div>
-                    
-                    <!-- تقدم الطالب -->
+
+                    <!-- Progress Bar -->
                     <div class="mb-3">
-                        <strong>مستوى التقدم:</strong>
+                        <strong>تقدم الحفظ:</strong>
                         <div class="progress mt-1" style="height: 10px;">
-                            {% set progress = (stats.attendance_rate * 0.4) + (stats.monthly_reports * 2) %}
-                            <div class="progress-bar bg-success" style="width: {{ progress if progress <= 100 else 100 }}%"></div>
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ (stats.student.total_verses_since_year_start / 6236) * 100 }}%;" aria-valuenow="{{ stats.student.total_verses_since_year_start }}" aria-valuemin="0" aria-valuemax="6236"></div>
                         </div>
-                        <small class="text-muted">
-                            {% if progress >= 80 %}
-                            ممتاز 👍
-                            {% elif progress >= 60 %}
-                            جيد جداً 👌
-                            {% elif progress >= 40 %}
-                            جيد 
-                            {% else %}
-                            يحتاج تحسين 📈
-                            {% endif %}
-                        </small>
+                        <small class="text-muted">{{ stats.student.total_verses_since_year_start }} آية محفوطة</small>
                     </div>
                     
-                    <!-- إحصائيات الحضور -->
-                    <div class="mb-2">
-                        <small><strong>إحصائيات الحضور (شهري):</strong></small>
-                        <div class="d-flex justify-content-between">
-                            <span class="badge bg-success">حاضر: {{ stats.monthly_attendance['حاضر'] }}</span>
-                            <span class="badge bg-warning">بعذر: {{ stats.monthly_attendance['غائب بعذر'] }}</span>
-                            <span class="badge bg-danger">بلا عذر: {{ stats.monthly_attendance['غائب بلا عذر'] }}</span>
-                        </div>
+                    <!-- Educational Notes -->
+                    <div class="mb-3">
+                        <strong>آخر الملاحظات:</strong>
+                        <ul class="list-group list-group-flush">
+                            {% for note in stats.notes %}
+                            <li class="list-group-item">{{ note.note }} <small class="text-muted">({{ note.date.strftime('%Y-%m-%d') }})</small></li>
+                            {% else %}
+                            <li class="list-group-item">لا توجد ملاحظات.</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <a href="{{ url_for('parent_student_details', student_id=stats.student.id) }}" class="btn btn-primary btn-sm w-100 btn-hover">
+                    <a href="{{ url_for('student_details', student_id=stats.student.id) }}" class="btn btn-primary btn-sm w-100 btn-hover">
                         <i class="fas fa-chart-bar"></i> عرض التفاصيل الكاملة
                     </a>
                 </div>
@@ -152,6 +129,32 @@
             </div>
         </div>
         {% endfor %}
+    </div>
+
+    <!-- Honor Board -->
+    <div class="row mt-4 fade-in">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-trophy"></i> لوحة الشرف الشهرية</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for entry in honor_students %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-warning me-2">{{ entry.rank }}</span>
+                                {{ entry.student.name }}
+                            </div>
+                            <small>{{ entry.student.circle.name }}</small>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item">لم يتم تحديث لوحة الشرف بعد.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- مقارنة بين الأبناء -->

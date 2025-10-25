@@ -12,6 +12,9 @@
            class="btn btn-primary" target="_blank">
             <i class="fab fa-whatsapp"></i> إرسال شهري
         </a>
+        <a href="{{ url_for('export_student_report', student_id=student.id) }}" class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> تصدير PDF
+        </a>
     </div>
 </div>
 

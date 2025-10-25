@@ -967,10 +967,16 @@ def approve_student(student_id):
 @require_login
 def delayed_students():
     today = datetime.now().date()
-    delayed_students = Student.query.join(Attendance).filter(
+    query = Student.query.join(Attendance).filter(
         Attendance.status == 'متأخر',
         func.date(Attendance.date) == today
-    ).all()
+    )
+
+    if session.get('role') == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        query = query.filter(Student.circle_id.in_(teacher_circles))
+
+    delayed_students = query.all()
     return render_template('delayed_students.html', students=delayed_students, today=today)
 
 @app.route('/reject_student/<int:student_id>')
@@ -1780,6 +1786,10 @@ def parent_dashboard():
     for student in students:
         stats = get_student_stats(student.id)
         if stats:
+            # Add gamification and educational notes data
+            stats['points'] = db.session.query(func.sum(Point.points)).filter_by(student_id=student.id).scalar() or 0
+            stats['badges'] = StudentBadge.query.filter_by(student_id=student.id).all()
+            stats['notes'] = EducationalNote.query.filter_by(student_id=student.id).order_by(EducationalNote.date.desc()).limit(3).all()
             student_stats.append(stats)
     
     total_children = len(students)
@@ -1793,7 +1803,10 @@ def parent_dashboard():
     if student_stats:
         total_attendance_rate = total_attendance_rate / len(student_stats)
     
-    # إحصائيات المركز
+    # Honor board
+    honor_students = HonorBoard.query.filter_by(month=datetime.now().month, year=datetime.now().year).order_by(HonorBoard.rank).limit(5).all()
+
+    # Center stats
     center_stats = {
         'total_students': Student.query.filter_by(is_active=True).count(),
         'average_attendance': get_center_attendance_stats(),
@@ -1803,11 +1816,11 @@ def parent_dashboard():
     return render_template('parent_dashboard.html', 
                          parent=parent, 
                          student_stats=student_stats,
-                         students=students,
                          total_children=total_children,
                          total_attendance_rate=total_attendance_rate,
                          total_monthly_reports=total_monthly_reports,
-                         center_stats=center_stats)
+                         center_stats=center_stats,
+                         honor_students=honor_students)
 
 # ---------- 21.  STUDENT REPORTS ----------
 @app.route('/add_educational_note/<int:student_id>', methods=['POST'])
@@ -1849,6 +1862,13 @@ def add_educational_note(student_id):
 def student_reports(student_id):
     student = Student.query.get_or_404(student_id)
     
+    # Teacher can only see his students
+    if session.get('role') == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        if student.circle_id not in teacher_circles:
+            flash('ليس لديك الصلاحية لعرض تقارير هذا الطالب', 'error')
+            return redirect(url_for('students'))
+
     end_date_weekly = datetime.now().date()
     start_date_weekly = end_date_weekly - timedelta(days=7)
     end_date_monthly = datetime.now().date()
@@ -1869,6 +1889,32 @@ def student_reports(student_id):
                          end_date_monthly=end_date_monthly,
                          verses_this_week=verses_this_week,
                          verses_last_week=verses_last_week)
+
+@app.route('/export_student_report/<int:student_id>')
+@require_login
+def export_student_report(student_id):
+    student = Student.query.get_or_404(student_id)
+    reports = Report.query.filter_by(student_id=student_id).order_by(Report.date.desc()).all()
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.add_font('NotoNaskhArabic', '', 'NotoNaskhArabic-Regular.ttf', uni=True)
+    pdf.set_font('NotoNaskhArabic', '', 12)
+
+    pdf.cell(0, 10, f'تقرير الطالب: {student.name}', 0, 1, 'C')
+
+    for report in reports:
+        pdf.cell(0, 10, f"التاريخ: {report.date.strftime('%Y-%m-%d')}", 0, 1)
+        pdf.cell(0, 10, f"السورة: {report.surah}", 0, 1)
+        pdf.cell(0, 10, f"من الآية {report.from_verse} إلى {report.to_verse}", 0, 1)
+        pdf.cell(0, 10, f"النوع: {report.type}", 0, 1)
+        pdf.cell(0, 10, f"التقدير: {report.grade}", 0, 1)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+
+    response = make_response(pdf.output(dest='S').encode('latin-1'))
+    response.headers.set('Content-Disposition', 'attachment', filename=f'report_{student.name}.pdf')
+    response.headers.set('Content-Type', 'application/pdf')
+    return response
 
 # ---------- 22.  COURSES AND TESTS ----------
 @app.route('/courses')
@@ -2289,57 +2335,59 @@ def certificates():
     return render_template('certificates.html', courses=courses, students=students)
 
 # ---------- 23.  RUN ----------
-if __name__ == '__main__':
+def setup_database():
+    """Initializes the database, creates tables, and runs simple migrations."""
     with app.app_context():
-        # التحقق من وجود الأعمدة المفقودة وإضافتها إذا لزم الأمر
-        inspector = inspect(db.engine)
-        
-        # التحقق من وجود جدول Settings وإنشاؤه إذا لم يكن موجوداً
-        if not inspector.has_table('settings'):
-            db.create_all()
-            print("تم إنشاء جميع الجداول")
-        
-        # التحقق من وجود الأعمدة في جدول Settings
-        columns = [col['name'] for col in inspector.get_columns('settings')] if inspector.has_table('settings') else []
-        
-        if 'allow_custom_teacher_name' not in columns:
-            try:
-                db.session.execute(text('ALTER TABLE settings ADD COLUMN allow_custom_teacher_name BOOLEAN DEFAULT 1'))
-                db.session.commit()
-                print("تم إضافة العمود allow_custom_teacher_name إلى جدول settings")
-            except Exception as e:
-                print(f"خطأ أثناء إضافة العمود allow_custom_teacher_name: {e}")
-                db.session.rollback()
-        
-        # التحقق من وجود العمود user_id في جدول Parent
-        parent_columns = [col['name'] for col in inspector.get_columns('parent')] if inspector.has_table('parent') else []
-        if 'user_id' not in parent_columns:
-            try:
-                db.session.execute(text('ALTER TABLE parent ADD COLUMN user_id INTEGER'))
-                db.session.commit()
-                print("تم إضافة العمود user_id إلى جدول parent")
-            except Exception as e:
-                print(f"خطأ أثناء إضافة العمود user_id: {e}")
-                db.session.rollback()
-        
-        # إنشاء جميع الجداول
+        # Ensure all tables are created based on the models.
+        # This will create tables that don't exist, but won't modify existing ones.
         db.create_all()
+
+        # Simple migration logic to add columns if they are missing.
+        # This is for users who have an older version of the database.
         
-        # إنشاء إعدادات افتراضية إذا لم تكن موجودة
+        # 1. Add 'allow_custom_teacher_name' to 'settings' table
+        try:
+            # We first try to add the column. If it fails because it already exists, we ignore the error.
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text('ALTER TABLE settings ADD COLUMN allow_custom_teacher_name BOOLEAN DEFAULT 1'))
+                trans.commit()
+            print("INFO: Added 'allow_custom_teacher_name' column to 'settings' table.")
+        except Exception as e:
+            # Check if the error is due to a duplicate column, which is expected if the DB is up to date.
+            if 'duplicate column' in str(e).lower():
+                pass # Column already exists, which is fine.
+            else:
+                print(f"ERROR: Could not add 'allow_custom_teacher_name' column: {e}")
+
+        # 2. Add 'user_id' to 'parent' table
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text('ALTER TABLE parent ADD COLUMN user_id INTEGER'))
+                trans.commit()
+            print("INFO: Added 'user_id' column to 'parent' table.")
+        except Exception as e:
+            if 'duplicate column' in str(e).lower():
+                pass # Column already exists.
+            else:
+                print(f"ERROR: Could not add 'user_id' column to 'parent' table: {e}")
+
+        # Seed initial data if it doesn't exist
+        # 1. Default settings
         if not Settings.query.first():
             try:
-                default_settings = Settings()
-                db.session.add(default_settings)
+                db.session.add(Settings())
                 db.session.commit()
-                print("تم إنشاء الإعدادات الافتراضية")
+                print("INFO: Created default settings.")
             except Exception as e:
-                print(f"خطأ أثناء إنشاء الإعدادات الافتراضية: {e}")
+                print(f"ERROR: Could not create default settings: {e}")
                 db.session.rollback()
-        
-        # إنشاء مستخدم مسؤول افتراضي إذا لم يكن موجوداً
+
+        # 2. Default admin user and badges
         if not User.query.filter_by(role='admin').first():
-            seed_badges()
             try:
+                seed_badges()
                 admin_user = User(
                     username='admin',
                     password=generate_password_hash('admin123'),
@@ -2348,10 +2396,11 @@ if __name__ == '__main__':
                 )
                 db.session.add(admin_user)
                 db.session.commit()
-                print("تم إنشاء المستخدم المسؤول الافتراضي")
+                print("INFO: Created default admin user.")
             except Exception as e:
-                print(f"خطأ أثناء إنشاء المستخدم المسؤول: {e}")
+                print(f"ERROR: Could not create default admin user: {e}")
                 db.session.rollback()
-    
-    # تشغيل التطبيق على الـ IP العام
+
+if __name__ == '__main__':
+    setup_database()
     app.run(debug=True, host='0.0.0.0', port=5000)
