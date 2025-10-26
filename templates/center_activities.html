@@ -20,37 +20,31 @@
                         </div>
                         <div class="mb-3">
                             <label for="location" class="form-label">مكان النشاط</label>
-                            <input type="text" class="form-control" id="location" name="location" required>
+                            <input type="text" class="form-control" id="location" name="location">
                         </div>
                         <div class="mb-3">
-                            <label for="date" class="form-label">التاريخ</label>
-                            <input type="date" class="form-control" id="date" name="date" required>
+                            <label for="activity_date" class="form-label">تاريخ النشاط</label>
+                            <input type="date" class="form-control" id="activity_date" name="activity_date" required>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="start_time" class="form-label">وقت البدء</label>
-                                    <input type="time" class="form-control" id="start_time" name="start_time" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="end_time" class="form-label">وقت الانتهاء</label>
-                                    <input type="time" class="form-control" id="end_time" name="end_time" required>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label for="start_time" class="form-label">وقت البداية</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time">
+                        </div>
+                        <div class="mb-3">
+                            <label for="end_time" class="form-label">وقت النهاية</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time">
                         </div>
                         <div class="mb-3">
                             <label for="target_students" class="form-label">عدد الطلاب المستهدفين</label>
                             <input type="number" class="form-control" id="target_students" name="target_students">
                         </div>
                         <div class="mb-3">
-                            <label for="details" class="form-label">تفاصيل النشاط</label>
-                            <textarea class="form-control" id="details" name="details" rows="3"></textarea>
+                            <label for="description" class="form-label">فقرات النشاط</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="circle_ids" class="form-label">الحلقات المشاركة</label>
-                            <select class="form-select" id="circle_ids" name="circle_ids" multiple>
+                            <select multiple class="form-control" id="circle_ids" name="circle_ids">
                                 {% for circle in circles %}
                                 <option value="{{ circle.id }}">{{ circle.name }}</option>
                                 {% endfor %}
@@ -71,11 +65,10 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>النشاط</th>
+                                    <th>نوع النشاط</th>
                                     <th>المكان</th>
                                     <th>التاريخ</th>
                                     <th>الوقت</th>
-                                    <th>الحلقات</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
@@ -84,16 +77,11 @@
                                 <tr>
                                     <td>{{ activity.activity_type }}</td>
                                     <td>{{ activity.location }}</td>
-                                    <td>{{ activity.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ activity.activity_date.strftime('%Y-%m-%d') }}</td>
                                     <td>{{ activity.start_time.strftime('%H:%M') }} - {{ activity.end_time.strftime('%H:%M') }}</td>
                                     <td>
-                                        {% for circle in activity.circles %}
-                                        <span class="badge bg-info">{{ circle.name }}</span>
-                                        {% endfor %}
-                                    </td>
-                                    <td>
-                                        <a href="{{ url_for('edit_center_activity', activity_id=activity.id) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
-                                        <a href="{{ url_for('delete_center_activity', activity_id=activity.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('هل أنت متأكد من حذف هذا النشاط؟');">حذف</a>
+                                        <a href="#" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                        <a href="#" class="btn btn-sm btn-outline-danger">حذف</a>
                                     </td>
                                 </tr>
                                 {% endfor %}

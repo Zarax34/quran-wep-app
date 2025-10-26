@@ -170,8 +170,6 @@ class Settings(db.Model):
     dark_mode_enabled = db.Column(db.Boolean, default=False)
     teacher_requires_approval = db.Column(db.Boolean, default=True)
     allow_custom_teacher_name = db.Column(db.Boolean, default=True)
-    developer_name = db.Column(db.String(100), default='Your Name')
-    developer_link = db.Column(db.String(200), default='https://www.linkedin.com/in/your-linkedin-profile')
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -249,22 +247,19 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.now)
 
-# ===================
-# Center Activities Models
-# ===================
 class CenterActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     activity_type = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(200), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    start_time = db.Column(db.Time, nullable=False)
-    end_time = db.Column(db.Time, nullable=False)
+    location = db.Column(db.String(200))
+    activity_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time)
+    end_time = db.Column(db.Time)
     target_students = db.Column(db.Integer)
-    details = db.Column(db.Text)
-    is_active = db.Column(db.Boolean, default=True)
-    circles = db.relationship('Circle', secondary='center_activity_circle', backref='center_activities')
+    description = db.Column(db.Text)
 
-center_activity_circle = db.Table('center_activity_circle',
+    circles = db.relationship('Circle', secondary='activity_circle_link')
+
+activity_circle_link = db.Table('activity_circle_link',
     db.Column('activity_id', db.Integer, db.ForeignKey('center_activity.id'), primary_key=True),
     db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
 )
@@ -366,20 +361,20 @@ def require_role(role):
 
 def create_parent_username(full_name):
     # استخدام مسافات بدلاً من الشرطة السفلية
-    username = full_name.strip()
+    username = full_name.strip().replace(' ', '_')
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username} {counter}"
+        username = f"{base_username}_{counter}"
         counter += 1
     return username
 
 def create_student_username(full_name):
-    username = full_name.strip()
+    username = full_name.strip().replace(' ', '_')
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username} {counter}"
+        username = f"{base_username}_{counter}"
         counter += 1
     return username
 
@@ -716,7 +711,6 @@ def guest_dashboard():
     attendance_stats = db.session.query(Attendance.status, func.count(Attendance.id)).filter(Attendance.date >= week_start).group_by(Attendance.status).all()
     
     center_attendance_rate = get_center_attendance_stats()
-    announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
     
     return render_template('guest_dashboard.html',
                          settings=settings,
@@ -725,8 +719,7 @@ def guest_dashboard():
                          total_circles=total_circles,
                          total_reports=total_reports,
                          attendance_stats=attendance_stats,
-                         center_attendance_rate=center_attendance_rate,
-                         announcements=announcements)
+                         center_attendance_rate=center_attendance_rate)
 
 @app.route('/set_view/<view_type>')
 @require_login
@@ -1433,6 +1426,61 @@ def delete_holiday(holiday_id):
     flash('تم حذف العطلة بنجاح', 'success')
     return redirect(url_for('holidays'))
 
+# ---------- 26. CENTER ACTIVITIES ----------
+@app.route('/center_activities', methods=['GET', 'POST'])
+@require_role('admin')
+def center_activities():
+    if request.method == 'POST':
+        activity_type = request.form['activity_type']
+        location = request.form['location']
+        activity_date = datetime.strptime(request.form['activity_date'], '%Y-%m-%d').date()
+        start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
+        end_time = datetime.strptime(request.form['end_time'], '%H:%M').time()
+        target_students = request.form['target_students']
+        description = request.form['description']
+        circle_ids = request.form.getlist('circle_ids')
+
+        new_activity = CenterActivity(
+            activity_type=activity_type,
+            location=location,
+            activity_date=activity_date,
+            start_time=start_time,
+            end_time=end_time,
+            target_students=target_students,
+            description=description
+        )
+
+        circles = Circle.query.filter(Circle.id.in_(circle_ids)).all()
+        new_activity.circles.extend(circles)
+
+        db.session.add(new_activity)
+        db.session.commit()
+
+        # Notify parents of students in the selected circles
+        for circle in new_activity.circles:
+            for student in circle.students:
+                if student.parent and student.parent.user_id:
+                    notification = Notification(
+                        user_id=student.parent.user_id,
+                        title='نشاط جديد في المركز',
+                        message=f'تم الإعلان عن نشاط جديد: {new_activity.activity_type}.'
+                    )
+                    db.session.add(notification)
+        db.session.commit()
+
+        flash('تمت إضافة النشاط بنجاح!', 'success')
+        return redirect(url_for('center_activities'))
+
+    activities = CenterActivity.query.all()
+    circles = Circle.query.filter_by(is_active=True).all()
+    return render_template('center_activities.html', activities=activities, circles=circles)
+
+@app.route('/view_center_activities')
+@require_login
+def view_center_activities():
+    activities = CenterActivity.query.all()
+    return render_template('view_center_activities.html', activities=activities)
+
 # ---------- 13.  PARENTS ----------
 @app.route('/parents')
 @require_role('admin')
@@ -1519,14 +1567,8 @@ def link_students_to_parents():
 @app.route('/users')
 @require_role('admin')
 def users():
-    users = User.query.filter(User.role.in_(['admin', 'teacher', 'support'])).all()
+    users = User.query.all()
     return render_template('users.html', users=users)
-
-@app.route('/student_accounts')
-@require_role('admin')
-def student_accounts():
-    students = User.query.filter_by(role='student').all()
-    return render_template('student_accounts.html', students=students)
 
 @app.route('/add_user', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1567,19 +1609,7 @@ def announcements():
         announcement = Announcement(title=title, content=content, image=filename)
         db.session.add(announcement)
         db.session.commit()
-
-        # إرسال إشعارات لأولياء الأمور
-        parents = Parent.query.filter(Parent.user_id.isnot(None)).all()
-        for parent in parents:
-            notification = Notification(
-                user_id=parent.user_id,
-                title='إعلان جديد',
-                message=f'إعلان جديد بعنوان: "{title}"'
-            )
-            db.session.add(notification)
-
-        db.session.commit()
-        flash('تم إضافة الإعلان بنجاح وإرسال الإشعارات!', 'success')
+        flash('تم إضافة الإعلان بنجاح!', 'success')
         return redirect(url_for('announcements'))
 
     all_announcements = Announcement.query.all()
@@ -1683,8 +1713,6 @@ def settings():
         settings_obj.teacher_requires_approval = bool(request.form.get('teacher_requires_approval'))
         settings_obj.allow_custom_teacher_name = bool(request.form.get('allow_custom_teacher_name'))
         settings_obj.dark_mode_enabled = bool(request.form.get('dark_mode_enabled'))
-        settings_obj.developer_name = request.form.get('developer_name', 'Your Name')
-        settings_obj.developer_link = request.form.get('developer_link', 'https://www.linkedin.com/in/your-linkedin-profile')
         
         logo = request.files.get('logo')
         if logo and allowed_file(logo.filename):
@@ -1764,12 +1792,6 @@ def notifications():
     
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if parent and parent.user_id:
-        # Mark all unread notifications as read
-        unread_notifs = Notification.query.filter_by(user_id=parent.user_id, is_read=False).all()
-        for notif in unread_notifs:
-            notif.is_read = True
-        db.session.commit()
-
         notifs = Notification.query.filter_by(user_id=parent.user_id).order_by(Notification.created_at.desc()).all()
         return render_template('notifications.html', notifications=notifs)
     
@@ -1851,9 +1873,6 @@ def parent_dashboard():
     # Honor board
     honor_students = HonorBoard.query.filter_by(month=datetime.now().month, year=datetime.now().year).order_by(HonorBoard.rank).limit(5).all()
 
-    # Announcements
-    announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
-
     # Center stats
     center_stats = {
         'total_students': Student.query.filter_by(is_active=True).count(),
@@ -1868,8 +1887,7 @@ def parent_dashboard():
                          total_attendance_rate=total_attendance_rate,
                          total_monthly_reports=total_monthly_reports,
                          center_stats=center_stats,
-                         honor_students=honor_students,
-                         announcements=announcements)
+                         honor_students=honor_students)
 
 # ---------- 21.  STUDENT REPORTS ----------
 @app.route('/add_educational_note/<int:student_id>', methods=['POST'])
@@ -1971,14 +1989,22 @@ def export_student_report(student_id):
 
 # ---------- 22.  COURSES AND TESTS ----------
 @app.route('/courses')
-@require_role('admin')
+@require_login
 def courses():
-    courses_list = Course.query.order_by(Course.created_at.desc()).all()
+    # Admin sees all courses, teacher sees only their own
+    if session['role'] == 'admin':
+        courses_list = Course.query.order_by(Course.created_at.desc()).all()
+    else: # teacher
+        courses_list = Course.query.filter_by(teacher_id=session['user_id']).order_by(Course.created_at.desc()).all()
     return render_template('courses.html', courses=courses_list)
 
 @app.route('/add_course', methods=['GET', 'POST'])
-@require_role('admin')
+@require_login
 def add_course():
+    if session.get('role') not in ['admin', 'teacher']:
+        flash('ليس لديك الصلاحية لإضافة دورات', 'error')
+        return redirect(url_for('courses'))
+
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
@@ -2002,9 +2028,13 @@ def add_course():
     return render_template('add_course.html', teachers=teachers)
 
 @app.route('/edit_course/<int:course_id>', methods=['GET', 'POST'])
-@require_role('admin')
+@require_login
 def edit_course(course_id):
     course = Course.query.get_or_404(course_id)
+    # Authorization check
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتعديل هذه الدورة', 'error')
+        return redirect(url_for('courses'))
 
     if request.method == 'POST':
         course.name = request.form.get('name')
@@ -2025,9 +2055,13 @@ def edit_course(course_id):
     return render_template('edit_course.html', course=course, teachers=teachers)
 
 @app.route('/delete_course/<int:course_id>')
-@require_role('admin')
+@require_login
 def delete_course(course_id):
     course = Course.query.get_or_404(course_id)
+    # Authorization check
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لحذف هذه الدورة', 'error')
+        return redirect(url_for('courses'))
 
     try:
         # This will also delete related enrollments and tests due to cascading
@@ -2041,9 +2075,13 @@ def delete_course(course_id):
     return redirect(url_for('courses'))
 
 @app.route('/course/<int:course_id>')
-@require_role('admin')
+@require_login
 def course_details(course_id):
     course = Course.query.get_or_404(course_id)
+    # Authorization check
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لعرض تفاصيل هذه الدورة', 'error')
+        return redirect(url_for('courses'))
 
     enrolled_students = Student.query.join(CourseEnrollment).filter(CourseEnrollment.course_id == course.id).all()
 
@@ -2054,9 +2092,13 @@ def course_details(course_id):
     return render_template('course_details.html', course=course, enrolled_students=enrolled_students, available_students=available_students)
 
 @app.route('/enroll_student/<int:course_id>', methods=['POST'])
-@require_role('admin')
+@require_login
 def enroll_student(course_id):
     course = Course.query.get_or_404(course_id)
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتسجيل طلاب في هذه الدورة', 'error')
+        return redirect(url_for('courses'))
 
     student_ids = request.form.getlist('student_ids')
     if not student_ids:
@@ -2080,10 +2122,14 @@ def enroll_student(course_id):
     return redirect(url_for('course_details', course_id=course_id))
 
 @app.route('/unenroll_student/<int:course_id>/<int:student_id>')
-@require_role('admin')
+@require_login
 def unenroll_student(course_id, student_id):
     enrollment = CourseEnrollment.query.filter_by(course_id=course_id, student_id=student_id).first_or_404()
     course = enrollment.course
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لإزالة طلاب من هذه الدورة', 'error')
+        return redirect(url_for('courses'))
 
     try:
         db.session.delete(enrollment)
@@ -2096,16 +2142,24 @@ def unenroll_student(course_id, student_id):
     return redirect(url_for('course_details', course_id=course_id))
 
 @app.route('/course/<int:course_id>/tests')
-@require_role('admin')
+@require_login
 def manage_tests(course_id):
     course = Course.query.get_or_404(course_id)
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لإدارة اختبارات هذه الدورة', 'error')
+        return redirect(url_for('courses'))
 
     return render_template('manage_tests.html', course=course)
 
 @app.route('/add_test/<int:course_id>', methods=['POST'])
-@require_role('admin')
+@require_login
 def add_test(course_id):
     course = Course.query.get_or_404(course_id)
+    # Authorization
+    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لإضافة اختبارات لهذه الدورة', 'error')
+        return redirect(url_for('courses'))
 
     name = request.form.get('name')
     test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
@@ -2123,9 +2177,13 @@ def add_test(course_id):
     return redirect(url_for('manage_tests', course_id=course_id))
 
 @app.route('/edit_test/<int:test_id>', methods=['POST'])
-@require_role('admin')
+@require_login
 def edit_test(test_id):
     test = Test.query.get_or_404(test_id)
+    # Authorization
+    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتعديل هذا الاختبار', 'error')
+        return redirect(url_for('courses'))
 
     test.name = request.form.get('name')
     test.test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
@@ -2141,10 +2199,14 @@ def edit_test(test_id):
     return redirect(url_for('manage_tests', course_id=test.course_id))
 
 @app.route('/delete_test/<int:test_id>')
-@require_role('admin')
+@require_login
 def delete_test(test_id):
     test = Test.query.get_or_404(test_id)
     course_id = test.course_id
+    # Authorization
+    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لحذف هذا الاختبار', 'error')
+        return redirect(url_for('courses'))
 
     try:
         db.session.delete(test)
@@ -2157,9 +2219,13 @@ def delete_test(test_id):
     return redirect(url_for('manage_tests', course_id=course_id))
 
 @app.route('/record_scores/<int:test_id>', methods=['GET', 'POST'])
-@require_role('admin')
+@require_login
 def record_scores(test_id):
     test = Test.query.get_or_404(test_id)
+    # Authorization
+    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتسجيل درجات لهذا الاختبار', 'error')
+        return redirect(url_for('courses'))
 
     if request.method == 'POST':
         for student in test.course.enrollments:
@@ -2340,132 +2406,7 @@ def certificates():
     students = Student.query.all()
     return render_template('certificates.html', courses=courses, students=students)
 
-# ---------- 23. CENTER ACTIVITIES ----------
-@app.route('/center_activities', methods=['GET', 'POST'])
-@require_role('admin')
-def center_activities():
-    if request.method == 'POST':
-        activity_type = request.form['activity_type']
-        location = request.form['location']
-        date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
-        start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
-        end_time = datetime.strptime(request.form['end_time'], '%H:%M').time()
-        target_students = request.form.get('target_students', type=int)
-        details = request.form.get('details')
-        circle_ids = request.form.getlist('circle_ids')
-
-        new_activity = CenterActivity(
-            activity_type=activity_type,
-            location=location,
-            date=date,
-            start_time=start_time,
-            end_time=end_time,
-            target_students=target_students,
-            details=details
-        )
-
-        circles = Circle.query.filter(Circle.id.in_(circle_ids)).all()
-        new_activity.circles.extend(circles)
-
-        db.session.add(new_activity)
-        db.session.commit()
-        flash('تمت إضافة النشاط بنجاح!', 'success')
-        return redirect(url_for('center_activities'))
-
-    activities = CenterActivity.query.order_by(CenterActivity.date.desc()).all()
-    circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('center_activities.html', activities=activities, circles=circles)
-
-@app.route('/view_center_activities')
-@require_login
-def view_center_activities():
-    activities = CenterActivity.query.filter_by(is_active=True).order_by(CenterActivity.date.desc()).all()
-    return render_template('view_center_activities.html', activities=activities)
-
-@app.route('/upload_certificate/<int:course_id>/<int:student_id>', methods=['GET', 'POST'])
-@require_role('admin')
-def upload_certificate(course_id, student_id):
-    if request.method == 'POST':
-        if 'certificate' not in request.files:
-            flash('No file part', 'danger')
-            return redirect(request.url)
-        file = request.files['certificate']
-        if file.filename == '':
-            flash('No selected file', 'danger')
-            return redirect(request.url)
-        if file and file.filename.endswith('.pdf'):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-            # Check if a certificate entry already exists
-            certificate = Certificate.query.filter_by(student_id=student_id, course_id=course_id).first()
-            if certificate:
-                certificate.certificate_file = filename
-            else:
-                certificate = Certificate(
-                    student_id=student_id,
-                    course_id=course_id,
-                    certificate_file=filename
-                )
-                db.session.add(certificate)
-
-            db.session.commit()
-            flash('Certificate uploaded successfully', 'success')
-            return redirect(url_for('course_details', course_id=course_id))
-
-    course = Course.query.get_or_404(course_id)
-    student = Student.query.get_or_404(student_id)
-    return render_template('upload_certificate.html', course=course, student=student)
-
-@app.route('/edit_center_activity/<int:activity_id>', methods=['GET', 'POST'])
-@require_role('admin')
-def edit_center_activity(activity_id):
-    activity = CenterActivity.query.get_or_404(activity_id)
-    if request.method == 'POST':
-        activity.activity_type = request.form['activity_type']
-        activity.location = request.form['location']
-        activity.date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
-        activity.start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
-        activity.end_time = datetime.strptime(request.form['end_time'], '%H:%M').time()
-        activity.target_students = request.form.get('target_students', type=int)
-        activity.details = request.form.get('details')
-        circle_ids = request.form.getlist('circle_ids')
-
-        circles = Circle.query.filter(Circle.id.in_(circle_ids)).all()
-        activity.circles = circles
-
-        db.session.commit()
-        flash('تم تعديل النشاط بنجاح!', 'success')
-        return redirect(url_for('center_activities'))
-
-    circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('edit_center_activity.html', activity=activity, circles=circles)
-
-@app.route('/my_certificates')
-@require_login
-def my_certificates():
-    if session['role'] == 'parent':
-        parent = Parent.query.filter_by(user_id=session['user_id']).first()
-        students = parent.students
-    elif session['role'] == 'student':
-        user = User.query.get(session['user_id'])
-        student = Student.query.filter_by(name=user.name).first()
-        students = [student] if student else []
-    else:
-        students = []
-
-    return render_template('my_certificates.html', students=students)
-
-@app.route('/delete_center_activity/<int:activity_id>')
-@require_role('admin')
-def delete_center_activity(activity_id):
-    activity = CenterActivity.query.get_or_404(activity_id)
-    db.session.delete(activity)
-    db.session.commit()
-    flash('تم حذف النشاط بنجاح!', 'success')
-    return redirect(url_for('center_activities'))
-
-# ---------- 24.  RUN ----------
+# ---------- 23.  RUN ----------
 def setup_database():
     """Initializes the database, creates tables, and runs simple migrations."""
     with app.app_context():

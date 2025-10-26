@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">خريجو المركز</h1>
+    </div>
+
+    <div class="row">
+        {% for graduate in graduates %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ graduate.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>العمر:</strong> {{ graduate.age }}</p>
+                    <p><strong>المنطقة:</strong> {{ graduate.location }}</p>
+                    <p><strong>تاريخ إتمام الحفظ:</strong> {{ graduate.completion_date.strftime('%Y-%m-%d') if graduate.completion_date }}</p>
+                    <p><strong>تاريخ الالتحاق بالتحفيظ:</strong> {{ graduate.enrollment_date.strftime('%Y-%m-%d') if graduate.enrollment_date }}</p>
+                    <p><strong>مقدار الحفظ السابق:</strong> {{ graduate.previous_memorization }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <p>لا يوجد خريجون حالياً.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

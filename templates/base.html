@@ -675,6 +675,35 @@
 <body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %}">
     
     <!-- شعار المركز في الأعلى -->
+    {% if not session.user_id %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('guest_dashboard') }}">{{ settings.site_name }}</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#guestNavbar" aria-controls="guestNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="guestNavbar">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('guest_dashboard') }}">الرئيسية</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('graduates') }}">خريجو المركز</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('works') }}">أعمالنا</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('support') }}">ادعم المركز</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">تسجيل الدخول</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
     {% if settings.logo or settings.site_name %}
     <div class="header-logo">
         <div class="container">
@@ -765,6 +794,12 @@
                     <a class="nav-link {{ 'active' if request.endpoint == 'my_certificates' }}" href="{{ url_for('my_certificates') }}">
                         <i class="fas fa-certificate me-2"></i>
                         شهاداتي
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'graduates' }}" href="{{ url_for('graduates') }}">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        خريجو المركز
                     </a>
                 </li>
                 

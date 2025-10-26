@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">أعمالنا</h2>
+        <div class="row">
+            {% for work in works %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if work.image %}
+                    <img src="{{ url_for('uploaded_file', filename=work.image) }}" class="card-img-top" alt="{{ work.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ work.title }}</h5>
+                        <p class="card-text">{{ work.description }}</p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col">
+                <p class="text-center">لا توجد أعمال لعرضها حاليًا.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

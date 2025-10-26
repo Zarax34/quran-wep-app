@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">تعديل العمل</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">تعديل عمل: {{ work.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">العنوان</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ work.title }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">الوصف</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ work.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">الصورة</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            {% if work.image %}
+                            <img src="{{ url_for('uploaded_file', filename=work.image) }}" width="100" class="mt-2">
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                        <a href="{{ url_for('manage_works') }}" class="btn btn-secondary">إلغاء</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

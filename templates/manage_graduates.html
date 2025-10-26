@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">إدارة خريجي المركز</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">إضافة خريج جديد</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">اسم الحافظ</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="age" class="form-label">العمر</label>
+                            <input type="number" class="form-control" id="age" name="age">
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">المنطقة</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        <div class="mb-3">
+                            <label for="completion_date" class="form-label">تاريخ إتمام الحفظ</label>
+                            <input type="date" class="form-control" id="completion_date" name="completion_date">
+                        </div>
+                        <div class="mb-3">
+                            <label for="enrollment_date" class="form-label">تاريخ الالتحاق بالتحفيظ</label>
+                            <input type="date" class="form-control" id="enrollment_date" name="enrollment_date">
+                        </div>
+                        <div class="mb-3">
+                            <label for="previous_memorization" class="form-label">مقدار الحفظ السابق</label>
+                            <input type="text" class="form-control" id="previous_memorization" name="previous_memorization">
+                        </div>
+                        <button type="submit" class="btn btn-primary">إضافة الخريج</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">قائمة الخريجين</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>الاسم</th>
+                                    <th>العمر</th>
+                                    <th>المنطقة</th>
+                                    <th>تاريخ إتمام الحفظ</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for graduate in graduates %}
+                                <tr>
+                                    <td>{{ graduate.name }}</td>
+                                    <td>{{ graduate.age }}</td>
+                                    <td>{{ graduate.location }}</td>
+                                    <td>{{ graduate.completion_date.strftime('%Y-%m-%d') if graduate.completion_date }}</td>
+                                    <td>
+                                        <a href="{{ url_for('edit_graduate', graduate_id=graduate.id) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                        <form action="{{ url_for('delete_graduate', graduate_id=graduate.id) }}" method="POST" style="display:inline;" onsubmit="return confirmDelete();">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

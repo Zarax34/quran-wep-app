@@ -18,7 +18,11 @@
             <div class="card-body">
                 <p><strong>الوصف:</strong> {{ course.description or 'لا يوجد وصف' }}</p>
                 <p><strong>المعلم:</strong> {{ course.teacher.name }}</p>
-                <p><strong>تاريخ الإنشاء:</strong> {{ course.created_at.strftime('%Y-%m-%d') }}</p>
+                <p><strong>تاريخ البدء:</strong> {{ course.start_date.strftime('%Y-%m-%d') if course.start_date else 'غير محدد' }}</p>
+                <p><strong>تاريخ الانتهاء:</strong> {{ course.end_date.strftime('%Y-%m-%d') if course.end_date else 'غير محدد' }}</p>
+                {% if course.ebook_link %}
+                <p><strong>الكتاب الإلكتروني:</strong> <a href="{{ course.ebook_link }}" target="_blank">اضغط هنا للتحميل</a></p>
+                {% endif %}
                 <p><strong>الحالة:</strong>
                     {% if course.is_active %}
                         <span class="badge bg-success">نشطة</span>
