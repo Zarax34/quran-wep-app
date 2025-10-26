@@ -1971,22 +1971,14 @@ def export_student_report(student_id):
 
 # ---------- 22.  COURSES AND TESTS ----------
 @app.route('/courses')
-@require_login
+@require_role('admin')
 def courses():
-    # Admin sees all courses, teacher sees only their own
-    if session['role'] == 'admin':
-        courses_list = Course.query.order_by(Course.created_at.desc()).all()
-    else: # teacher
-        courses_list = Course.query.filter_by(teacher_id=session['user_id']).order_by(Course.created_at.desc()).all()
+    courses_list = Course.query.order_by(Course.created_at.desc()).all()
     return render_template('courses.html', courses=courses_list)
 
 @app.route('/add_course', methods=['GET', 'POST'])
-@require_login
+@require_role('admin')
 def add_course():
-    if session.get('role') not in ['admin', 'teacher']:
-        flash('ليس لديك الصلاحية لإضافة دورات', 'error')
-        return redirect(url_for('courses'))
-
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
@@ -2010,13 +2002,9 @@ def add_course():
     return render_template('add_course.html', teachers=teachers)
 
 @app.route('/edit_course/<int:course_id>', methods=['GET', 'POST'])
-@require_login
+@require_role('admin')
 def edit_course(course_id):
     course = Course.query.get_or_404(course_id)
-    # Authorization check
-    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لتعديل هذه الدورة', 'error')
-        return redirect(url_for('courses'))
 
     if request.method == 'POST':
         course.name = request.form.get('name')
@@ -2037,13 +2025,9 @@ def edit_course(course_id):
     return render_template('edit_course.html', course=course, teachers=teachers)
 
 @app.route('/delete_course/<int:course_id>')
-@require_login
+@require_role('admin')
 def delete_course(course_id):
     course = Course.query.get_or_404(course_id)
-    # Authorization check
-    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لحذف هذه الدورة', 'error')
-        return redirect(url_for('courses'))
 
     try:
         # This will also delete related enrollments and tests due to cascading
@@ -2057,13 +2041,9 @@ def delete_course(course_id):
     return redirect(url_for('courses'))
 
 @app.route('/course/<int:course_id>')
-@require_login
+@require_role('admin')
 def course_details(course_id):
     course = Course.query.get_or_404(course_id)
-    # Authorization check
-    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لعرض تفاصيل هذه الدورة', 'error')
-        return redirect(url_for('courses'))
 
     enrolled_students = Student.query.join(CourseEnrollment).filter(CourseEnrollment.course_id == course.id).all()
 
@@ -2074,13 +2054,9 @@ def course_details(course_id):
     return render_template('course_details.html', course=course, enrolled_students=enrolled_students, available_students=available_students)
 
 @app.route('/enroll_student/<int:course_id>', methods=['POST'])
-@require_login
+@require_role('admin')
 def enroll_student(course_id):
     course = Course.query.get_or_404(course_id)
-    # Authorization
-    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لتسجيل طلاب في هذه الدورة', 'error')
-        return redirect(url_for('courses'))
 
     student_ids = request.form.getlist('student_ids')
     if not student_ids:
@@ -2104,14 +2080,10 @@ def enroll_student(course_id):
     return redirect(url_for('course_details', course_id=course_id))
 
 @app.route('/unenroll_student/<int:course_id>/<int:student_id>')
-@require_login
+@require_role('admin')
 def unenroll_student(course_id, student_id):
     enrollment = CourseEnrollment.query.filter_by(course_id=course_id, student_id=student_id).first_or_404()
     course = enrollment.course
-    # Authorization
-    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لإزالة طلاب من هذه الدورة', 'error')
-        return redirect(url_for('courses'))
 
     try:
         db.session.delete(enrollment)
@@ -2124,24 +2096,16 @@ def unenroll_student(course_id, student_id):
     return redirect(url_for('course_details', course_id=course_id))
 
 @app.route('/course/<int:course_id>/tests')
-@require_login
+@require_role('admin')
 def manage_tests(course_id):
     course = Course.query.get_or_404(course_id)
-    # Authorization
-    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لإدارة اختبارات هذه الدورة', 'error')
-        return redirect(url_for('courses'))
 
     return render_template('manage_tests.html', course=course)
 
 @app.route('/add_test/<int:course_id>', methods=['POST'])
-@require_login
+@require_role('admin')
 def add_test(course_id):
     course = Course.query.get_or_404(course_id)
-    # Authorization
-    if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لإضافة اختبارات لهذه الدورة', 'error')
-        return redirect(url_for('courses'))
 
     name = request.form.get('name')
     test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
@@ -2159,13 +2123,9 @@ def add_test(course_id):
     return redirect(url_for('manage_tests', course_id=course_id))
 
 @app.route('/edit_test/<int:test_id>', methods=['POST'])
-@require_login
+@require_role('admin')
 def edit_test(test_id):
     test = Test.query.get_or_404(test_id)
-    # Authorization
-    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لتعديل هذا الاختبار', 'error')
-        return redirect(url_for('courses'))
 
     test.name = request.form.get('name')
     test.test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
@@ -2181,14 +2141,10 @@ def edit_test(test_id):
     return redirect(url_for('manage_tests', course_id=test.course_id))
 
 @app.route('/delete_test/<int:test_id>')
-@require_login
+@require_role('admin')
 def delete_test(test_id):
     test = Test.query.get_or_404(test_id)
     course_id = test.course_id
-    # Authorization
-    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لحذف هذا الاختبار', 'error')
-        return redirect(url_for('courses'))
 
     try:
         db.session.delete(test)
@@ -2201,13 +2157,9 @@ def delete_test(test_id):
     return redirect(url_for('manage_tests', course_id=course_id))
 
 @app.route('/record_scores/<int:test_id>', methods=['GET', 'POST'])
-@require_login
+@require_role('admin')
 def record_scores(test_id):
     test = Test.query.get_or_404(test_id)
-    # Authorization
-    if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
-        flash('ليس لديك الصلاحية لتسجيل درجات لهذا الاختبار', 'error')
-        return redirect(url_for('courses'))
 
     if request.method == 'POST':
         for student in test.course.enrollments:
@@ -2429,6 +2381,89 @@ def center_activities():
 def view_center_activities():
     activities = CenterActivity.query.filter_by(is_active=True).order_by(CenterActivity.date.desc()).all()
     return render_template('view_center_activities.html', activities=activities)
+
+@app.route('/upload_certificate/<int:course_id>/<int:student_id>', methods=['GET', 'POST'])
+@require_role('admin')
+def upload_certificate(course_id, student_id):
+    if request.method == 'POST':
+        if 'certificate' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
+        file = request.files['certificate']
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+        if file and file.filename.endswith('.pdf'):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+            # Check if a certificate entry already exists
+            certificate = Certificate.query.filter_by(student_id=student_id, course_id=course_id).first()
+            if certificate:
+                certificate.certificate_file = filename
+            else:
+                certificate = Certificate(
+                    student_id=student_id,
+                    course_id=course_id,
+                    certificate_file=filename
+                )
+                db.session.add(certificate)
+
+            db.session.commit()
+            flash('Certificate uploaded successfully', 'success')
+            return redirect(url_for('course_details', course_id=course_id))
+
+    course = Course.query.get_or_404(course_id)
+    student = Student.query.get_or_404(student_id)
+    return render_template('upload_certificate.html', course=course, student=student)
+
+@app.route('/edit_center_activity/<int:activity_id>', methods=['GET', 'POST'])
+@require_role('admin')
+def edit_center_activity(activity_id):
+    activity = CenterActivity.query.get_or_404(activity_id)
+    if request.method == 'POST':
+        activity.activity_type = request.form['activity_type']
+        activity.location = request.form['location']
+        activity.date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        activity.start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
+        activity.end_time = datetime.strptime(request.form['end_time'], '%H:%M').time()
+        activity.target_students = request.form.get('target_students', type=int)
+        activity.details = request.form.get('details')
+        circle_ids = request.form.getlist('circle_ids')
+
+        circles = Circle.query.filter(Circle.id.in_(circle_ids)).all()
+        activity.circles = circles
+
+        db.session.commit()
+        flash('تم تعديل النشاط بنجاح!', 'success')
+        return redirect(url_for('center_activities'))
+
+    circles = Circle.query.filter_by(is_active=True).all()
+    return render_template('edit_center_activity.html', activity=activity, circles=circles)
+
+@app.route('/my_certificates')
+@require_login
+def my_certificates():
+    if session['role'] == 'parent':
+        parent = Parent.query.filter_by(user_id=session['user_id']).first()
+        students = parent.students
+    elif session['role'] == 'student':
+        user = User.query.get(session['user_id'])
+        student = Student.query.filter_by(name=user.name).first()
+        students = [student] if student else []
+    else:
+        students = []
+
+    return render_template('my_certificates.html', students=students)
+
+@app.route('/delete_center_activity/<int:activity_id>')
+@require_role('admin')
+def delete_center_activity(activity_id):
+    activity = CenterActivity.query.get_or_404(activity_id)
+    db.session.delete(activity)
+    db.session.commit()
+    flash('تم حذف النشاط بنجاح!', 'success')
+    return redirect(url_for('center_activities'))
 
 # ---------- 24.  RUN ----------
 def setup_database():

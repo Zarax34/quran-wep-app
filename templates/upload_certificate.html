@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Upload Certificate for {{ student.name }} in {{ course.name }}</h1>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="certificate" class="form-label">Certificate (PDF only)</label>
+                    <input type="file" class="form-control" id="certificate" name="certificate" accept=".pdf" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+                <a href="{{ url_for('course_details', course_id=course.id) }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

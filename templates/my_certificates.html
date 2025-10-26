@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">شهاداتي</h1>
+    </div>
+
+    {% for student in students %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">شهادات الطالب: {{ student.name }}</h5>
+        </div>
+        <div class="card-body">
+            {% if student.certificates %}
+            <ul class="list-group">
+                {% for certificate in student.certificates %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ certificate.course_info.name }}
+                    <a href="{{ url_for('uploaded_file', filename=certificate.certificate_file) }}" class="btn btn-sm btn-outline-success" target="_blank">
+                        <i class="fas fa-download"></i> تنزيل الشهادة
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>لا توجد شهادات لهذا الطالب.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
