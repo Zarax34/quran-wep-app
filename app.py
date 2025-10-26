@@ -250,6 +250,26 @@ class Message(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.now)
 
 # ===================
+# Center Activities Models
+# ===================
+class CenterActivity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    activity_type = db.Column(db.String(100), nullable=False)
+    location = db.Column(db.String(200), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    target_students = db.Column(db.Integer)
+    details = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    circles = db.relationship('Circle', secondary='center_activity_circle', backref='center_activities')
+
+center_activity_circle = db.Table('center_activity_circle',
+    db.Column('activity_id', db.Integer, db.ForeignKey('center_activity.id'), primary_key=True),
+    db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
+)
+
+# ===================
 # Courses and Tests Models
 # ===================
 class Course(db.Model):
@@ -2368,7 +2388,49 @@ def certificates():
     students = Student.query.all()
     return render_template('certificates.html', courses=courses, students=students)
 
-# ---------- 23.  RUN ----------
+# ---------- 23. CENTER ACTIVITIES ----------
+@app.route('/center_activities', methods=['GET', 'POST'])
+@require_role('admin')
+def center_activities():
+    if request.method == 'POST':
+        activity_type = request.form['activity_type']
+        location = request.form['location']
+        date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
+        end_time = datetime.strptime(request.form['end_time'], '%H:%M').time()
+        target_students = request.form.get('target_students', type=int)
+        details = request.form.get('details')
+        circle_ids = request.form.getlist('circle_ids')
+
+        new_activity = CenterActivity(
+            activity_type=activity_type,
+            location=location,
+            date=date,
+            start_time=start_time,
+            end_time=end_time,
+            target_students=target_students,
+            details=details
+        )
+
+        circles = Circle.query.filter(Circle.id.in_(circle_ids)).all()
+        new_activity.circles.extend(circles)
+
+        db.session.add(new_activity)
+        db.session.commit()
+        flash('تمت إضافة النشاط بنجاح!', 'success')
+        return redirect(url_for('center_activities'))
+
+    activities = CenterActivity.query.order_by(CenterActivity.date.desc()).all()
+    circles = Circle.query.filter_by(is_active=True).all()
+    return render_template('center_activities.html', activities=activities, circles=circles)
+
+@app.route('/view_center_activities')
+@require_login
+def view_center_activities():
+    activities = CenterActivity.query.filter_by(is_active=True).order_by(CenterActivity.date.desc()).all()
+    return render_template('view_center_activities.html', activities=activities)
+
+# ---------- 24.  RUN ----------
 def setup_database():
     """Initializes the database, creates tables, and runs simple migrations."""
     with app.app_context():

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">إدارة أنشطة المركز</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">إضافة نشاط جديد</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="activity_type" class="form-label">نوع النشاط</label>
+                            <input type="text" class="form-control" id="activity_type" name="activity_type" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">مكان النشاط</label>
+                            <input type="text" class="form-control" id="location" name="location" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="date" class="form-label">التاريخ</label>
+                            <input type="date" class="form-control" id="date" name="date" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="start_time" class="form-label">وقت البدء</label>
+                                    <input type="time" class="form-control" id="start_time" name="start_time" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="end_time" class="form-label">وقت الانتهاء</label>
+                                    <input type="time" class="form-control" id="end_time" name="end_time" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="target_students" class="form-label">عدد الطلاب المستهدفين</label>
+                            <input type="number" class="form-control" id="target_students" name="target_students">
+                        </div>
+                        <div class="mb-3">
+                            <label for="details" class="form-label">تفاصيل النشاط</label>
+                            <textarea class="form-control" id="details" name="details" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="circle_ids" class="form-label">الحلقات المشاركة</label>
+                            <select class="form-select" id="circle_ids" name="circle_ids" multiple>
+                                {% for circle in circles %}
+                                <option value="{{ circle.id }}">{{ circle.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">إضافة النشاط</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">قائمة الأنشطة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>النشاط</th>
+                                    <th>المكان</th>
+                                    <th>التاريخ</th>
+                                    <th>الوقت</th>
+                                    <th>الحلقات</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in activities %}
+                                <tr>
+                                    <td>{{ activity.activity_type }}</td>
+                                    <td>{{ activity.location }}</td>
+                                    <td>{{ activity.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ activity.start_time.strftime('%H:%M') }} - {{ activity.end_time.strftime('%H:%M') }}</td>
+                                    <td>
+                                        {% for circle in activity.circles %}
+                                        <span class="badge bg-info">{{ circle.name }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                        <a href="#" class="btn btn-sm btn-outline-danger">حذف</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

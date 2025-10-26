@@ -755,6 +755,12 @@
                         ادعم المركز
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'view_center_activities' }}" href="{{ url_for('view_center_activities') }}">
+                        <i class="fas fa-skating me-2"></i>
+                        أنشطة المركز
+                    </a>
+                </li>
                 
                 <!-- مبدل الواجهات في القائمة الجانبية -->
                 <li class="nav-item">
@@ -883,6 +889,12 @@
                     <a class="nav-link {{ 'active' if request.endpoint == 'announcements' }}" href="{{ url_for('announcements') }}">
                         <i class="fas fa-bullhorn me-2"></i>
                         إدارة الإعلانات
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'center_activities' }}" href="{{ url_for('center_activities') }}">
+                        <i class="fas fa-skating me-2"></i>
+                        أنشطة المركز
                     </a>
                 </li>
                 <li class="nav-item">

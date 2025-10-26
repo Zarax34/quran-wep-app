@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">أنشطة المركز</h1>
+    </div>
+
+    <div class="row">
+        {% for activity in activities %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ activity.activity_type }}</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>المكان:</strong> {{ activity.location }}</p>
+                    <p><strong>التاريخ:</strong> {{ activity.date.strftime('%Y-%m-%d') }}</p>
+                    <p><strong>الوقت:</strong> {{ activity.start_time.strftime('%H:%M') }} - {{ activity.end_time.strftime('%H:%M') }}</p>
+                    <p><strong>الطلاب المستهدفين:</strong> {{ activity.target_students }}</p>
+                    <p><strong>التفاصيل:</strong> {{ activity.details }}</p>
+                    <p><strong>الحلقات المشاركة:</strong>
+                        {% for circle in activity.circles %}
+                        <span class="badge bg-info">{{ circle.name }}</span>
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <p>لا توجد أنشطة حالياً.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
