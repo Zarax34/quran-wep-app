@@ -266,6 +266,22 @@
                                 </div>
                             </div>
                         </div>
+
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="developer_name" class="form-label">اسم المطور</label>
+                                    <input type="text" class="form-control" id="developer_name" name="developer_name" value="{{ settings.developer_name }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="developer_link" class="form-label">رابط المطور</label>
+                                    <input type="text" class="form-control" id="developer_link" name="developer_link" value="{{ settings.developer_link }}">
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <button type="button" class="btn btn-secondary me-md-2 btn-hover" onclick="resetForm()">

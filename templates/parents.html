@@ -30,6 +30,7 @@
                         <th>اسم المستخدم</th>
                         <th>كلمة المرور</th>
                         <th>الحالة</th>
+                        <th>الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,6 +56,9 @@
                         </td>
                         <td>
                             <span class="badge bg-success">نشط</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('edit_user', user_id=parent.user_id) }}" class="btn btn-sm btn-outline-primary">تعديل الحساب</a>
                         </td>
                     </tr>
                     {% endfor %}

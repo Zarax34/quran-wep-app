@@ -741,6 +741,15 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'notifications' }}" href="{{ url_for('notifications') }}">
+                        <i class="fas fa-bell me-2"></i>
+                        الإشعارات
+                        {% if unread_notifications > 0 %}
+                        <span class="badge bg-danger ms-2">{{ unread_notifications }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
                         <i class="fas fa-hand-holding-heart me-2"></i>
                         ادعم المركز
@@ -853,6 +862,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'student_accounts' }}" href="{{ url_for('student_accounts') }}">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        إدارة حسابات الطلاب
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'badges' }}" href="{{ url_for('badges') }}">
                         <i class="fas fa-medal me-2"></i>
                         إدارة الشارات
@@ -938,7 +953,7 @@
         </div>
 
         <footer class="text-center mt-4">
-            <p>&copy; {{ current_year }} {{ settings.site_name }}. جميع الحقوق محفوظة. تم تطويره بواسطة <a href="https://www.linkedin.com/in/your-linkedin-profile" target="_blank">Your Name</a>.</p>
+            <p>&copy; {{ current_year }} {{ settings.site_name }}. جميع الحقوق محفوظة. تم تطويره بواسطة <a href="{{ settings.developer_link }}" target="_blank">{{ settings.developer_name }}</a>.</p>
         </footer>
 
         {% if session.user_id %}

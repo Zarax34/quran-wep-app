@@ -169,7 +169,7 @@
 
 <script>
 function copyBankAccounts() {
-    const accountsText = `{{ settings.support_bank_accounts }}`;
+    const accountsText = document.querySelector('.bank-accounts').innerText;
     navigator.clipboard.writeText(accountsText).then(() => {
         alert('تم نسخ حسابات البنوك بنجاح!');
     });

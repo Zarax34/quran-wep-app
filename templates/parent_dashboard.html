@@ -131,6 +131,31 @@
         {% endfor %}
     </div>
 
+    <!-- Announcements -->
+    <div class="row mt-4 fade-in">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-bullhorn"></i> الإعلانات</h5>
+                </div>
+                <div class="card-body">
+                    {% for announcement in announcements %}
+                    <div class="alert alert-info">
+                        <h5>{{ announcement.title }}</h5>
+                        <p>{{ announcement.content }}</p>
+                        {% if announcement.image %}
+                        <img src="{{ url_for('uploaded_file', filename=announcement.image) }}" class="img-fluid rounded">
+                        {% endif %}
+                        <small class="text-muted">{{ announcement.date_posted.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    {% else %}
+                    <p>لا توجد إعلانات حالياً.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Honor Board -->
     <div class="row mt-4 fade-in">
         <div class="col-12">

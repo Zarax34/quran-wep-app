@@ -170,6 +170,8 @@ class Settings(db.Model):
     dark_mode_enabled = db.Column(db.Boolean, default=False)
     teacher_requires_approval = db.Column(db.Boolean, default=True)
     allow_custom_teacher_name = db.Column(db.Boolean, default=True)
+    developer_name = db.Column(db.String(100), default='Your Name')
+    developer_link = db.Column(db.String(200), default='https://www.linkedin.com/in/your-linkedin-profile')
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -344,20 +346,20 @@ def require_role(role):
 
 def create_parent_username(full_name):
     # استخدام مسافات بدلاً من الشرطة السفلية
-    username = full_name.strip().replace(' ', '_')
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username}_{counter}"
+        username = f"{base_username} {counter}"
         counter += 1
     return username
 
 def create_student_username(full_name):
-    username = full_name.strip().replace(' ', '_')
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username}_{counter}"
+        username = f"{base_username} {counter}"
         counter += 1
     return username
 
@@ -694,6 +696,7 @@ def guest_dashboard():
     attendance_stats = db.session.query(Attendance.status, func.count(Attendance.id)).filter(Attendance.date >= week_start).group_by(Attendance.status).all()
     
     center_attendance_rate = get_center_attendance_stats()
+    announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
     
     return render_template('guest_dashboard.html',
                          settings=settings,
@@ -702,7 +705,8 @@ def guest_dashboard():
                          total_circles=total_circles,
                          total_reports=total_reports,
                          attendance_stats=attendance_stats,
-                         center_attendance_rate=center_attendance_rate)
+                         center_attendance_rate=center_attendance_rate,
+                         announcements=announcements)
 
 @app.route('/set_view/<view_type>')
 @require_login
@@ -1495,8 +1499,14 @@ def link_students_to_parents():
 @app.route('/users')
 @require_role('admin')
 def users():
-    users = User.query.all()
+    users = User.query.filter(User.role.in_(['admin', 'teacher', 'support'])).all()
     return render_template('users.html', users=users)
+
+@app.route('/student_accounts')
+@require_role('admin')
+def student_accounts():
+    students = User.query.filter_by(role='student').all()
+    return render_template('student_accounts.html', students=students)
 
 @app.route('/add_user', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1537,7 +1547,19 @@ def announcements():
         announcement = Announcement(title=title, content=content, image=filename)
         db.session.add(announcement)
         db.session.commit()
-        flash('تم إضافة الإعلان بنجاح!', 'success')
+
+        # إرسال إشعارات لأولياء الأمور
+        parents = Parent.query.filter(Parent.user_id.isnot(None)).all()
+        for parent in parents:
+            notification = Notification(
+                user_id=parent.user_id,
+                title='إعلان جديد',
+                message=f'إعلان جديد بعنوان: "{title}"'
+            )
+            db.session.add(notification)
+
+        db.session.commit()
+        flash('تم إضافة الإعلان بنجاح وإرسال الإشعارات!', 'success')
         return redirect(url_for('announcements'))
 
     all_announcements = Announcement.query.all()
@@ -1641,6 +1663,8 @@ def settings():
         settings_obj.teacher_requires_approval = bool(request.form.get('teacher_requires_approval'))
         settings_obj.allow_custom_teacher_name = bool(request.form.get('allow_custom_teacher_name'))
         settings_obj.dark_mode_enabled = bool(request.form.get('dark_mode_enabled'))
+        settings_obj.developer_name = request.form.get('developer_name', 'Your Name')
+        settings_obj.developer_link = request.form.get('developer_link', 'https://www.linkedin.com/in/your-linkedin-profile')
         
         logo = request.files.get('logo')
         if logo and allowed_file(logo.filename):
@@ -1720,6 +1744,12 @@ def notifications():
     
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if parent and parent.user_id:
+        # Mark all unread notifications as read
+        unread_notifs = Notification.query.filter_by(user_id=parent.user_id, is_read=False).all()
+        for notif in unread_notifs:
+            notif.is_read = True
+        db.session.commit()
+
         notifs = Notification.query.filter_by(user_id=parent.user_id).order_by(Notification.created_at.desc()).all()
         return render_template('notifications.html', notifications=notifs)
     
@@ -1801,6 +1831,9 @@ def parent_dashboard():
     # Honor board
     honor_students = HonorBoard.query.filter_by(month=datetime.now().month, year=datetime.now().year).order_by(HonorBoard.rank).limit(5).all()
 
+    # Announcements
+    announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
+
     # Center stats
     center_stats = {
         'total_students': Student.query.filter_by(is_active=True).count(),
@@ -1815,7 +1848,8 @@ def parent_dashboard():
                          total_attendance_rate=total_attendance_rate,
                          total_monthly_reports=total_monthly_reports,
                          center_stats=center_stats,
-                         honor_students=honor_students)
+                         honor_students=honor_students,
+                         announcements=announcements)
 
 # ---------- 21.  STUDENT REPORTS ----------
 @app.route('/add_educational_note/<int:student_id>', methods=['POST'])
