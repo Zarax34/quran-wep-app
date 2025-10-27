@@ -32,27 +32,41 @@
                                 </div>
                             </div>
                         </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="page_number" class="form-label">رقم الصفحة</label>
+                                <input type="text" class="form-control" id="page_number" name="page_number" readonly>
+                            </div>
+                        </div>
+                    </div>
                         
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="surah" class="form-label">السورة</label>
-                                    <input type="text" class="form-control" id="surah" name="surah" 
-                                           value="{{ report.surah }}" required>
+                                    <select class="form-control" id="surah" name="surah" required>
+                                        <option value="">اختر السورة</option>
+                                        {% for surah in surah_names %}
+                                        <option value="{{ surah }}" {% if report.surah == surah %}selected{% endif %}>{{ surah }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="from_verse" class="form-label">من الآية</label>
-                                    <input type="number" class="form-control" id="from_verse" name="from_verse" 
-                                           value="{{ report.from_verse }}" min="1" required>
+                                    <select class="form-control" id="from_verse" name="from_verse" required>
+                                        <option value="">اختر السورة أولاً</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="to_verse" class="form-label">إلى الآية</label>
-                                    <input type="number" class="form-control" id="to_verse" name="to_verse" 
-                                           value="{{ report.to_verse }}" min="1" required>
+                                    <select class="form-control" id="to_verse" name="to_verse" required>
+                                        <option value="">اختر السورة أولاً</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -102,4 +116,59 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var surahName = document.getElementById('surah').value;
+    var fromVerse = document.getElementById('from_verse');
+    var toVerse = document.getElementById('to_verse');
+    var pageNumber = document.getElementById('page_number');
+    var currentFromVerse = "{{ report.from_verse }}";
+    var currentToVerse = "{{ report.to_verse }}";
+
+    function populateVerses(selectedSurah) {
+        if (selectedSurah) {
+            fetch('/api/get_surah_details?surah=' + selectedSurah)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.verse_count) {
+                        fromVerse.innerHTML = '<option value="">اختر آية</option>';
+                        toVerse.innerHTML = '<option value="">اختر آية</option>';
+                        for (var i = 1; i <= data.verse_count; i++) {
+                            fromVerse.innerHTML += '<option value="' + i + '"' + (i == currentFromVerse ? ' selected' : '') + '>' + i + '</option>';
+                            toVerse.innerHTML += '<option value="' + i + '"' + (i == currentToVerse ? ' selected' : '') + '>' + i + '</option>';
+                        }
+                    }
+                });
+        }
+    }
+
+    // Populate verses on page load
+    populateVerses(surahName);
+
+    // Repopulate on surah change
+    document.getElementById('surah').addEventListener('change', function() {
+        currentFromVerse = null; // Reset selection
+        currentToVerse = null;
+        populateVerses(this.value);
+    });
+
+    document.getElementById('from_verse').addEventListener('change', function() {
+        var surahName = document.getElementById('surah').value;
+        var verseNumber = this.value;
+        var pageNumber = document.getElementById('page_number');
+
+        if (surahName && verseNumber) {
+            fetch('/api/get_page_number?surah=' + surahName + '&verse=' + verseNumber)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.page_number) {
+                        pageNumber.value = data.page_number;
+                    } else {
+                        pageNumber.value = 'غير متوفر';
+                    }
+                });
+        }
+    });
+});
+</script>
 {% endblock %}

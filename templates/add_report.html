@@ -36,27 +36,41 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="page_number" class="form-label">رقم الصفحة</label>
+                                <input type="text" class="form-control" id="page_number" name="page_number" readonly>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="surah" class="form-label">السورة</label>
-                                <input type="text" class="form-control" id="surah" name="surah" 
-                                       placeholder="مثال: البقرة" required>
+                                <select class="form-control" id="surah" name="surah" required>
+                                    <option value="">اختر السورة</option>
+                                    {% for surah in surah_names %}
+                                    <option value="{{ surah }}">{{ surah }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label for="from_verse" class="form-label">من الآية</label>
-                                <input type="number" class="form-control" id="from_verse" name="from_verse" 
-                                       min="1" required>
+                                <select class="form-control" id="from_verse" name="from_verse" required>
+                                    <option value="">اختر السورة أولاً</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label for="to_verse" class="form-label">إلى الآية</label>
-                                <input type="number" class="form-control" id="to_verse" name="to_verse" 
-                                       min="1" required>
+                                <select class="form-control" id="to_verse" name="to_verse" required>
+                                    <option value="">اختر السورة أولاً</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -102,6 +116,66 @@
 </div>
 
 <script>
+// Function to fetch and update the page number
+function updatePageNumber() {
+    var surahName = document.getElementById('surah').value;
+    var verseNumber = document.getElementById('from_verse').value; // Always use from_verse for page number
+    var pageNumberInput = document.getElementById('page_number');
+
+    if (surahName && verseNumber) {
+        fetch('/api/get_page_number?surah=' + surahName + '&verse=' + verseNumber)
+            .then(response => response.json())
+            .then(data => {
+                if (data.page_number) {
+                    pageNumberInput.value = data.page_number;
+                } else {
+                    pageNumberInput.value = 'غير متوفر';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching page number:', error);
+                pageNumberInput.value = 'خطأ';
+            });
+    } else {
+        pageNumberInput.value = ''; // Clear if no surah/verse is selected
+    }
+}
+
+// Listener for the Surah dropdown to populate verse dropdowns
+document.getElementById('surah').addEventListener('change', function() {
+    var surahName = this.value;
+    var fromVerse = document.getElementById('from_verse');
+    var toVerse = document.getElementById('to_verse');
+    var pageNumber = document.getElementById('page_number');
+
+    fromVerse.innerHTML = '<option value="">...</option>';
+    toVerse.innerHTML = '<option value="">...</option>';
+    pageNumber.value = '';
+
+    if (surahName) {
+        fetch('/api/get_surah_details?surah=' + encodeURIComponent(surahName))
+            .then(response => response.json())
+            .then(data => {
+                if (data.verse_count) {
+                    fromVerse.innerHTML = '<option value="">اختر آية</option>';
+                    toVerse.innerHTML = '<option value="">اختر آية</option>';
+                    for (var i = 1; i <= data.verse_count; i++) {
+                        fromVerse.innerHTML += '<option value="' + i + '">' + i + '</option>';
+                        toVerse.innerHTML += '<option value="' + i + '">' + i + '</option>';
+                    }
+                }
+            });
+    }
+});
+
+// Use event delegation on the form for verse changes
+document.getElementById('addReportForm').addEventListener('change', function(event) {
+    if (event.target.id === 'from_verse' || event.target.id === 'to_verse') {
+        updatePageNumber();
+    }
+});
+
+
 document.getElementById('addReportForm').addEventListener('submit', function(event) {
     var student = document.getElementById('student_id').value;
     var surah = document.getElementById('surah').value;

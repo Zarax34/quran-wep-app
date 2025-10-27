@@ -746,6 +746,18 @@
                         ادعم المركز
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'alumni' }}" href="{{ url_for('alumni') }}">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        خريجو المركز
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'our_work' }}" href="{{ url_for('our_work') }}">
+                        <i class="fas fa-briefcase me-2"></i>
+                        أعمالنا
+                    </a>
+                </li>
                 
                 <!-- مبدل الواجهات في القائمة الجانبية -->
                 <li class="nav-item">
@@ -837,9 +849,21 @@
                         إدارة العطل
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'activities' }}" href="{{ url_for('activities') }}">
+                        <i class="fas fa-calendar-star me-2"></i>
+                        أنشطة المركز
+                    </a>
+                </li>
                 {% endif %}
                 
                 {% if session.role == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint in ['fees', 'add_fee', 'edit_fee'] }}" href="{{ url_for('fees') }}">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        إدارة الرسوم
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'parents' }}" href="{{ url_for('parents') }}">
                         <i class="fas fa-user-friends me-2"></i>
@@ -874,6 +898,18 @@
                     <a class="nav-link {{ 'active' if request.endpoint == 'settings' }}" href="{{ url_for('settings') }}">
                         <i class="fas fa-cog me-2"></i>
                         إعدادات الموقع
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'manage_alumni' }}" href="{{ url_for('manage_alumni') }}">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        إدارة الخريجين
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'manage_work' }}" href="{{ url_for('manage_work') }}">
+                        <i class="fas fa-briefcase me-2"></i>
+                        إدارة أعمالنا
                     </a>
                 </li>
                 {% endif %}

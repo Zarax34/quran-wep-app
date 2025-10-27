@@ -10,6 +10,7 @@ import re, os, urllib.parse
 from fpdf import FPDF
 from flask_mail import Mail, Message as MailMessage
 from apscheduler.schedulers.background import BackgroundScheduler
+import json
 
 # ---------- 2.  FLASK INIT  ----------
 app = Flask(__name__)
@@ -33,6 +34,26 @@ mail = Mail(app)
 # Scheduler for automatic emails
 scheduler = BackgroundScheduler()
 scheduler.start()
+
+# Load Quran data from JSON file
+with open('quran_data.json', 'r') as f:
+    quran_data = json.load(f)
+quran_data_map = {item['verse_key']: item for item in quran_data}
+
+surah_names = [
+    "الفاتحة", "البقرة", "آل عمران", "النساء", "المائدة", "الأنعام", "الأعراف", "الأنفال", "التوبة", "يونس",
+    "هود", "يوسف", "الرعد", "إبراهيم", "الحجر", "النحل", "الإسراء", "الكهف", "مريم", "طه", "الأنبياء",
+    "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء", "النمل", "القصص", "العنكبوت", "الروم", "لقمان",
+    "السجدة", "الأحزاب", "سبأ", "فاطر", "يس", "الصافات", "ص", "الزمر", "غافر", "فصلت", "الشورى", "الزخرف",
+    "الدخان", "الجاثية", "الأحقاف", "محمد", "الفتح", "الحجرات", "ق", "الذاريات", "الطور", "النجم", "القمر",
+    "الرحمن", "الواقعة", "الحديد", "المجادلة", "الحشر", "الممتحنة", "الصف", "الجمعة", "المنافقون",
+    "التغابن", "الطلاق", "التحريم", "الملك", "القلم", "الحاقة", "المعارج", "نوح", "الجن", "المزمل",
+    "المدثر", "القيامة", "الإنسان", "المرسلات", "النبأ", "النازعات", "عبس", "التكوير", "الإنفطار",
+    "المطففين", "الإنشقاق", "البروج", "الطارق", "الأعلى", "الغاشية", "الفجر", "البلد", "الشمس", "الليل",
+    "الضحى", "الشرح", "التين", "العلق", "القدر", "البينة", "الزلزلة", "العاديات", "القارعة", "التكاثر",
+    "العصر", "الهمزة", "الفيل", "قريش", "الماعون", "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص",
+    "الفلق", "الناس"
+]
 
 def send_weekly_progress_reports():
     with app.app_context():
@@ -246,6 +267,38 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.now)
+
+class CenterActivity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    image = db.Column(db.String(200))
+    fee = db.Column(db.Float, nullable=True)  # Add this line for the fee
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+class Alumni(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    graduation_year = db.Column(db.Integer, nullable=False)
+    testimonial = db.Column(db.Text)
+    photo = db.Column(db.String(200))
+
+class Fee(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    date_paid = db.Column(db.Date, nullable=False, default=datetime.now().date)
+    notes = db.Column(db.Text)
+    student = db.relationship('Student', backref='fees')
+
+class Work(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    image = db.Column(db.String(200))
+    link = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
 # ===================
 # Courses and Tests Models
@@ -1207,6 +1260,12 @@ def add_report():
         )
         db.session.add(report)
 
+        # Automatically mark attendance if not already recorded
+        existing_attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
+        if not existing_attendance:
+            new_attendance = Attendance(student_id=student.id, date=date, status='حاضر', notes='تم التحضير تلقائياً لوجود تسميع')
+            db.session.add(new_attendance)
+
         # Update last recitation date
         student.last_recitation_date = date
         
@@ -1249,7 +1308,7 @@ def add_report():
     else:
         students = Student.query.filter_by(is_active=True).all()
 
-    return render_template('add_report.html', students=students)
+    return render_template('add_report.html', students=students, surah_names=surah_names)
 
 @app.route('/collective_report', methods=['GET', 'POST'])
 @require_login
@@ -1312,7 +1371,7 @@ def edit_report(report_id):
             db.session.rollback()
             flash(f'حدث خطأ أثناء تعديل التقرير: {str(e)}', 'error')
     
-    return render_template('edit_report.html', report=report)
+    return render_template('edit_report.html', report=report, surah_names=surah_names)
 
 # ---------- 11.  ATTENDANCE ----------
 @app.route('/attendance')
@@ -1440,7 +1499,7 @@ def add_parents():
                         db.session.add(parent)
                         
                         # إنشاء حساب مستخدم
-                        username = name.replace(' ', ' ')  # استخدام مسافات بدلاً من الشرطة السفلية
+                        username = name.replace(' ', '_')
                         user = User(
                             username=username, 
                             password=generate_password_hash(phone), 
@@ -1542,6 +1601,306 @@ def announcements():
 
     all_announcements = Announcement.query.all()
     return render_template('announcements.html', announcements=all_announcements)
+
+# ---------- Center Activities Routes ----------
+@app.route('/activities')
+@require_login
+def activities():
+    activities = CenterActivity.query.order_by(CenterActivity.date.desc()).all()
+    return render_template('activities.html', activities=activities)
+
+@app.route('/add_activity', methods=['GET', 'POST'])
+@require_role('admin')
+def add_activity():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        image = request.files.get('image')
+        fee = request.form.get('fee', type=float)
+
+
+        filename = None
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        activity = CenterActivity(title=title, description=description, date=date, image=filename, fee=fee)
+        db.session.add(activity)
+
+        # Notify all parents
+        parents = Parent.query.join(User).filter(Parent.user_id.isnot(None)).all()
+        for parent in parents:
+            notification = Notification(
+                user_id=parent.user_id,
+                title='نشاط جديد في المركز',
+                message=f'تم إضافة نشاط جديد بعنوان "{title}". يمكنكم الاطلاع عليه في صفحة الأنشطة.'
+            )
+            db.session.add(notification)
+
+        db.session.commit()
+        flash('تم إضافة النشاط وإشعار أولياء الأمور بنجاح!', 'success')
+        return redirect(url_for('activities'))
+
+    return render_template('add_activity.html')
+
+@app.route('/edit_activity/<int:activity_id>', methods=['GET', 'POST'])
+@require_role('admin')
+def edit_activity(activity_id):
+    activity = CenterActivity.query.get_or_404(activity_id)
+    if request.method == 'POST':
+        activity.title = request.form['title']
+        activity.description = request.form['description']
+        activity.date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        activity.fee = request.form.get('fee', type=float)
+
+        image = request.files.get('image')
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            activity.image = filename
+
+        db.session.commit()
+        flash('تم تعديل النشاط بنجاح!', 'success')
+        return redirect(url_for('activities'))
+
+    return render_template('edit_activity.html', activity=activity)
+
+# ---------- Fee Management Routes ----------
+@app.route('/fees')
+@require_login
+def fees():
+    fees = Fee.query.order_by(Fee.date_paid.desc()).all()
+    return render_template('fees.html', fees=fees)
+
+@app.route('/add_fee', methods=['GET', 'POST'])
+@require_login
+def add_fee():
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        amount = request.form.get('amount', type=float)
+        date_paid = datetime.strptime(request.form['date_paid'], '%Y-%m-%d').date() if request.form.get('date_paid') else datetime.now().date()
+        notes = request.form.get('notes')
+
+        if not student_id or not amount:
+            flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
+            return redirect(url_for('add_fee'))
+
+        fee = Fee(student_id=student_id, amount=amount, date_paid=date_paid, notes=notes)
+        db.session.add(fee)
+        db.session.commit()
+        flash('تمت إضافة الرسوم بنجاح!', 'success')
+        return redirect(url_for('fees'))
+
+    students = Student.query.filter_by(is_active=True).all()
+    return render_template('add_fee.html', students=students)
+
+@app.route('/edit_fee/<int:fee_id>', methods=['GET', 'POST'])
+@require_login
+def edit_fee(fee_id):
+    fee = Fee.query.get_or_404(fee_id)
+    if request.method == 'POST':
+        fee.student_id = request.form.get('student_id')
+        fee.amount = request.form.get('amount', type=float)
+        fee.date_paid = datetime.strptime(request.form['date_paid'], '%Y-%m-%d').date() if request.form.get('date_paid') else fee.date_paid
+        fee.notes = request.form.get('notes')
+        db.session.commit()
+        flash('تم تعديل الرسوم بنجاح!', 'success')
+        return redirect(url_for('fees'))
+
+    students = Student.query.filter_by(is_active=True).all()
+    return render_template('edit_fee.html', fee=fee, students=students)
+
+@app.route('/delete_fee/<int:fee_id>', methods=['POST'])
+@require_login
+def delete_fee(fee_id):
+    fee = Fee.query.get_or_404(fee_id)
+    db.session.delete(fee)
+    db.session.commit()
+    flash('تم حذف الرسوم بنجاح!', 'success')
+    return redirect(url_for('fees'))
+
+@app.route('/delete_activity/<int:activity_id>', methods=['POST'])
+@require_role('admin')
+def delete_activity(activity_id):
+    activity = CenterActivity.query.get_or_404(activity_id)
+    db.session.delete(activity)
+    db.session.commit()
+    flash('تم حذف النشاط بنجاح!', 'success')
+    return redirect(url_for('activities'))
+
+# ---------- Alumni Routes ----------
+@app.route('/alumni')
+def alumni():
+    alumni_list = Alumni.query.order_by(Alumni.graduation_year.desc()).all()
+    return render_template('alumni.html', alumni_list=alumni_list)
+
+@app.route('/manage_alumni')
+@require_role('admin')
+def manage_alumni():
+    alumni_list = Alumni.query.all()
+    return render_template('manage_alumni.html', alumni_list=alumni_list)
+
+@app.route('/add_alumni', methods=['GET', 'POST'])
+@require_role('admin')
+def add_alumni():
+    if request.method == 'POST':
+        name = request.form['name']
+        graduation_year = request.form['graduation_year']
+        testimonial = request.form.get('testimonial')
+        photo = request.files.get('photo')
+
+        filename = None
+        if photo and allowed_file(photo.filename):
+            filename = secure_filename(photo.filename)
+            photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        alumnus = Alumni(name=name, graduation_year=graduation_year, testimonial=testimonial, photo=filename)
+        db.session.add(alumnus)
+        db.session.commit()
+        flash('تمت إضافة الخريج بنجاح!', 'success')
+        return redirect(url_for('manage_alumni'))
+
+    return render_template('add_alumni.html')
+
+@app.route('/edit_alumni/<int:alumni_id>', methods=['GET', 'POST'])
+@require_role('admin')
+def edit_alumni(alumni_id):
+    alumnus = Alumni.query.get_or_404(alumni_id)
+    if request.method == 'POST':
+        alumnus.name = request.form['name']
+        alumnus.graduation_year = request.form['graduation_year']
+        alumnus.testimonial = request.form.get('testimonial')
+
+        photo = request.files.get('photo')
+        if photo and allowed_file(photo.filename):
+            filename = secure_filename(photo.filename)
+            photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            alumnus.photo = filename
+
+        db.session.commit()
+        flash('تم تعديل بيانات الخريج بنجاح!', 'success')
+        return redirect(url_for('manage_alumni'))
+
+    return render_template('edit_alumni.html', alumnus=alumnus)
+
+@app.route('/delete_alumni/<int:alumni_id>', methods=['POST'])
+@require_role('admin')
+def delete_alumni(alumni_id):
+    alumnus = Alumni.query.get_or_404(alumni_id)
+    db.session.delete(alumnus)
+    db.session.commit()
+    flash('تم حذف الخريج بنجاح!', 'success')
+    return redirect(url_for('manage_alumni'))
+
+# ---------- Our Work Routes ----------
+@app.route('/our_work')
+def our_work():
+    work_list = Work.query.order_by(Work.created_at.desc()).all()
+    return render_template('our_work.html', work_list=work_list)
+
+@app.route('/manage_work')
+@require_role('admin')
+def manage_work():
+    work_list = Work.query.all()
+    return render_template('manage_work.html', work_list=work_list)
+
+@app.route('/add_work', methods=['GET', 'POST'])
+@require_role('admin')
+def add_work():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        link = request.form.get('link')
+        image = request.files.get('image')
+
+        filename = None
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        work_item = Work(title=title, description=description, link=link, image=filename)
+        db.session.add(work_item)
+        db.session.commit()
+        flash('تمت إضافة العمل بنجاح!', 'success')
+        return redirect(url_for('manage_work'))
+
+    return render_template('add_work.html')
+
+@app.route('/edit_work/<int:work_id>', methods=['GET', 'POST'])
+@require_role('admin')
+def edit_work(work_id):
+    work_item = Work.query.get_or_404(work_id)
+    if request.method == 'POST':
+        work_item.title = request.form['title']
+        work_item.description = request.form['description']
+        work_item.link = request.form.get('link')
+
+        image = request.files.get('image')
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            work_item.image = filename
+
+        db.session.commit()
+        flash('تم تعديل العمل بنجاح!', 'success')
+        return redirect(url_for('manage_work'))
+
+    return render_template('edit_work.html', work_item=work_item)
+
+@app.route('/delete_work/<int:work_id>', methods=['POST'])
+@require_role('admin')
+def delete_work(work_id):
+    work_item = Work.query.get_or_404(work_id)
+    db.session.delete(work_item)
+    db.session.commit()
+    flash('تم حذف العمل بنجاح!', 'success')
+    return redirect(url_for('manage_work'))
+
+@app.route('/api/get_page_number', methods=['GET'])
+def get_page_number():
+    surah_name = request.args.get('surah')
+    verse = request.args.get('verse')
+    if not surah_name or not verse:
+        return jsonify({'error': 'Surah and verse parameters are required'}), 400
+
+    try:
+        surah_number = surah_names.index(surah_name) + 1
+    except ValueError:
+        return jsonify({'error': 'Invalid surah name'}), 404
+
+    verse_key = f"{surah_number}:{verse}"
+    verse_data = quran_data_map.get(verse_key)
+
+    if verse_data:
+        return jsonify({'page_number': verse_data.get('page_number')})
+    else:
+        return jsonify({'error': f'Verse not found for key {verse_key}'}), 404
+
+@app.route('/api/get_surah_details', methods=['GET'])
+def get_surah_details():
+    surah_name = request.args.get('surah')
+    if not surah_name:
+        return jsonify({'error': 'Surah parameter is required'}), 400
+
+    try:
+        surah_number = surah_names.index(surah_name) + 1
+    except ValueError:
+        return jsonify({'error': 'Invalid surah name'}), 404
+
+    max_verse = 0
+    for item in quran_data:
+        s_num_str, v_num_str = item['verse_key'].split(':')
+        s_num = int(s_num_str)
+        if s_num == surah_number:
+            v_num = int(v_num_str)
+            if v_num > max_verse:
+                max_verse = v_num
+
+    if max_verse > 0:
+        return jsonify({'verse_count': max_verse})
+    else:
+        return jsonify({'error': 'Surah not found or has no verses'}), 404
 
 @app.route('/api/fingerprint_login', methods=['POST'])
 def fingerprint_login():

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">تعديل النشاط</h1>
+    <a href="{{ url_for('activities') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للأنشطة
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-edit"></i> تفاصيل النشاط</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">عنوان النشاط</label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ activity.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">وصف النشاط</label>
+                        <textarea class="form-control" id="description" name="description" rows="5" required>{{ activity.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">تاريخ النشاط</label>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ activity.date.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fee" class="form-label">رسوم النشاط (اختياري)</label>
+                        <input type="number" step="0.01" class="form-control" id="fee" name="fee" value="{{ activity.fee or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">صورة النشاط (اختياري)</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                        {% if activity.image %}
+                        <div class="mt-2">
+                            <img src="{{ url_for('uploaded_file', filename=activity.image) }}" alt="{{ activity.title }}" style="max-width: 200px; border-radius: 5px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i> حفظ التعديلات
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
