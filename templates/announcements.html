@@ -2,69 +2,50 @@
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">إدارة الإعلانات</h1>
+    <h1 class="h2">لوحة الإعلانات</h1>
+    {% if session.role == 'admin' %}
+    <a href="{{ url_for('add_announcement') }}" class="btn btn-success">
+        <i class="fas fa-plus-circle"></i> إضافة إعلان جديد
+    </a>
+    {% endif %}
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">إضافة إعلان جديد</h5>
-            </div>
+<div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for announcement in announcements %}
+    <div class="col">
+        <div class="card h-100 shadow-sm announcement-card">
+            {% if announcement.image %}
+                <img src="{{ url_for('uploaded_file', filename=announcement.image) }}" class="card-img-top" alt="{{ announcement.title }}">
+            {% endif %}
             <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="title" class="form-label">العنوان</label>
-                        <input type="text" class="form-control" id="title" name="title" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="content" class="form-label">المحتوى</label>
-                        <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="image" class="form-label">صورة الإعلان</label>
-                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
-                    </div>
-                    <button type="submit" class="btn btn-primary">إضافة</button>
-                </form>
+                <h5 class="card-title">{{ announcement.title }}</h5>
+                <p class="card-text">{{ announcement.content }}</p>
+            </div>
+            <div class="card-footer bg-light">
+                <small class="text-muted">نشر في: {{ announcement.date_posted.strftime('%Y-%m-%d') }}</small>
+                {% if session.role == 'admin' %}
+                <div class="float-end">
+                    <a href="{{ url_for('edit_announcement', announcement_id=announcement.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+                    <a href="{{ url_for('delete_announcement', announcement_id=announcement.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('هل أنت متأكد؟')"><i class="fas fa-trash"></i></a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">الإعلانات الحالية</h5>
-            </div>
-            <div class="card-body">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>العنوان</th>
-                            <th>الحالة</th>
-                            <th>الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for announcement in announcements %}
-                        <tr>
-                            <td>{{ announcement.title }}</td>
-                            <td>
-                                {% if announcement.is_active %}
-                                    <span class="badge bg-success">نشط</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">غير نشط</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="#" class="btn btn-sm btn-warning">تعديل</a>
-                                <a href="#" class="btn btn-sm btn-danger">حذف</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center p-4">
+            <i class="fas fa-info-circle fa-3x mb-3"></i>
+            <h4>لا توجد إعلانات حالياً</h4>
         </div>
     </div>
+    {% endfor %}
 </div>
+
+<style>
+.announcement-card img {
+    max-height: 250px;
+    object-fit: cover;
+}
+</style>
 {% endblock %}

@@ -3,287 +3,128 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">إدارة الطلاب</h1>
-    <div class="d-flex align-items-center gap-2">
-        <a href="{{ url_for('add_student') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> إضافة طالب جديد
-        </a>
-        <!-- مبدل طريقة العرض -->
-        <div class="btn-group btn-sm">
-            <a href="{{ url_for('students', view_mode='table') }}" class="btn btn-outline-secondary {% if view_mode != 'cards' %}active{% endif %}">
-                <i class="fas fa-list"></i>
-            </a>
-            <a href="{{ url_for('students', view_mode='cards') }}" class="btn btn-outline-secondary {% if view_mode == 'cards' %}active{% endif %}">
-                <i class="fas fa-th"></i>
-            </a>
-        </div>
-    </div>
+    <a href="{{ url_for('add_student') }}" class="btn btn-success">
+        <i class="fas fa-plus-circle"></i> إضافة طالب جديد
+    </a>
 </div>
 
-<!-- فلترة وبحث -->
-<div class="card mb-4">
+<!-- Filter and Search -->
+<div class="card mb-4 shadow-sm">
     <div class="card-body">
-        <form method="GET" class="row g-3">
-            <input type="hidden" name="view_mode" value="{{ view_mode }}">
-            <div class="col-md-5">
-                <label for="circle_id" class="form-label">تصفية حسب الحلقة</label>
-                <select class="form-control" id="circle_id" name="circle_id">
-                    <option value="">جميع الحلقات</option>
-                    {% for circle in circles %}
-                    <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
-                        {{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-5">
-                <label for="search" class="form-label">بحث عن طالب</label>
-                <input type="text" class="form-control" id="search" name="search" placeholder="أدخل اسم الطالب..." value="{{ request.args.get('search', '') }}">
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">بحث</button>
+        <form method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="circle_id" class="form-label">تصفية حسب الحلقة</label>
+                    <select class="form-select" id="circle_id" name="circle_id">
+                        <option value="">جميع الحلقات</option>
+                        {% for circle in circles %}
+                        <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
+                            {{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="search" class="form-label">بحث عن طالب</label>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="أدخل اسم الطالب, ولي الأمر, أو رقم الهاتف..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> بحث
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 </div>
 
-{% if view_mode == 'cards' %}
-<!-- عرض البطاقات -->
-<div class="row">
+<!-- Students Card View -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     {% for student in students %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow-sm hover-card">
-            <div class="card-body text-center">
-                {% if student.photo %}
-                <img src="{{ url_for('uploaded_file', filename=student.photo) }}" class="rounded-circle mb-3" width="80" height="80" alt="{{ student.name }}">
-                {% else %}
-                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                    <i class="fas fa-user fa-2x text-muted"></i>
+    <div class="col">
+        <div class="card h-100 text-center student-card shadow-sm">
+            <div class="card-body">
+                <div class="mb-3">
+                    {% if student.photo %}
+                    <img src="{{ url_for('uploaded_file', filename=student.photo) }}" class="student-photo-lg" alt="{{ student.name }}">
+                    {% else %}
+                    <div class="student-photo-lg-placeholder">
+                        <i class="fas fa-user fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-                <h5 class="card-title mb-1">{{ student.name }}</h5>
-                <p class="text-muted mb-2">{{ student.circle.name }}</p>
-                <p class="mb-1"><strong>العمر:</strong> {{ student.age or '-' }}</p>
-                <p class="mb-1"><strong>ولي الأمر:</strong> {{ student.parent_phone or '-' }}</p>
+                <h5 class="card-title">{{ student.name }}</h5>
+                <p class="card-text text-muted">{{ student.circle.name }}</p>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item"><strong>العمر:</strong> {{ student.age or '-' }}</li>
+                    <li class="list-group-item"><strong>ولي الأمر:</strong> {{ student.parent.name if student.parent else '-' }}</li>
+                </ul>
                 {% if student.pending_approval %}
-                <span class="badge bg-warning mb-2">في انتظار الموافقة</span>
+                    <span class="badge bg-warning text-dark mb-3">في انتظار الموافقة</span>
                 {% endif %}
-                <div class="btn-group btn-group-sm w-100 mt-2">
-                    <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-info">التقارير</a>
-                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-warning">تعديل</a>
-                    <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn btn-outline-danger" onclick="return confirm('هل أنت متأكد من الحذف؟')">حذف</a>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="d-grid gap-2">
+                    <div class="btn-group">
+                        <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-chart-line"></i> التقارير
+                        </a>
+                        <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-edit"></i> تعديل
+                        </a>
+                    </div>
+                    {% if session.role == 'admin' and student.pending_approval %}
+                        <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success"><i class="fas fa-check-circle"></i> موافقة</a>
+                        <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times-circle"></i> رفض</a>
+                    {% endif %}
                 </div>
-                {% if session.role == 'admin' and student.pending_approval %}
-                <div class="mt-2">
-                    <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success btn-sm w-100 mb-1">موافقة</a>
-                    <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger btn-sm w-100" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')">رفض</a>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
     {% else %}
     <div class="col-12">
-        <div class="alert alert-info text-center">
-            <i class="fas fa-user-slash fa-2x mb-3"></i>
-            <h4>لا توجد طلاب</h4>
-            <p>{% if selected_circle %}لا توجد طلاب في الحلقة المحددة{% else %}لم يتم إضافة أي طلاب بعد{% endif %}</p>
-            <a href="{{ url_for('add_student') }}" class="btn btn-primary">إضافة طالب جديد</a>
+        <div class="alert alert-info text-center p-4">
+            <i class="fas fa-users-slash fa-3x mb-3"></i>
+            <h4>لا يوجد طلاب مطابقون لمعايير البحث</h4>
+            <p>حاول تغيير الفلاتر أو إضافة طالب جديد.</p>
+            <a href="{{ url_for('add_student') }}" class="btn btn-primary mt-2">
+                <i class="fas fa-plus"></i> إضافة طالب جديد
+            </a>
         </div>
     </div>
     {% endfor %}
 </div>
 
-{% else %}
-<!-- عرض الجدول التقليدي -->
-<div class="table-responsive">
-    <table class="table table-striped table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>الطالب</th>
-                <th>العمر</th>
-                <th>رقم الطالب</th>
-                <th>رقم ولي الأمر</th>
-                <th>الحلقة</th>
-                <th>المعلم</th>
-                <th>الحالة</th>
-                <th>آخر تقرير</th>
-                <th>مجموع الأوجه</th>
-                <th>الإجراءات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for student in students %}
-            <tr>
-                <td>
-                    <a href="#" class="student-info-link" data-bs-toggle="modal" data-bs-target="#studentReportsModal" data-student-id="{{ student.id }}" data-student-name="{{ student.name }}">
-                        <div class="d-flex align-items-center">
-                            {% if student.photo %}
-                                <img src="{{ url_for('uploaded_file', filename=student.photo) }}" class="student-photo me-3" alt="{{ student.name }}">
-                            {% else %}
-                                <div class="student-photo bg-light text-center me-3">
-                                    <i class="fas fa-user text-muted" style="line-height: 60px;"></i>
-                                </div>
-                            {% endif %}
-                            <div>
-                                <strong>{{ student.name }}</strong>
-                                {% if student.pending_approval %}
-                                    <span class="badge bg-warning ms-2">في انتظار الموافقة</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </a>
-                </td>
-                <td>{{ student.age or '-' }}</td>
-                <td>
-                    {% if student.student_phone %}
-                    <a href="https://wa.me/967{{ student.student_phone }}" class="text-success" target="_blank">
-                        <i class="fab fa-whatsapp"></i> {{ student.student_phone }}
-                    </a>
-                    {% else %}
-                    <span class="text-muted">-</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if student.parent_phone %}
-                    <a href="https://wa.me/967{{ student.parent_phone }}" class="text-primary" target="_blank">
-                        <i class="fab fa-whatsapp"></i> {{ student.parent_phone }}
-                    </a>
-                    {% else %}
-                    <span class="text-muted">-</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <span class="badge bg-info">{{ student.circle.name }}</span>
-                </td>
-                <td>
-                    <small>{{ student.circle.teacher.name if student.circle.teacher else student.circle.teacher_name }}</small>
-                </td>
-                <td>
-                    {% if student.pending_approval %}
-                    <span class="badge bg-warning">في انتظار الموافقة</span>
-                    {% else %}
-                    <span class="badge bg-success">نشط</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if student.last_recitation_date %}
-                    <small class="text-muted">{{ student.last_recitation_date.strftime('%Y-%m-%d') }}</small>
-                    {% else %}
-                    <span class="text-muted">لا يوجد</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <span class="badge bg-success">{{ student.total_verses_since_year_start or 0 }}</span>
-                </td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-info" title="التقارير">
-                            <i class="fas fa-chart-bar"></i>
-                        </a>
-                        <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-warning" title="تعديل">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn btn-outline-danger" onclick="return confirm('هل أنت متأكد من حذف الطالب؟')" title="حذف">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </div>
-                    {% if session.role == 'admin' and student.pending_approval %}
-                    <div class="mt-1">
-                        <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success btn-sm w-100 mb-1">موافقة</a>
-                        <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger btn-sm w-100" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')">رفض</a>
-                    </div>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% endif %}
-
 <style>
-.student-photo {
-    width: 60px;
-    height: 60px;
+.student-card {
+    border-radius: 15px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.student-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+.student-photo-lg {
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #dee2e6;
+    border: 4px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-.hover-card {
-    transition: transform 0.2s;
+.student-photo-lg-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e9ecef;
+    border: 4px solid #dee2e6;
 }
-.hover-card:hover {
-    transform: translateY(-5px);
+.card-footer {
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
 }
 </style>
-
-<!-- Student Reports Modal -->
-<div class="modal fade" id="studentReportsModal" tabindex="-1" aria-labelledby="studentReportsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="studentReportsModalLabel">تفاصيل الطالب</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="studentDetailsContent">
-                    <p class="text-center">جاري تحميل البيانات...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var studentReportsModal = document.getElementById('studentReportsModal');
-    studentReportsModal.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        var studentId = button.getAttribute('data-student-id');
-        var studentName = button.getAttribute('data-student-name');
-        var modalTitle = studentReportsModal.querySelector('.modal-title');
-        var modalBody = studentReportsModal.querySelector('#studentDetailsContent');
-
-        modalTitle.textContent = 'تفاصيل الطالب: ' + studentName;
-        modalBody.innerHTML = '<p class="text-center">جاري تحميل البيانات...</p>';
-
-        fetch('/api/student_details/' + studentId)
-            .then(response => response.json())
-            .then(data => {
-                var content = `
-                    <div class="row">
-                        <div class="col-md-4">
-                            <h5>البيانات الشخصية</h5>
-                            <p><strong>العمر:</strong> ${data.age || '-'}</p>
-                            <p><strong>تاريخ الميلاد:</strong> ${data.date_of_birth || '-'}</p>
-                            <p><strong>المحافظة:</strong> ${data.governorate || '-'}</p>
-                            <p><strong>السكن الحالي:</strong> ${data.current_address || '-'}</p>
-                            <p><strong>السكن السابق:</strong> ${data.previous_address || '-'}</p>
-                        </div>
-                        <div class="col-md-4">
-                            <h5>البيانات الدراسية</h5>
-                            <p><strong>الحلقة:</strong> ${data.circle}</p>
-                            <p><strong>المعلم:</strong> ${data.teacher}</p>
-                            <p><strong>تاريخ الالتحاق:</strong> ${data.enrollment_date || '-'}</p>
-                            <p><strong>مقدار الحفظ السابق:</strong> ${data.previous_memorization || '-'}</p>
-                        </div>
-                        <div class="col-md-4">
-                            <h5>سجل التقارير</h5>
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm table-striped">
-                                    <thead><tr><th>التاريخ</th><th>السورة</th><th>الآيات</th><th>النوع</th><th>التقدير</th></tr></thead>
-                                    <tbody>`;
-                if (data.reports.length > 0) {
-                    data.reports.forEach(report => {
-                        content += `<tr><td>${report.date}</td><td>${report.surah}</td><td>${report.from_verse} - ${report.to_verse}</td><td>${report.type}</td><td>${report.grade}</td></tr>`;
-                    });
-                } else {
-                    content += '<tr><td colspan="5" class="text-center">لا توجد تقارير.</td></tr>';
-                }
-                content += `</tbody></table></div></div></div>`;
-                modalBody.innerHTML = content;
-            });
-    });
-});
-</script>
 {% endblock %}

@@ -923,9 +923,9 @@ def add_student():
         if parent:
             student.parent_id = parent.id
         
-        # Create user account for student
+        # Create user account for student, ensuring full name is stored for display
         student_username = create_student_username(name)
-        student_user = User(username=student_username, password=generate_password_hash(parent_phone), name=name, role='student')
+        student_user = User(username=student_username, password=generate_password_hash(parent_phone or student_phone or '123456'), name=name, role='student')
         db.session.add(student_user)
 
         try:
@@ -1469,12 +1469,13 @@ def delete_holiday(holiday_id):
     return redirect(url_for('holidays'))
 
 # ---------- 13.  PARENTS ----------
-@app.route('/parents')
+@app.route('/parent_management')
 @require_role('admin')
-def parents():
-    parents = Parent.query.all()
+def parent_management():
+    # Join Parent with User to get all necessary details for management
+    parents = db.session.query(Parent, User).outerjoin(User, Parent.user_id == User.id).all()
     total_linked_students = Student.query.filter(Student.parent_id.isnot(None)).count()
-    return render_template('parents.html', parents=parents, total_linked_students=total_linked_students)
+    return render_template('parent_management.html', parents=parents, total_linked_students=total_linked_students)
 
 @app.route('/add_parents', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1498,12 +1499,12 @@ def add_parents():
                         parent = Parent(name=name, phone=phone)
                         db.session.add(parent)
                         
-                        # إنشاء حساب مستخدم
-                        username = name.replace(' ', '_')
+                        # Create user account with a sanitized username and the original full name for display
+                        username = create_parent_username(name)
                         user = User(
-                            username=username, 
-                            password=generate_password_hash(phone), 
-                            name=name, 
+                            username=username,
+                            password=generate_password_hash(phone),
+                            name=name,  # Full name with spaces for display
                             role='parent'
                         )
                         db.session.add(user)
@@ -1554,7 +1555,8 @@ def link_students_to_parents():
 @app.route('/users')
 @require_role('admin')
 def users():
-    users = User.query.all()
+    # Only show admins and teachers in user management
+    users = User.query.filter(User.role.in_(['admin', 'teacher', 'support'])).all()
     return render_template('users.html', users=users)
 
 @app.route('/add_user', methods=['GET', 'POST'])
@@ -1580,9 +1582,15 @@ def add_user():
     
     return render_template('add_user.html')
 
-@app.route('/announcements', methods=['GET', 'POST'])
-@require_role('admin')
+@app.route('/announcements')
+@require_login # Allow all logged in users to view
 def announcements():
+    all_announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
+    return render_template('announcements.html', announcements=all_announcements)
+
+@app.route('/add_announcement', methods=['GET', 'POST'])
+@require_role('admin')
+def add_announcement():
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
@@ -1596,11 +1604,38 @@ def announcements():
         announcement = Announcement(title=title, content=content, image=filename)
         db.session.add(announcement)
         db.session.commit()
-        flash('تم إضافة الإعلان بنجاح!', 'success')
+        flash('تم نشر الإعلان بنجاح!', 'success')
         return redirect(url_for('announcements'))
+    return render_template('add_announcement.html')
 
-    all_announcements = Announcement.query.all()
-    return render_template('announcements.html', announcements=all_announcements)
+@app.route('/edit_announcement/<int:announcement_id>', methods=['GET', 'POST'])
+@require_role('admin')
+def edit_announcement(announcement_id):
+    announcement = Announcement.query.get_or_404(announcement_id)
+    if request.method == 'POST':
+        announcement.title = request.form['title']
+        announcement.content = request.form['content']
+        announcement.is_active = 'is_active' in request.form
+
+        image = request.files.get('image')
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            announcement.image = filename
+
+        db.session.commit()
+        flash('تم تحديث الإعلان بنجاح!', 'success')
+        return redirect(url_for('announcements'))
+    return render_template('edit_announcement.html', announcement=announcement)
+
+@app.route('/delete_announcement/<int:announcement_id>')
+@require_role('admin')
+def delete_announcement(announcement_id):
+    announcement = Announcement.query.get_or_404(announcement_id)
+    db.session.delete(announcement)
+    db.session.commit()
+    flash('تم حذف الإعلان بنجاح.', 'success')
+    return redirect(url_for('announcements'))
 
 # ---------- Center Activities Routes ----------
 @app.route('/activities')
@@ -1978,6 +2013,15 @@ def edit_user(user_id):
             flash(f'حدث خطأ أثناء تعديل المستخدم: {str(e)}', 'error')
     
     return render_template('edit_user.html', user=user)
+
+@app.route('/block_user/<int:user_id>')
+@require_role('admin')
+def block_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_active = not user.is_active
+    db.session.commit()
+    flash(f'تم {"إلغاء حظر" if user.is_active else "حظر"} المستخدم {user.name} بنجاح.', 'success')
+    return redirect(request.referrer or url_for('users'))
 
 # ---------- 15.  SETTINGS ----------
 @app.route('/settings', methods=['GET', 'POST'])
