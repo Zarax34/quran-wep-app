@@ -10,52 +10,98 @@
 
 <div class="row">
     <!-- Course Info Card -->
-    <div class="col-md-4">
+    <div class="col-lg-4">
         <div class="card mb-4">
+            {% if course.image %}
+                <img src="{{ url_for('uploaded_file', filename=course.image) }}" class="card-img-top" alt="صورة الدورة">
+            {% endif %}
             <div class="card-header">
                 <h5><i class="fas fa-info-circle"></i> معلومات الدورة</h5>
             </div>
             <div class="card-body">
                 <p><strong>الوصف:</strong> {{ course.description or 'لا يوجد وصف' }}</p>
                 <p><strong>المعلم:</strong> {{ course.teacher.name }}</p>
-                <p><strong>تاريخ الإنشاء:</strong> {{ course.created_at.strftime('%Y-%m-%d') }}</p>
+                <p><strong>تاريخ البدء:</strong> {{ course.start_date.strftime('%Y-%m-%d') if course.start_date else 'غير محدد' }}</p>
+                <p><strong>تاريخ الانتهاء:</strong> {{ course.end_date.strftime('%Y-%m-%d') if course.end_date else 'غير محدد' }}</p>
+                <p><strong>رسوم الدورة:</strong> {{ "%.2f"|format(course.fee) if course.fee else 'مجانية' }}</p>
+                <p><strong>برنامج الدورة:</strong><br>{{ course.program_description or 'لم يحدد' }}</p>
                 <p><strong>الحالة:</strong>
-                    {% if course.is_active %}
+                    {% if course.status == 'نشطة' %}
                         <span class="badge bg-success">نشطة</span>
                     {% else %}
-                        <span class="badge bg-secondary">غير نشطة</span>
+                        <span class="badge bg-secondary">مكتملة</span>
                     {% endif %}
                 </p>
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('manage_tests', course_id=course.id) }}" class="btn btn-primary mt-3">
+                <p><strong>إجمالي الرسوم المتوقعة:</strong> {{ "%.2f"|format(total_fees) }}</p>
+
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{{ url_for('manage_tests', course_id=course.id) }}" class="btn btn-primary">
                         <i class="fas fa-file-alt"></i> إدارة الاختبارات
                     </a>
+                    {% if session.role == 'admin' %}
+                    <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#extendCourseModal">
+                        <i class="fas fa-calendar-plus"></i> تمديد الدورة
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Enrolled Students Card -->
-    <div class="col-md-8">
+    <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-users"></i> الطلاب المسجلون ({{ enrolled_students|length }})</h5>
+                <h5 class="mb-0"><i class="fas fa-users"></i> الطلاب المسجلون ({{ course.enrollments.count() }})</h5>
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
                     <i class="fas fa-user-plus"></i> تسجيل طالب جديد
                 </button>
             </div>
             <div class="card-body">
-                {% if enrolled_students %}
-                <ul class="list-group">
-                    {% for student in enrolled_students %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ student.name }}
-                        <a href="{{ url_for('unenroll_student', course_id=course.id, student_id=student.id) }}" class="btn btn-sm btn-outline-danger" title="إلغاء التسجيل">
-                            <i class="fas fa-user-minus"></i>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
+                {% if course.enrollments.count() > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>حالة الدفع</th>
+                                <th>رابط الشهادة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for enrollment in course.enrollments %}
+                            <tr>
+                                <td>{{ enrollment.student.name }}</td>
+                                <td>
+                                    {% if enrollment.payment_status == 'دفع' %}
+                                        <span class="badge bg-success">دفع</span>
+                                    {% elif enrollment.payment_status == 'حالة خاصة' %}
+                                        <span class="badge bg-warning text-dark">حالة خاصة</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">لم يدفع</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if enrollment.certificate_url %}
+                                        <a href="{{ enrollment.certificate_url }}" target="_blank">عرض الشهادة</a>
+                                    {% else %}
+                                        لا يوجد
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editEnrollmentModal-{{ enrollment.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a href="{{ url_for('unenroll_student', course_id=course.id, student_id=enrollment.student.id) }}" class="btn btn-sm btn-outline-danger" title="إلغاء التسجيل">
+                                        <i class="fas fa-user-minus"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% else %}
                 <p class="text-center">لم يتم تسجيل أي طالب في هذه الدورة بعد.</p>
                 {% endif %}
@@ -101,6 +147,68 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Enrollment Modals -->
+{% for enrollment in course.enrollments %}
+<div class="modal fade" id="editEnrollmentModal-{{ enrollment.id }}" tabindex="-1" aria-labelledby="editEnrollmentModalLabel-{{ enrollment.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('update_enrollment', enrollment_id=enrollment.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editEnrollmentModalLabel-{{ enrollment.id }}">تعديل تسجيل: {{ enrollment.student.name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="payment_status-{{ enrollment.id }}" class="form-label">حالة الدفع</label>
+                        <select class="form-select" id="payment_status-{{ enrollment.id }}" name="payment_status">
+                            <option value="لم يدفع" {% if enrollment.payment_status == 'لم يدفع' %}selected{% endif %}>لم يدفع</option>
+                            <option value="دفع" {% if enrollment.payment_status == 'دفع' %}selected{% endif %}>دفع</option>
+                            <option value="حالة خاصة" {% if enrollment.payment_status == 'حالة خاصة' %}selected{% endif %}>حالة خاصة</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="certificate_url-{{ enrollment.id }}" class="form-label">رابط الشهادة (Google Drive)</label>
+                        <input type="url" class="form-control" id="certificate_url-{{ enrollment.id }}" name="certificate_url" value="{{ enrollment.certificate_url or '' }}" placeholder="https://drive.google.com/...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Extend Course Modal -->
+{% if session.role == 'admin' %}
+<div class="modal fade" id="extendCourseModal" tabindex="-1" aria-labelledby="extendCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('extend_course', course_id=course.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="extendCourseModalLabel">تمديد الدورة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>التاريخ الحالي للانتهاء: {{ course.end_date.strftime('%Y-%m-%d') if course.end_date else 'غير محدد' }}</p>
+                    <div class="mb-3">
+                        <label for="days" class="form-label">عدد أيام التمديد</label>
+                        <input type="number" class="form-control" name="days" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="submit" class="btn btn-primary">تمديد</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 
 <script>
 document.getElementById('studentSearch').addEventListener('keyup', function() {

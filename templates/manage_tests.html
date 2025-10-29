@@ -69,7 +69,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="test_date" class="form-label">تاريخ الاختبار</label>
-                        <input type="date" class="form-control" name="test_date" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                        <input type="date" class="form-control" name="test_date" value="{{ now().strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="max_score" class="form-label">الدرجة القصوى</label>

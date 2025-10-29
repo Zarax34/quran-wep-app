@@ -84,6 +84,20 @@ def send_weekly_progress_reports():
 # Schedule the job to run every Sunday at 6 PM
 scheduler.add_job(send_weekly_progress_reports, 'cron', day_of_week='sun', hour=18)
 
+def update_course_status():
+    """Check for courses that have passed their end date and mark them as complete."""
+    with app.app_context():
+        today = datetime.now().date()
+        courses_to_update = Course.query.filter(Course.status == 'نشطة', Course.end_date < today).all()
+        for course in courses_to_update:
+            course.status = 'مكتملة'
+        if courses_to_update:
+            db.session.commit()
+            print(f"INFO: Updated {len(courses_to_update)} courses to 'مكتملة'.")
+
+# Schedule the course status update job to run daily at midnight
+scheduler.add_job(update_course_status, 'cron', hour=0)
+
 # ---------- 3.  MODELS  ----------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -309,7 +323,12 @@ class Course(db.Model):
     description = db.Column(db.Text, nullable=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True)
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
+    image = db.Column(db.String(200), nullable=True)
+    fee = db.Column(db.Float, nullable=True, default=0.0)
+    program_description = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(50), default='نشطة')  # نشطة, مكتملة
 
     teacher = db.relationship('User', backref='courses_taught')
     enrollments = db.relationship('CourseEnrollment', backref='course', lazy='dynamic', cascade="all, delete-orphan")
@@ -320,6 +339,8 @@ class CourseEnrollment(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
     enrollment_date = db.Column(db.DateTime, default=datetime.utcnow)
+    payment_status = db.Column(db.String(50), default='لم يدفع')  # لم يدفع, دفع, حالة خاصة
+    certificate_url = db.Column(db.String(500), nullable=True)
 
     student = db.relationship('Student', backref='course_enrollments')
 
@@ -2201,6 +2222,7 @@ def parent_dashboard():
             stats['points'] = db.session.query(func.sum(Point.points)).filter_by(student_id=student.id).scalar() or 0
             stats['badges'] = StudentBadge.query.filter_by(student_id=student.id).all()
             stats['notes'] = EducationalNote.query.filter_by(student_id=student.id).order_by(EducationalNote.date.desc()).limit(3).all()
+            stats['course_enrollments'] = CourseEnrollment.query.filter_by(student_id=student.id).all()
             student_stats.append(stats)
     
     total_children = len(students)
@@ -2353,11 +2375,26 @@ def add_course():
         name = request.form.get('name')
         description = request.form.get('description')
         teacher_id = request.form.get('teacher_id') if session['role'] == 'admin' else session['user_id']
+        start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date() if request.form.get('start_date') else None
+        end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None
+        fee = request.form.get('fee', type=float)
+        program_description = request.form.get('program_description')
+        image = request.files.get('image')
+
+        filename = None
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         new_course = Course(
             name=name,
             description=description,
-            teacher_id=teacher_id
+            teacher_id=teacher_id,
+            start_date=start_date,
+            end_date=end_date,
+            fee=fee,
+            program_description=program_description,
+            image=filename
         )
         db.session.add(new_course)
         try:
@@ -2385,7 +2422,17 @@ def edit_course(course_id):
         course.description = request.form.get('description')
         if session['role'] == 'admin':
             course.teacher_id = request.form.get('teacher_id')
-        course.is_active = 'is_active' in request.form
+        course.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date() if request.form.get('start_date') else None
+        course.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None
+        course.fee = request.form.get('fee', type=float)
+        course.program_description = request.form.get('program_description')
+        course.status = request.form.get('status')
+
+        image = request.files.get('image')
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            course.image = filename
 
         try:
             db.session.commit()
@@ -2427,13 +2474,72 @@ def course_details(course_id):
         flash('ليس لديك الصلاحية لعرض تفاصيل هذه الدورة', 'error')
         return redirect(url_for('courses'))
 
-    enrolled_students = Student.query.join(CourseEnrollment).filter(CourseEnrollment.course_id == course.id).all()
+    # Calculate total fees
+    paid_enrollments = course.enrollments.filter(CourseEnrollment.payment_status != 'حالة خاصة').count()
+    total_fees = (course.fee or 0) * paid_enrollments
 
     # Students not yet enrolled in this course
-    enrolled_student_ids = [s.id for s in enrolled_students]
+    enrolled_student_ids = [enrollment.student_id for enrollment in course.enrollments]
     available_students = Student.query.filter(Student.id.notin_(enrolled_student_ids), Student.is_active==True).all()
 
-    return render_template('course_details.html', course=course, enrolled_students=enrolled_students, available_students=available_students)
+    return render_template('course_details.html',
+                           course=course,
+                           available_students=available_students,
+                           total_fees=total_fees)
+
+@app.route('/update_enrollment/<int:enrollment_id>', methods=['POST'])
+@require_login
+def update_enrollment(enrollment_id):
+    enrollment = CourseEnrollment.query.get_or_404(enrollment_id)
+    course = enrollment.course
+    # Authorization
+    if session['role'] not in ['admin'] and course.teacher_id != session['user_id']:
+        flash('ليس لديك الصلاحية لتعديل بيانات التسجيل', 'error')
+        return redirect(url_for('courses'))
+
+    enrollment.payment_status = request.form.get('payment_status')
+    enrollment.certificate_url = request.form.get('certificate_url')
+
+    try:
+        db.session.commit()
+        flash('تم تحديث بيانات تسجيل الطالب بنجاح!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ: {e}', 'error')
+
+    return redirect(url_for('course_details', course_id=course.id))
+
+@app.route('/extend_course/<int:course_id>', methods=['POST'])
+@require_role('admin')
+def extend_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    days_to_extend = request.form.get('days', type=int)
+
+    if days_to_extend and days_to_extend > 0:
+        if course.end_date:
+            course.end_date += timedelta(days=days_to_extend)
+            # Send notifications
+            for enrollment in course.enrollments:
+                student = enrollment.student
+                if student.parent and student.parent.user_id:
+                    notification = Notification(
+                        user_id=student.parent.user_id,
+                        title=f'تمديد دورة: {course.name}',
+                        message=f'تم تمديد دورة "{course.name}" المسجل بها الطالب {student.name}. تاريخ الانتهاء الجديد هو {course.end_date.strftime("%Y-%m-%d")}.'
+                    )
+                    db.session.add(notification)
+            try:
+                db.session.commit()
+                flash(f'تم تمديد الدورة لمدة {days_to_extend} يوم بنجاح!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'حدث خطأ: {e}', 'error')
+        else:
+            flash('لا يمكن تمديد دورة بدون تاريخ انتهاء محدد.', 'error')
+    else:
+        flash('الرجاء إدخال عدد أيام صحيح للتمديد.', 'error')
+
+    return redirect(url_for('course_details', course_id=course.id))
 
 @app.route('/enroll_student/<int:course_id>', methods=['POST'])
 @require_login
@@ -2667,6 +2773,7 @@ def student_details(student_id):
     progress_percentage = (student.total_verses_since_year_start / total_verses_in_quran) * 100
 
     educational_notes = EducationalNote.query.filter_by(student_id=student_id).order_by(EducationalNote.date.desc()).all()
+    course_enrollments = CourseEnrollment.query.filter_by(student_id=student_id).all()
 
     return render_template('student_details.html',
                          student=student,
@@ -2675,7 +2782,8 @@ def student_details(student_id):
                          recent_attendance=recent_attendance,
                          circle_stats=circle_stats,
                          progress_percentage=progress_percentage,
-                         educational_notes=educational_notes)
+                         educational_notes=educational_notes,
+                         course_enrollments=course_enrollments)
 
 @app.route('/grades', methods=['GET', 'POST'])
 @require_login
@@ -2832,6 +2940,54 @@ def setup_database():
             except Exception as e:
                 print(f"ERROR: Could not create default admin user: {e}")
                 db.session.rollback()
+
+@app.route('/_test_setup_for_frontend_verification')
+def test_setup_for_frontend_verification():
+    with app.app_context():
+        # Clean up existing test data
+        User.query.filter(User.username.like('test%')).delete()
+        Parent.query.filter(Parent.name.like('Test%')).delete()
+        Student.query.filter(Student.name.like('Test%')).delete()
+        Course.query.filter(Course.name.like('Test%')).delete()
+        db.session.commit()
+
+        # Create parent and user
+        parent_user = User(username='testparent', password=generate_password_hash('password'), name='Test Parent', role='parent')
+        db.session.add(parent_user)
+        db.session.commit()
+        parent = Parent(name='Test Parent', phone='777123456', user_id=parent_user.id)
+        db.session.add(parent)
+        db.session.commit()
+
+        # Create circle and teacher
+        teacher = User.query.filter_by(role='teacher').first()
+        if not teacher:
+            teacher = User(username='courseteacher', password=generate_password_hash('password'), name='Course Teacher', role='teacher')
+            db.session.add(teacher)
+            db.session.commit()
+        circle = Circle(name='Test Circle', teacher_id=teacher.id)
+        db.session.add(circle)
+        db.session.commit()
+
+        # Create student and user
+        student_user = User(username='teststudent', password=generate_password_hash('password'), name='Test Student', role='student')
+        db.session.add(student_user)
+        db.session.commit()
+        student = Student(name='Test Student', parent_id=parent.id, circle_id=circle.id)
+        db.session.add(student)
+        db.session.commit()
+
+        # Create course
+        course = Course(name='Test Course for Certificates', teacher_id=teacher.id)
+        db.session.add(course)
+        db.session.commit()
+
+        # Enroll student and add certificate URL
+        enrollment = CourseEnrollment(student_id=student.id, course_id=course.id, certificate_url='https://example.com/certificate.pdf')
+        db.session.add(enrollment)
+        db.session.commit()
+
+    return "Frontend verification test data created."
 
 if __name__ == '__main__':
     setup_database()

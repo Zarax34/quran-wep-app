@@ -15,7 +15,7 @@
                 <h5 class="card-title mb-0">بيانات الدورة</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="name" class="form-label">اسم الدورة</label>
                         <input type="text" class="form-control" id="name" name="name" placeholder="مثال: دورة أحكام التجويد" required>
@@ -24,6 +24,32 @@
                     <div class="mb-3">
                         <label for="description" class="form-label">وصف الدورة (اختياري)</label>
                         <textarea class="form-control" id="description" name="description" rows="3" placeholder="أدخل وصفاً موجزاً عن الدورة ومحتواها..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">تاريخ البدء</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">تاريخ الانتهاء</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fee" class="form-label">رسوم الدورة (اختياري)</label>
+                        <input type="number" step="0.01" class="form-control" id="fee" name="fee" placeholder="0.00" value="0">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="program_description" class="form-label">برنامج الدورة (اختياري)</label>
+                        <textarea class="form-control" id="program_description" name="program_description" rows="4" placeholder="اكتب هنا البرنامج الذي ستسير عليه الدورة..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="image" class="form-label">صورة للدورة (اختياري)</label>
+                        <input class="form-control" type="file" id="image" name="image" accept="image/*">
                     </div>
 
                     {% if session.role == 'admin' %}

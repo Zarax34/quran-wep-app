@@ -423,6 +423,41 @@
             </div>
         </div>
     </div>
+
+    <!-- Enrolled Courses and Certificates -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-graduation-cap"></i> الدورات والشهادات</h5>
+                </div>
+                <div class="card-body">
+                    {% if course_enrollments %}
+                        <ul class="list-group">
+                            {% for enrollment in course_enrollments %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ enrollment.course.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">تاريخ التسجيل: {{ enrollment.enrollment_date.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                    {% if enrollment.certificate_url %}
+                                        <a href="{{ enrollment.certificate_url }}" target="_blank" class="btn btn-success btn-sm">
+                                            <i class="fas fa-certificate"></i> عرض الشهادة
+                                        </a>
+                                    {% else %}
+                                        <span class="badge bg-secondary">لا توجد شهادة</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">لم يتم التسجيل في أي دورات بعد.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
