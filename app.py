@@ -1207,7 +1207,20 @@ def reject_circle(circle_id):
 @app.route('/reports')
 @require_login
 def reports():
-    reports = Report.query.order_by(Report.date.desc()).all()
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
+
+    query = Report.query
+
+    if from_date_str:
+        from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+        query = query.filter(Report.date >= from_date)
+
+    if to_date_str:
+        to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+        query = query.filter(Report.date <= to_date)
+
+    reports = query.order_by(Report.date.desc()).all()
     return render_template('reports.html', reports=reports)
 
 @app.route('/add_report', methods=['GET', 'POST'])
@@ -2703,6 +2716,7 @@ def certificates():
     if request.method == 'POST':
         course_id = request.form.get('course_id')
         student_id = request.form.get('student_id')
+        reason = request.form.get('reason', 'لإتمام متطلبات الدورة بنجاح') # Default reason
 
         if not all([course_id, student_id]):
             flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
@@ -2714,10 +2728,25 @@ def certificates():
         # Create PDF certificate
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font('Arial', 'B', 16)
-        pdf.cell(0, 10, 'Certificate of Completion', 1, 1, 'C')
-        pdf.cell(0, 10, f'This is to certify that {student.name} has successfully completed the course:', 0, 1, 'C')
-        pdf.cell(0, 10, course.name, 0, 1, 'C')
+        pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
+        pdf.set_font('DejaVu', '', 16)
+
+        pdf.cell(0, 20, 'شهادة إتمام دورة', 0, 1, 'C')
+        pdf.ln(10)
+
+        pdf.set_font('DejaVu', '', 12)
+        pdf.cell(0, 10, f'يشهد مركز الإمام حفص بأن الطالب/ة: {student.name}', 0, 1, 'C')
+        pdf.ln(5)
+
+        pdf.cell(0, 10, f'قد أتم بنجاح دورة: "{course.name}"', 0, 1, 'C')
+        pdf.ln(5)
+
+        pdf.cell(0, 10, f'وذلك {reason}', 0, 1, 'C')
+        pdf.ln(20)
+
+        pdf.cell(0, 10, f'تاريخ الإصدار: {datetime.now().strftime("%Y-%m-%d")}', 0, 1, 'L')
+        pdf.cell(0, 10, 'توقيع المدير: ..............................', 0, 1, 'R')
+
 
         certificate_filename = f"certificate_{student.id}_{course.id}.pdf"
         certificate_path = os.path.join(app.config['UPLOAD_FOLDER'], certificate_filename)

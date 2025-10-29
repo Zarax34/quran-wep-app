@@ -14,6 +14,30 @@
         </div>
     </div>
 
+    <div class="card fade-in mb-3">
+        <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-filter"></i> فلترة التقارير</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('reports') }}">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-5">
+                        <label for="from_date" class="form-label">من تاريخ</label>
+                        <input type="date" class="form-control" id="from_date" name="from_date" value="{{ request.args.get('from_date', '') }}">
+                    </div>
+                    <div class="col-md-5">
+                        <label for="to_date" class="form-label">إلى تاريخ</label>
+                        <input type="date" class="form-control" id="to_date" name="to_date" value="{{ request.args.get('to_date', '') }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100 btn-hover"><i class="fas fa-search"></i> بحث</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     {% if reports %}
     <div class="card fade-in">
         <div class="card-header">
