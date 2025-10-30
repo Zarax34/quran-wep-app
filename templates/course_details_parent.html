@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-chalkboard"></i> تفاصيل الدورة: {{ course.name }}</h1>
+    <a href="{{ url_for('parent_dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للوحة التحكم
+    </a>
+</div>
+
+<div class="row">
+    <!-- Course Info -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            {% if course.image %}
+            <img src="{{ url_for('uploaded_file', filename=course.image) }}" class="card-img-top" alt="{{ course.name }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ course.name }}</h5>
+                <p class="card-text">{{ course.description }}</p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>المعلم:</strong> {{ course.teacher.name }}</li>
+                    <li class="list-group-item"><strong>الحالة:</strong> {{ course.status }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Performance -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-line"></i> أداء الطلاب في الدورة</h5>
+            </div>
+            <div class="card-body">
+                {% for student in students %}
+                <div class="student-performance mb-4">
+                    <h4>{{ student.name }}</h4>
+
+                    <!-- Attendance -->
+                    <h6><i class="fas fa-calendar-check"></i> الحضور والغياب</h6>
+                    <p>معدل الحضور: {{ attendance_stats[student.id].rate }}%</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">أيام الحضور: {{ attendance_stats[student.id].present }}</li>
+                        <li class="list-group-item">أيام الغياب: {{ attendance_stats[student.id].absent }}</li>
+                    </ul>
+
+                    <!-- Test Scores -->
+                    <h6 class="mt-3"><i class="fas fa-file-alt"></i> درجات الاختبارات</h6>
+                    {% if test_scores[student.id] %}
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>الاختبار</th>
+                                <th>الدرجة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for score in test_scores[student.id] %}
+                            <tr>
+                                <td>{{ score.test.name }}</td>
+                                <td>{{ score.score }} / {{ score.test.max_score }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>لا توجد درجات مسجلة لهذا الطالب في هذه الدورة.</p>
+                    {% endif %}
+                </div>
+                {% if not loop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

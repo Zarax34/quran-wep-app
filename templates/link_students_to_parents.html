@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">ربط الطلاب بأولياء الأمور</h1>
-    <a href="{{ url_for('parents') }}" class="btn btn-secondary">
+    <a href="{{ url_for('parent_management') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-right"></i> رجوع للأولياء
     </a>
 </div>
@@ -38,7 +38,7 @@
                             {% for parent in parents %}
                             <option value="{{ parent.id }}">
                                 {{ parent.name }} ({{ parent.phone }})
-                                - {{ parent.students|length }} أبناء
+                                - {{ parent.students|length }} طلاب
                             </option>
                             {% endfor %}
                         </select>
@@ -66,7 +66,7 @@
                 </div>
                 
                 <div class="mb-3">
-                    <h6>أولياء الأمور بدون أبناء:</h6>
+                    <h6>أولياء الأمور بدون طلاب مرتبطين:</h6>
                     <span class="badge bg-info">
                         {{ parents|selectattr('students|length', 'equalto', 0)|list|length }}
                     </span>

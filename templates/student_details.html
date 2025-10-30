@@ -56,6 +56,50 @@
         </div>
     </div>
 
+    <!-- Test Scores -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-file-alt"></i> درجات الاختبارات</h5>
+                </div>
+                <div class="card-body">
+                    {% if test_scores %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>الدورة</th>
+                                    <th>الاختبار</th>
+                                    <th>الدرجة</th>
+                                    <th>النسبة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for score in test_scores %}
+                                <tr>
+                                    <td>{{ score.test.course.name }}</td>
+                                    <td>{{ score.test.name }}</td>
+                                    <td>{{ score.score }} / {{ score.test.max_score }}</td>
+                                    <td>
+                                        {% set percentage = (score.score / score.test.max_score) * 100 %}
+                                        <span class="badge bg-{{ 'success' if percentage >= 85 else 'warning' if percentage >= 60 else 'danger' }}">
+                                            {{ "%.1f"|format(percentage) }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">لا توجد درجات مسجلة.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- إحصائيات الطالب -->
         <div class="col-md-6">

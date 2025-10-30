@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-file-excel"></i> استيراد الطلاب من ملف Excel</h1>
+    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للطلاب
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="excel_file" class="form-label">اختر ملف Excel</label>
+                <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx" required>
+            </div>
+            <div class="mb-3">
+                <label for="circle_id" class="form-label">اختر الحلقة لربط الطلاب بها</label>
+                <select class="form-select" id="circle_id" name="circle_id" required>
+                    <option value="">اختر حلقة...</option>
+                    {% for circle in circles %}
+                    <option value="{{ circle.id }}">{{ circle.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-upload"></i> استيراد
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> تعليمات</h5>
+    </div>
+    <div class="card-body">
+        <p>يجب أن يحتوي ملف Excel على الأعمدة التالية بالترتيب:</p>
+        <ul>
+            <li><strong>name</strong>: الاسم الكامل للطالب</li>
+            <li><strong>age</strong>: العمر</li>
+            <li><strong>student_phone</strong>: رقم هاتف الطالب</li>
+            <li><strong>parent_phone</strong>: رقم هاتف ولي الأمر</li>
+            <li><strong>parent_job</strong>: وظيفة ولي الأمر</li>
+            <li><strong>parent_workplace</strong>: مكان عمل ولي الأمر</li>
+            <li><strong>current_address</strong>: السكن الحالي</li>
+            <li><strong>previous_address</strong>: السكن السابق</li>
+            <li><strong>governorate</strong>: المحافظة</li>
+            <li><strong>date_of_birth</strong>: تاريخ الميلاد (بتنسيق YYYY-MM-DD)</li>
+            <li><strong>previous_memorization</strong>: مقدار الحفظ السابق</li>
+            <li><strong>enrollment_date</strong>: تاريخ الالتحاق (بتنسيق YYYY-MM-DD)</li>
+        </ul>
+        <a href="#" class="btn btn-success"><i class="fas fa-download"></i> تحميل نموذج للملف</a>
+    </div>
+</div>
+{% endblock %}

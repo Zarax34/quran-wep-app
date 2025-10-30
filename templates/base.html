@@ -1226,6 +1226,38 @@
         window.addEventListener('error', function() {
             hideLoading();
         });
+
+        // Student Details Modal
+        var studentDetailsModal = document.getElementById('studentDetailsModal');
+        if (studentDetailsModal) {
+            studentDetailsModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var modalTitle = studentDetailsModal.querySelector('.modal-title');
+
+                document.getElementById('modalStudentName').textContent = button.getAttribute('data-student-name');
+                document.getElementById('modalStudentAge').textContent = button.getAttribute('data-student-age');
+                document.getElementById('modalStudentCircle').textContent = button.getAttribute('data-student-circle');
+                document.getElementById('modalStudentParent').textContent = button.getAttribute('data-student-parent');
+                document.getElementById('modalParentJob').textContent = button.getAttribute('data-parent-job');
+                document.getElementById('modalParentWorkplace').textContent = button.getAttribute('data-parent-workplace');
+
+                var photoUrl = button.getAttribute('data-student-photo');
+                var photoElement = document.getElementById('modalStudentPhoto');
+                if (photoUrl) {
+                    photoElement.src = photoUrl;
+                    photoElement.style.display = 'block';
+                } else {
+                    photoElement.style.display = 'none';
+                }
+            });
+        }
+
+        // Image Modal
+        function showImageModal(src) {
+            var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            document.getElementById('fullImage').src = src;
+            imageModal.show();
+        }
     </script>
 </body>
 </html>

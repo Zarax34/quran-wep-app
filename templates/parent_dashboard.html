@@ -15,7 +15,7 @@
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-light">عدد الأبناء</h6>
+                        <h6 class="text-light">عدد الطلاب</h6>
                         <h2 class="mb-0">{{ total_children }}</h2>
                     </div>
                     <div class="align-self-center">
@@ -68,7 +68,7 @@
         </div>
     </div>
 
-    <!-- أبناء ولي الأمر -->
+    <!-- طلاب ولي الأمر -->
     <div class="row fade-in">
         {% for stats in student_stats %}
         <div class="col-md-6 col-lg-4 mb-4">
@@ -143,8 +143,46 @@
         <div class="col-12">
             <div class="alert alert-info text-center">
                 <i class="fas fa-user-slash fa-3x mb-3"></i>
-                <h4>لا يوجد أبناء مسجلين</h4>
+                <h4>لا يوجد طلاب مسجلين</h4>
                 <p>لم يتم ربط أي طلاب بحسابك بعد</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Enrolled Courses -->
+    <div class="row mt-4 fade-in">
+        <div class="col-12">
+            <h3 class="mb-3"><i class="fas fa-chalkboard-teacher"></i> الدورات المسجل بها</h3>
+        </div>
+        {% set enrolled_courses = [] %}
+        {% for stats in student_stats %}
+            {% for enrollment in stats.course_enrollments %}
+                {% if enrollment.course not in enrolled_courses %}
+                    {% set _ = enrolled_courses.append(enrollment.course) %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+
+        {% for course in enrolled_courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 course-card shadow-sm">
+                {% if course.image %}
+                <img src="{{ url_for('uploaded_file', filename=course.image) }}" class="card-img-top" alt="{{ course.name }}" style="height: 180px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ course.name }}</h5>
+                    <p class="card-text text-muted">المعلم: {{ course.teacher.name }}</p>
+                    <div class="mt-auto">
+                         <a href="{{ url_for('parent_course_details', course_id=course.id) }}" class="btn btn-primary w-100"><i class="fas fa-eye"></i> عرض تفاصيل الدورة والأداء</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-light text-center">
+                لم يتم تسجيل أي طالب في دورات بعد.
             </div>
         </div>
         {% endfor %}
@@ -176,13 +214,13 @@
         </div>
     </div>
 
-    <!-- مقارنة بين الأبناء -->
+    <!-- مقارنة بين الطلاب -->
     {% if children_stats|length > 1 %}
     <div class="row mt-4 slide-in-left">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> مقارنة بين الأبناء</h5>
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> مقارنة بين الطلاب</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -269,7 +307,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="border rounded p-3">
-                                <h6>عدد الأبناء</h6>
+                                <h6>عدد الطلاب</h6>
                                 <h3 class="text-primary">{{ total_children }}</h3>
                                 <small>إجمالي طلاب المركز: {{ center_stats.total_students }}</small>
                             </div>
