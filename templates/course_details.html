@@ -41,6 +41,9 @@
                     <a href="{{ url_for('manage_tests', course_id=course.id) }}" class="btn btn-primary">
                         <i class="fas fa-file-alt"></i> إدارة الاختبارات
                     </a>
+                    <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#uploadCertificatesModal">
+                        <i class="fas fa-file-excel"></i> رفع روابط الشهادات (Excel)
+                    </button>
                     {% if session.role == 'admin' %}
                     <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#extendCourseModal">
                         <i class="fas fa-calendar-plus"></i> تمديد الدورة
@@ -211,6 +214,31 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Upload Certificates Modal -->
+<div class="modal fade" id="uploadCertificatesModal" tabindex="-1" aria-labelledby="uploadCertificatesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('upload_certificates', course_id=course.id) }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadCertificatesModalLabel">رفع روابط الشهادات</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>الرجاء رفع ملف Excel يحتوي على عمودين: الأول لأسماء الطلاب والثاني لروابط شهاداتهم.</p>
+                    <div class="mb-3">
+                        <label for="excel_file" class="form-label">ملف Excel</label>
+                        <input type="file" class="form-control" name="excel_file" id="excel_file" accept=".xlsx, .xls" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="submit" class="btn btn-primary">رفع الملف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 
 <script>

@@ -323,6 +323,11 @@ class CourseEnrollment(db.Model):
 
     student = db.relationship('Student', backref='course_enrollments')
 
+    @property
+    def certificate_url(self):
+        cert = Certificate.query.filter_by(student_id=self.student_id, course_id=self.course_id).first()
+        return cert.certificate_url if cert else None
+
 class Test(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
@@ -348,7 +353,8 @@ class Certificate(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
     issue_date = db.Column(db.DateTime, default=datetime.utcnow)
-    certificate_file = db.Column(db.String(255), nullable=False) # Stores the path to the PDF file
+    certificate_file = db.Column(db.String(255), nullable=True) # Stores the path to the PDF file
+    certificate_url = db.Column(db.String(500), nullable=True) # Stores an external URL for the certificate
 
     student = db.relationship('Student', backref='certificates')
     course_info = db.relationship('Course', backref='certificates')
@@ -396,21 +402,20 @@ def require_role(role):
     return decorator
 
 def create_parent_username(full_name):
-    # استخدام مسافات بدلاً من الشرطة السفلية
-    username = full_name.strip().replace(' ', '_')
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username}_{counter}"
+        username = f"{base_username} {counter}"
         counter += 1
     return username
 
 def create_student_username(full_name):
-    username = full_name.strip().replace(' ', '_')
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username}_{counter}"
+        username = f"{base_username} {counter}"
         counter += 1
     return username
 
@@ -2599,6 +2604,62 @@ def record_scores(test_id):
     existing_scores = {score.student_id: score for score in test.scores}
     return render_template('record_scores.html', test=test, existing_scores=existing_scores)
 
+@app.route('/upload_certificates/<int:course_id>', methods=['POST'])
+@require_login
+def upload_certificates(course_id):
+    course = Course.query.get_or_404(course_id)
+    if not (session.get('role') == 'admin' or (session.get('role') == 'teacher' and course.teacher_id == session.get('user_id'))):
+        flash('ليس لديك الصلاحية لرفع شهادات لهذه الدورة.', 'error')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    if 'certificate_excel' not in request.files:
+        flash('لم يتم العثور على ملف.', 'error')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    file = request.files['certificate_excel']
+    if file.filename == '':
+        flash('لم يتم تحديد أي ملف.', 'error')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        try:
+            import openpyxl
+            workbook = openpyxl.load_workbook(file)
+            sheet = workbook.active
+
+            not_found_students = []
+            for row in sheet.iter_rows(min_row=2, values_only=True): # Assuming first row is header
+                student_name, certificate_url = row[0], row[1]
+
+                # Find student by name (case-insensitive and strip whitespace)
+                student = Student.query.filter(func.lower(Student.name) == func.lower(student_name.strip())).first()
+
+                if student:
+                    # Create or update certificate
+                    certificate = Certificate.query.filter_by(student_id=student.id, course_id=course_id).first()
+                    if certificate:
+                        certificate.certificate_url = certificate_url
+                    else:
+                        new_certificate = Certificate(student_id=student.id, course_id=course_id, certificate_url=certificate_url)
+                        db.session.add(new_certificate)
+                else:
+                    not_found_students.append(student_name)
+
+            db.session.commit()
+
+            if not_found_students:
+                flash(f'تم رفع الشهادات بنجاح، لكن لم يتم العثور على الطلاب التالية أسماؤهم: {", ".join(not_found_students)}', 'warning')
+            else:
+                flash('تم رفع جميع روابط الشهادات بنجاح!', 'success')
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء معالجة الملف: {e}', 'error')
+    else:
+        flash('صيغة الملف غير مدعومة. يرجى استخدام ملفات Excel (.xlsx, .xls).', 'error')
+
+    return redirect(url_for('course_details', course_id=course_id))
+
 # ---------- 22.  PARENT STUDENT DETAILS ----------
 @app.route('/student_dashboard')
 @require_login
@@ -2804,6 +2865,20 @@ def setup_database():
                 pass # Column already exists.
             else:
                 print(f"ERROR: Could not add 'user_id' column to 'parent' table: {e}")
+
+        # 3. Add 'certificate_url' to 'certificate' table
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text('ALTER TABLE certificate ADD COLUMN certificate_url VARCHAR(500)'))
+                trans.commit()
+            print("INFO: Added 'certificate_url' column to 'certificate' table.")
+        except Exception as e:
+            if 'duplicate column' in str(e).lower():
+                pass # Column already exists.
+            else:
+                print(f"ERROR: Could not add 'certificate_url' column to 'certificate' table: {e}")
+
 
         # Seed initial data if it doesn't exist
         # 1. Default settings
