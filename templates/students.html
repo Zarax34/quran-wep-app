@@ -82,6 +82,12 @@
                         <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100" onclick="event.stopPropagation();">
                             <i class="fas fa-edit"></i> تعديل
                         </a>
+                        {% if session.role in ['admin', 'teacher'] %}
+                        <button type="button" class="btn btn-outline-danger w-100"
+                                onclick="event.stopPropagation(); handleDeleteClick('{{ student.id }}', '{{ student.name }}')">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                        {% endif %}
                     </div>
                     {% if session.role == 'admin' and student.pending_approval %}
                         <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success" onclick="event.stopPropagation();"><i class="fas fa-check-circle"></i> موافقة</a>
@@ -102,6 +108,48 @@
             </a>
         </div>
     </div>
+
+<!-- Delete Request Modal (for teachers) -->
+<div class="modal fade" id="deleteRequestModal" tabindex="-1" aria-labelledby="deleteRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteRequestModalLabel">طلب حذف الطالب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deleteRequestForm" method="POST">
+                <div class="modal-body">
+                    <p>أنت على وشك إرسال طلب حذف للطالب: <strong id="studentNameToDelete"></strong>.</p>
+                    <p>سيقوم المسؤول بمراجعة هذا الطلب. هل أنت متأكد؟</p>
+                    <div class="mb-3">
+                        <label for="deleteReason" class="form-label">السبب (اختياري)</label>
+                        <textarea class="form-control" id="deleteReason" name="reason" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">إرسال الطلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleDeleteClick(studentId, studentName) {
+        const userRole = "{{ session.role }}";
+        if (userRole === 'admin') {
+            if (confirm(`هل أنت متأكد من حذف الطالب "${studentName}"؟ سيتم تعطيل حساب الطالب ولن يظهر في القوائم.`)) {
+                window.location.href = `/delete_student/${studentId}`;
+            }
+        } else if (userRole === 'teacher') {
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteRequestModal'));
+            document.getElementById('studentNameToDelete').textContent = studentName;
+            document.getElementById('deleteRequestForm').action = `/request_student_delete/${studentId}`;
+            deleteModal.show();
+        }
+    }
+</script>
     {% endfor %}
 </div>
 
