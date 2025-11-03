@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">لوحة الشرف لشهر {{ month }}/{{ year }}</h1>
+    {% if session.role == 'admin' %}
+        <a href="{{ url_for('update_honor_board_manual') }}" class="btn btn-primary">
+            <i class="fas fa-sync-alt"></i> تحديث لوحة الشرف
+        </a>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% for entry in honor_students %}
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <span class="badge bg-warning" style="font-size: 1.5rem; position: absolute; top: 10px; left: 10px;">#{{ entry.rank }}</span>
+                    {% if entry.student.photo %}
+                        <img src="{{ url_for('uploaded_file', filename=entry.student.photo) }}" class="rounded-circle mb-3" width="100" height="100" alt="{{ entry.student.name }}">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <h5 class="card-title">{{ entry.student.name }}</h5>
+                    <p class="card-text">{{ entry.student.circle.name }}</p>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                لم يتم تحديث لوحة الشرف لهذا الشهر بعد.
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

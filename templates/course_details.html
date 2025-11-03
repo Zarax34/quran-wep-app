@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-chalkboard"></i> تفاصيل الدورة: {{ course.name }}</h1>
+    <a href="{{ url_for('courses') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> الرجوع للدورات
+    </a>
+</div>
+
+<div class="row">
+    <!-- Course Info Card -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> معلومات الدورة</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>الوصف:</strong> {{ course.description or 'لا يوجد وصف' }}</p>
+                <p><strong>المعلم:</strong> {{ course.teacher.name }}</p>
+                <p><strong>تاريخ الإنشاء:</strong> {{ course.created_at.strftime('%Y-%m-%d') }}</p>
+                <p><strong>الحالة:</strong>
+                    {% if course.is_active %}
+                        <span class="badge bg-success">نشطة</span>
+                    {% else %}
+                        <span class="badge bg-secondary">غير نشطة</span>
+                    {% endif %}
+                </p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('manage_tests', course_id=course.id) }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-file-alt"></i> إدارة الاختبارات
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrolled Students Card -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-users"></i> الطلاب المسجلون ({{ enrolled_students|length }})</h5>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                    <i class="fas fa-user-plus"></i> تسجيل طالب جديد
+                </button>
+            </div>
+            <div class="card-body">
+                {% if enrolled_students %}
+                <ul class="list-group">
+                    {% for student in enrolled_students %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ student.name }}
+                        <a href="{{ url_for('unenroll_student', course_id=course.id, student_id=student.id) }}" class="btn btn-sm btn-outline-danger" title="إلغاء التسجيل">
+                            <i class="fas fa-user-minus"></i>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center">لم يتم تسجيل أي طالب في هذه الدورة بعد.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enroll Student Modal -->
+<div class="modal fade" id="enrollStudentModal" tabindex="-1" aria-labelledby="enrollStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="enrollStudentModalLabel">تسجيل طالب في دورة "{{ course.name }}"</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('enroll_student', course_id=course.id) }}" method="POST">
+                <div class="modal-body">
+                    <p>اختر الطلاب الذين ترغب في تسجيلهم في هذه الدورة:</p>
+                    {% if available_students %}
+                        <div class="mb-3">
+                            <input type="text" id="studentSearch" class="form-control" placeholder="ابحث عن طالب...">
+                        </div>
+                        <div id="student-list" style="max-height: 300px; overflow-y: auto;">
+                        {% for student in available_students %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="student_ids" value="{{ student.id }}" id="student-{{ student.id }}">
+                                <label class="form-check-label" for="student-{{ student.id }}">
+                                    {{ student.name }} ({{ student.circle.name }})
+                                </label>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">لا يوجد طلاب متاحون للتسجيل حالياً.</div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="submit" class="btn btn-primary" {% if not available_students %}disabled{% endif %}>تسجيل الطلاب المحددين</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('studentSearch').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    let studentList = document.getElementById('student-list');
+    let checks = studentList.getElementsByClassName('form-check');
+    for (let i = 0; i < checks.length; i++) {
+        let label = checks[i].getElementsByTagName('label')[0];
+        if (label.innerHTML.toLowerCase().indexOf(filter) > -1) {
+            checks[i].style.display = "";
+        } else {
+            checks[i].style.display = "none";
+        }
+    }
+});
+</script>
+{% endblock %}

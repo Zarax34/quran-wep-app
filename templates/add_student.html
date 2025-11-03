@@ -52,6 +52,51 @@
                         </div>
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="current_address" class="form-label">السكن الحالي</label>
+                                <input type="text" class="form-control" id="current_address" name="current_address">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="previous_address" class="form-label">السكن السابق</label>
+                                <input type="text" class="form-control" id="previous_address" name="previous_address">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="governorate" class="form-label">المحافظة</label>
+                                <input type="text" class="form-control" id="governorate" name="governorate">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="date_of_birth" class="form-label">تاريخ الميلاد</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="previous_memorization" class="form-label">مقدار الحفظ السابق</label>
+                                <input type="text" class="form-control" id="previous_memorization" name="previous_memorization">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="enrollment_date" class="form-label">تاريخ الالتحاق</label>
+                                <input type="date" class="form-control" id="enrollment_date" name="enrollment_date" value="{{ now().strftime('%Y-%m-%d') }}">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="circle_id" class="form-label">الحلقة</label>
                         <select class="form-control" id="circle_id" name="circle_id" required>

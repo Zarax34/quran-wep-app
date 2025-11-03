@@ -50,6 +50,50 @@
                         </div>
                     </div>
                     
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="current_address" class="form-label">السكن الحالي</label>
+                                <input type="text" class="form-control" id="current_address" name="current_address" value="{{ student.current_address or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="previous_address" class="form-label">السكن السابق</label>
+                                <input type="text" class="form-control" id="previous_address" name="previous_address" value="{{ student.previous_address or '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="governorate" class="form-label">المحافظة</label>
+                                <input type="text" class="form-control" id="governorate" name="governorate" value="{{ student.governorate or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="date_of_birth" class="form-label">تاريخ الميلاد</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ student.date_of_birth.strftime('%Y-%m-%d') if student.date_of_birth else '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="previous_memorization" class="form-label">مقدار الحفظ السابق</label>
+                                <input type="text" class="form-control" id="previous_memorization" name="previous_memorization" value="{{ student.previous_memorization or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="enrollment_date" class="form-label">تاريخ الالتحاق</label>
+                                <input type="date" class="form-control" id="enrollment_date" name="enrollment_date" value="{{ student.enrollment_date.strftime('%Y-%m-%d') if student.enrollment_date else '' }}">
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="circle_id" class="form-label">الحلقة</label>
                         <select class="form-control" id="circle_id" name="circle_id" required>
@@ -89,11 +133,45 @@
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#moveStudentModal">
+                            <i class="fas fa-exchange-alt"></i> نقل الطالب
+                        </button>
                         <a href="{{ url_for('students') }}" class="btn btn-secondary me-md-2">إلغاء</a>
                         <button type="submit" class="btn btn-success">حفظ التعديلات</button>
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Move Student Modal -->
+<div class="modal fade" id="moveStudentModal" tabindex="-1" aria-labelledby="moveStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moveStudentModalLabel">نقل الطالب: {{ student.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('move_student', student_id=student.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new_circle_id" class="form-label">اختر الحلقة الجديدة</label>
+                        <select class="form-control" id="new_circle_id" name="new_circle_id" required>
+                            <option value="">-- اختر --</option>
+                            {% for circle in circles %}
+                                {% if circle.id != student.circle_id %}
+                                    <option value="{{ circle.id }}">{{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="submit" class="btn btn-primary">نقل</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-edit"></i> تعديل الدورة: {{ course.name }}</h1>
+    <a href="{{ url_for('courses') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> الرجوع للدورات
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">تعديل بيانات الدورة</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">اسم الدورة</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ course.name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">وصف الدورة (اختياري)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ course.description or '' }}</textarea>
+                    </div>
+
+                    {% if session.role == 'admin' %}
+                    <div class="mb-3">
+                        <label for="teacher_id" class="form-label">المعلم المسؤول</label>
+                        <select class="form-select" id="teacher_id" name="teacher_id" required>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}" {% if teacher.id == course.teacher_id %}selected{% endif %}>{{ teacher.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if course.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">الدورة نشطة</label>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('courses') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> حفظ التعديلات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -68,6 +68,7 @@
                                         <option value="حاضر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'حاضر' %}selected{% endif %}>حاضر</option>
                                         <option value="غائب بعذر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'غائب بعذر' %}selected{% endif %}>✖️ غائب بعذر</option>
                                         <option value="غائب بلا عذر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'غائب بلا عذر' %}selected{% endif %}>❌ غائب بلا عذر</option>
+                                        <option value="متأخر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'متأخر' %}selected{% endif %}>🕒 متأخر</option>
                                         <option value="هروب" {% if attendance_data[student.id] and attendance_data[student.id].status == 'هروب' %}selected{% endif %}>🏃 هروب</option>
                                         <option value="لم يسمع" {% if attendance_data[student.id] and attendance_data[student.id].status == 'لم يسمع' %}selected{% endif %}>لم يسمع</option>
                                     </select>
