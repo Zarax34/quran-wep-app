@@ -192,6 +192,34 @@
                                     </div>
                                 </div>
                             </div>
+                            <hr>
+                            <h5 class="card-title mb-3">روابط التواصل الاجتماعي</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="social_instagram" class="form-label"><i class="fab fa-instagram"></i> Instagram</label>
+                                        <input type="url" class="form-control" id="social_instagram" name="social_instagram" value="{{ settings.social_instagram or '' }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="social_facebook" class="form-label"><i class="fab fa-facebook"></i> Facebook</label>
+                                        <input type="url" class="form-control" id="social_facebook" name="social_facebook" value="{{ settings.social_facebook or '' }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="social_whatsapp" class="form-label"><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                                        <input type="url" class="form-control" id="social_whatsapp" name="social_whatsapp" value="{{ settings.social_whatsapp or '' }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="social_telegram" class="form-label"><i class="fab fa-telegram"></i> Telegram</label>
+                                        <input type="url" class="form-control" id="social_telegram" name="social_telegram" value="{{ settings.social_telegram or '' }}">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- قالب رسالة الواتساب -->
@@ -354,7 +382,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('parents') }}" class="btn btn-outline-primary btn-sm btn-hover">
+                        <a href="{{ url_for('parent_management') }}" class="btn btn-outline-primary btn-sm btn-hover">
                             <i class="fas fa-user-friends"></i> إدارة أولياء الأمور
                         </a>
                         <a href="{{ url_for('users') }}" class="btn btn-outline-info btn-sm btn-hover">
@@ -419,7 +447,7 @@
                         <a href="{{ url_for('users') }}" class="btn btn-outline-primary btn-sm btn-hover">
                             <i class="fas fa-users-cog"></i> قائمة المستخدمين
                         </a>
-                        <a href="{{ url_for('parents') }}" class="btn btn-outline-info btn-sm btn-hover">
+                        <a href="{{ url_for('parent_management') }}" class="btn btn-outline-info btn-sm btn-hover">
                             <i class="fas fa-user-friends"></i> أولياء الأمور
                         </a>
                     </div>

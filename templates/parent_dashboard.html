@@ -288,5 +288,130 @@
     padding: 20px;
     margin-bottom: 20px;
 }
+
+/* From Uiverse.io by Smit-Prajapati */
+.card {
+    width: 230px;
+    border-radius: 20px;
+    background: #1b233d;
+    padding: 5px;
+    overflow: hidden;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 20px 0px;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.card:hover {
+    transform: scale(1.05);
+}
+.card .top-section {
+    height: 150px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(45deg, rgb(4, 159, 187) 0%, rgb(80, 246, 255) 100%);
+    position: relative;
+}
+.card .top-section .border {
+    border-bottom-right-radius: 10px;
+    height: 30px;
+    width: 130px;
+    background: #1b233d;
+    position: relative;
+    transform: skew(-40deg);
+    box-shadow: -10px -10px 0 0 #1b233d;
+}
+.card .top-section .border::before {
+    content: "";
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    top: 0;
+    right: -15px;
+    background: rgba(255, 255, 255, 0);
+    border-top-left-radius: 10px;
+    box-shadow: -5px -5px 0 2px #1b233d;
+}
+.card .top-section::before {
+    content: "";
+    position: absolute;
+    top: 30px;
+    left: 0;
+    background: rgba(255, 255, 255, 0);
+    height: 15px;
+    width: 15px;
+    border-top-left-radius: 15px;
+    box-shadow: -5px -5px 0 2px #1b233d;
+}
+.card .bottom-section {
+    margin-top: 15px;
+    padding: 10px 5px;
+}
+.card .bottom-section .title {
+    display: block;
+    font-size: 17px;
+    font-weight: bolder;
+    color: white;
+    text-align: center;
+    letter-spacing: 2px;
+}
+.card .bottom-section .row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+.card .bottom-section .row .item {
+    flex: 30%;
+    text-align: center;
+    padding: 5px;
+    color: rgba(170, 222, 243, 0.721);
+}
+.card .bottom-section .row .item .big-text {
+    font-size: 12px;
+    display: block;
+}
+.card .bottom-section .row .item .regular-text {
+    font-size: 9px;
+}
+.card .bottom-section .row .item:nth-child(2) {
+    border-left: 1px solid rgba(255, 255, 255, 0.126);
+    border-right: 1px solid rgba(255, 255, 255, 0.126);
+}
 </style>
+
+    <!-- Student of the Month -->
+    {% if students_of_the_month %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-star text-warning"></i> طالب الشهر</h4>
+            <div class="d-flex flex-wrap gap-3">
+                {% for student in students_of_the_month %}
+                <div class="card">
+                    <div class="top-section">
+                        <div class="border"></div>
+                        <div class="icons">
+                            <!-- Icons can be added here if needed -->
+                        </div>
+                    </div>
+                    <div class="bottom-section">
+                        <span class="title">{{ student.name }}</span>
+                        <div class="row row-cols-3">
+                            <div class="item">
+                                <span class="big-text">{{ student.student_badges|length }}</span>
+                                <span class="regular-text">شارات</span>
+                            </div>
+                            <div class="item">
+                                <span class="big-text">{{ student.points|sum(attribute='points') }}</span>
+                                <span class="regular-text">نقاط</span>
+                            </div>
+                            <div class="item">
+                                <span class="big-text">{{ student.total_verses_since_year_start }}</span>
+                                <span class="regular-text">آيات</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}

@@ -399,7 +399,37 @@
         }
 
         .mobile-menu {
-            display: none;
+            display: none; /* Hidden by default */
+        }
+
+        /* Show for parents */
+        .parent-bottom-nav {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            justify-content: center; /* Center the nav bar itself */
+            padding: 10px 0;
+            z-index: 1040;
+            background-color: var(--background-color); /* Match body background */
+        }
+
+        /* The black rounded container from the provided code */
+        .parent-bottom-nav > div {
+            display: flex;
+            justify-content: space-around;
+            gap: 1rem; /* 16px */
+            align-items: center;
+            padding: 0.25rem 1rem; /* py-1 px-4 */
+            background-color: black;
+            border-radius: 15px;
+            border: 1px solid white;
+        }
+
+        /* Adjust main content to not be overlapped by the nav */
+        body.parent-view .main-content {
+            padding-bottom: 100px; /* More space for the bottom nav */
         }
 
         .academic-year-selector {
@@ -672,7 +702,7 @@
         }
     </style>
 </head>
-<body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %}">
+<body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %} {% if session.role == 'parent' %}parent-view{% endif %}">
     
     <!-- شعار المركز في الأعلى -->
     {% if settings.logo or settings.site_name %}
@@ -731,61 +761,9 @@
             </div>
             {% endif %}
             
-            <!-- قائمة التنقل الخاصة بولي الأمر -->
+            <!-- قائمة التنقل الخاصة بولي الأمر (تمت إزالتها واستبدالها بشريط سفلي) -->
             {% if session.role == 'parent' %}
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_dashboard' }}" href="{{ url_for('parent_dashboard') }}">
-                        <i class="fas fa-tachometer-alt me-2"></i>
-                        لوحة التحكم
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
-                        <i class="fas fa-hand-holding-heart me-2"></i>
-                        ادعم المركز
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'alumni' }}" href="{{ url_for('alumni') }}">
-                        <i class="fas fa-user-graduate me-2"></i>
-                        خريجو المركز
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'our_work' }}" href="{{ url_for('our_work') }}">
-                        <i class="fas fa-briefcase me-2"></i>
-                        أعمالنا
-                    </a>
-                </li>
-                
-                <!-- مبدل الواجهات في القائمة الجانبية -->
-                <li class="nav-item">
-                    <div class="view-switcher-sidebar">
-                        <small class="text-light d-block mb-2">تبديل الواجهة:</small>
-                        <div class="btn-group" role="group">
-                            <a href="{{ url_for('set_view', view_type='desktop') }}" class="btn {% if session.get('view_type') == 'desktop' %}active{% endif %}">
-                                <i class="fas fa-desktop"></i>
-                            </a>
-                            <a href="{{ url_for('set_view', view_type='mobile') }}" class="btn {% if session.get('view_type') == 'mobile' %}active{% endif %}">
-                                <i class="fas fa-mobile-alt"></i>
-                            </a>
-                            <a href="{{ url_for('set_view', view_type='auto') }}" class="btn {% if session.get('view_type') == 'auto' or not session.get('view_type') %}active{% endif %}">
-                                <i class="fas fa-sync-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                </li>
-                
-                <li class="nav-item mt-4">
-                    <a class="nav-link logout-btn text-white" href="{{ url_for('parent_logout') }}">
-                        <i class="fas fa-sign-out-alt me-2"></i>
-                        تسجيل الخروج
-                    </a>
-                </li>
-            </ul>
-            
-            <!-- قائمة التنقل للمستخدمين الآخرين -->
+            <!-- This space is intentionally left blank -->
             {% else %}
             <ul class="nav flex-column">
                 <li class="nav-item">
@@ -991,21 +969,38 @@
 
     {% if session.user_id %}
     <!-- شريط التنقل للهواتف -->
-    <div class="mobile-menu mobile-only">
+    <div class="mobile-menu {% if session.role == 'parent' %}parent-bottom-nav{% else %}mobile-only{% endif %}">
         {% if session.role == 'parent' %}
-        <a href="{{ url_for('parent_dashboard') }}" class="btn btn-outline-primary">
-            <i class="fas fa-home"></i>
-            <small>الرئيسية</small>
-        </a>
-        <a href="{{ url_for('support') }}" class="btn btn-outline-info">
-            <i class="fas fa-heart"></i>
-            <small>الدعم</small>
-        </a>
-        <a href="{{ url_for('parent_logout') }}" class="btn btn-outline-warning">
-            <i class="fas fa-sign-out-alt"></i>
-            <small>خروج</small>
-        </a>
-        
+        <div class="flex justify-around gap-4 items-center px-4 py-1 bg-black rounded-[15px] ring-1 ring-white">
+            <a href="{{ url_for('parent_dashboard') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
+                <svg width="20" height="20" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M27.9167 30H20.4167C19.2658 30 18.3333 29.1392 18.3333 28.0769V21.1538C18.3333 20.3038 17.5875 19.6154 16.6667 19.6154H13.3333C12.4125 19.6154 11.6667 20.3038 11.6667 21.1538V28.0769C11.6667 29.1392 10.7342 30 9.58333 30H2.08333C0.9325 30 0 29.1392 0 28.0769V13.3946C0 11.6262 0.878334 9.95539 2.3825 8.86154L14.2258 0.246923C14.68 -0.0823077 15.32 -0.0823077 15.7733 0.246923L27.6183 8.86154C29.1225 9.95539 30 11.6254 30 13.3931V28.0769C30 29.1392 29.0675 30 27.9167 30Z" fill="white"></path></svg>
+                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الرئيسية</span>
+            </a>
+            <a href="#" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="white"></path></svg>
+                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">التقارير</span>
+            </a>
+            <a href="#" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10H10v-2h6v2zm-6-3H10V7h2v2zm4 0H14V7h2v2z" fill="white"></path></svg>
+                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الدورات</span>
+            </a>
+            <a href="{{ url_for('activities') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 12H9v-2h2v2zm4-4h-2v2h2v-2zm-4-4H9V5h2v2z" fill="white"></path></svg>
+                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الأنشطة</span>
+            </a>
+            <a href="{{ url_for('messaging') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10z" fill="white"></path></svg>
+                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">المراسلة</span>
+            </a>
+            <a href="{{ url_for('support') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="white"></path></svg>
+                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الدعم</span>
+            </a>
+             <a href="{{ url_for('parent_logout') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" fill="white"></path></svg>
+                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الخروج</span>
+            </a>
+        </div>
         {% else %}
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
             <i class="fas fa-home"></i>

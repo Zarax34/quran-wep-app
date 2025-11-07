@@ -30,6 +30,22 @@
                         <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
                     </form>
                 </div>
+                {% elif session.get('role') == 'parent' and parent_children %}
+                <div>
+                    <h6 class="mb-2">موافقة الأبناء:</h6>
+                    <ul class="list-group">
+                        {% for child in parent_children %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ child.name }}
+                            <input type="checkbox" class="peer opacity-0" id="approve-{{ child.id }}-{{ activity.id }}"
+                                   onchange="toggleApproval({{ child.id }}, {{ activity.id }})"
+                                   {% if approvals.get((child.id, activity.id)) %}checked{% endif %}>
+                            <label for="approve-{{ child.id }}-{{ activity.id }}" class="after:z-10 w-[72px] h-[37px] rounded-full bg-white border-black border-2 hover:bg-rose-50 peer-checked:bg-black transition-all duration-300 ease-in-out after:w-[29px] after:h-[29px] after:bg-black after:rounded-full after:absolute after:top-1 after:left-1 after:transition-all after:duration-500 after:ease-in-out after:peer-checked:translate-x-[36px] after:peer-checked:bg-rose-50"
+                            ></label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -40,4 +56,88 @@
     </div>
     {% endfor %}
 </div>
+
+{% if session.get('role') == 'parent' %}
+<script>
+function toggleApproval(studentId, activityId) {
+    fetch(`/approve_activity/${studentId}/${activityId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // You might need a CSRF token here depending on your setup
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Optional: Show a success message
+            console.log(`Approval status for student ${studentId} is now ${data.approved}`);
+        } else {
+            // Optional: Show an error message
+            console.error('Failed to update approval status');
+            // Revert the checkbox state if the backend update fails
+            const checkbox = document.getElementById(`approve-${studentId}-${activityId}`);
+            checkbox.checked = !checkbox.checked;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const checkbox = document.getElementById(`approve-${studentId}-${activityId}`);
+        checkbox.checked = !checkbox.checked;
+    });
+}
+</script>
+{% endif %}
+
+<style>
+/* Basic styles for the toggle switch */
+.list-group-item {
+    position: relative; /* Needed for absolute positioning of the label */
+}
+
+.peer {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+label[for^="approve-"] {
+    position: relative;
+    display: inline-block;
+    width: 72px;
+    height: 37px;
+    background-color: #fff;
+    border: 2px solid black;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+label[for^="approve-"]:hover {
+    background-color: #fce7f3; /* rose-50 equivalent */
+}
+
+.peer:checked + label[for^="approve-"] {
+    background-color: black;
+}
+
+label[for^="approve-"]::after {
+    content: '';
+    position: absolute;
+    z-index: 10;
+    width: 29px;
+    height: 29px;
+    background-color: black;
+    border-radius: 50%;
+    top: 2px; /* Adjusted for border */
+    left: 2px; /* Adjusted for border */
+    transition: transform 0.5s ease-in-out, background-color 0.5s ease-in-out;
+}
+
+.peer:checked + label[for^="approve-"]::after {
+    transform: translateX(36px);
+    background-color: #fce7f3; /* rose-50 equivalent */
+}
+</style>
 {% endblock %}

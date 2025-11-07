@@ -191,6 +191,10 @@ class Settings(db.Model):
     dark_mode_enabled = db.Column(db.Boolean, default=False)
     teacher_requires_approval = db.Column(db.Boolean, default=True)
     allow_custom_teacher_name = db.Column(db.Boolean, default=True)
+    social_instagram = db.Column(db.String(200))
+    social_facebook = db.Column(db.String(200))
+    social_whatsapp = db.Column(db.String(200))
+    social_telegram = db.Column(db.String(200))
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -276,6 +280,14 @@ class CenterActivity(db.Model):
     image = db.Column(db.String(200))
     fee = db.Column(db.Float, nullable=True)  # Add this line for the fee
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+class ActivityApproval(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    activity_id = db.Column(db.Integer, db.ForeignKey('center_activity.id'), nullable=False)
+    approved = db.Column(db.Boolean, default=False)
+    student = db.relationship('Student', backref='approvals')
+    activity = db.relationship('CenterActivity', backref='approvals')
 
 class Alumni(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -836,7 +848,30 @@ def dashboard():
     active_circles = Circle.query.filter_by(is_active=True).all()
     announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
     
+    # Student of the Month
+    today = datetime.now().date()
+    start_of_month = today.replace(day=1)
+
+    # Subquery to count badges per student this month
+    subquery = db.session.query(
+        StudentBadge.student_id,
+        func.count(StudentBadge.id).label('badge_count')
+    ).filter(
+        StudentBadge.date_awarded >= start_of_month
+    ).group_by(StudentBadge.student_id).subquery()
+
+    # Find the max badge count
+    max_badge_count_query = db.session.query(func.max(subquery.c.badge_count)).scalar()
+
+    students_of_the_month = []
+    if max_badge_count_query:
+        # Find all students with that max count
+        top_students_ids = db.session.query(subquery.c.student_id).filter(subquery.c.badge_count == max_badge_count_query).all()
+        student_ids = [s_id[0] for s_id in top_students_ids]
+        students_of_the_month = Student.query.filter(Student.id.in_(student_ids)).all()
+
     return render_template('dashboard.html',
+                         students_of_the_month=students_of_the_month,
                          total_students=total_students,
                          total_teachers=total_teachers,
                          total_circles=total_circles,
@@ -940,6 +975,17 @@ def add_student():
     
     circles = Circle.query.filter_by(is_active=True).all()
     return render_template('add_student.html', circles=circles)
+
+
+@app.route('/upload_students_excel', methods=['GET', 'POST'])
+@require_role('admin')
+def upload_students_excel():
+    if request.method == 'POST':
+        # Logic to handle file upload and processing will be added here
+        flash('File upload functionality is not yet implemented.', 'info')
+        return redirect(url_for('upload_students_excel'))
+    return render_template('upload_excel.html')
+
 
 @app.route('/move_student/<int:student_id>', methods=['POST'])
 @require_login
@@ -1535,7 +1581,7 @@ def add_parents():
             
             db.session.commit()
             flash(f'تم إضافة {created_count} من أولياء الأمور بنجاح', 'success')
-            return redirect(url_for('parents'))
+            return redirect(url_for('parent_management'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة أولياء الأمور: {str(e)}', 'error')
@@ -1655,7 +1701,23 @@ def delete_announcement(announcement_id):
 @require_login
 def activities():
     activities = CenterActivity.query.order_by(CenterActivity.date.desc()).all()
-    return render_template('activities.html', activities=activities)
+
+    parent_children = []
+    approvals = {}
+    if session.get('role') == 'parent':
+        parent = Parent.query.filter_by(user_id=session['user_id']).first()
+        if parent:
+            parent_children = parent.students
+            # Get all approvals for this parent's children in one query
+            child_ids = [child.id for child in parent_children]
+            approval_list = ActivityApproval.query.filter(ActivityApproval.student_id.in_(child_ids)).all()
+            for approval in approval_list:
+                approvals[(approval.student_id, approval.activity_id)] = approval.approved
+
+    return render_template('activities.html',
+                         activities=activities,
+                         parent_children=parent_children,
+                         approvals=approvals)
 
 @app.route('/add_activity', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1767,6 +1829,28 @@ def delete_fee(fee_id):
     db.session.commit()
     flash('تم حذف الرسوم بنجاح!', 'success')
     return redirect(url_for('fees'))
+
+@app.route('/approve_activity/<int:student_id>/<int:activity_id>', methods=['POST'])
+@require_login
+def approve_activity(student_id, activity_id):
+    if session.get('role') != 'parent':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
+    student = Student.query.get_or_404(student_id)
+    if not parent or student.parent_id != parent.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    approval = ActivityApproval.query.filter_by(student_id=student_id, activity_id=activity_id).first()
+    if not approval:
+        approval = ActivityApproval(student_id=student_id, activity_id=activity_id, approved=True)
+        db.session.add(approval)
+    else:
+        approval.approved = not approval.approved
+
+    db.session.commit()
+    return jsonify({'success': True, 'approved': approval.approved})
+
 
 @app.route('/delete_activity/<int:activity_id>', methods=['POST'])
 @require_role('admin')
@@ -2058,6 +2142,11 @@ def settings():
         settings_obj.allow_custom_teacher_name = bool(request.form.get('allow_custom_teacher_name'))
         settings_obj.dark_mode_enabled = bool(request.form.get('dark_mode_enabled'))
         
+        settings_obj.social_instagram = request.form.get('social_instagram')
+        settings_obj.social_facebook = request.form.get('social_facebook')
+        settings_obj.social_whatsapp = request.form.get('social_whatsapp')
+        settings_obj.social_telegram = request.form.get('social_telegram')
+
         logo = request.files.get('logo')
         if logo and allowed_file(logo.filename):
             filename = secure_filename(logo.filename)
@@ -2179,6 +2268,14 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # ---------- 20.  PARENT DASHBOARD ----------
+@app.route('/messaging')
+@require_login
+def messaging():
+    if session.get('role') != 'parent':
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+        return redirect(url_for('dashboard'))
+    return render_template('messaging.html')
+
 @app.route('/parent_dashboard')
 @require_login
 def parent_dashboard():
@@ -2223,8 +2320,25 @@ def parent_dashboard():
         'average_attendance': get_center_attendance_stats(),
         'total_verses_this_month': Report.query.filter(Report.date >= datetime.now().date() - timedelta(days=30)).count()
     }
+
+    # Student of the Month
+    today = datetime.now().date()
+    start_of_month = today.replace(day=1)
+    subquery = db.session.query(
+        StudentBadge.student_id,
+        func.count(StudentBadge.id).label('badge_count')
+    ).filter(
+        StudentBadge.date_awarded >= start_of_month
+    ).group_by(StudentBadge.student_id).subquery()
+    max_badge_count_query = db.session.query(func.max(subquery.c.badge_count)).scalar()
+    students_of_the_month = []
+    if max_badge_count_query:
+        top_students_ids = db.session.query(subquery.c.student_id).filter(subquery.c.badge_count == max_badge_count_query).all()
+        student_ids = [s_id[0] for s_id in top_students_ids]
+        students_of_the_month = Student.query.filter(Student.id.in_(student_ids)).all()
     
     return render_template('parent_dashboard.html', 
+                         students_of_the_month=students_of_the_month,
                          parent=parent, 
                          student_stats=student_stats,
                          total_children=total_children,
@@ -2668,7 +2782,24 @@ def student_details(student_id):
 
     educational_notes = EducationalNote.query.filter_by(student_id=student_id).order_by(EducationalNote.date.desc()).all()
 
+    # Student of the Month
+    today = datetime.now().date()
+    start_of_month = today.replace(day=1)
+    subquery = db.session.query(
+        StudentBadge.student_id,
+        func.count(StudentBadge.id).label('badge_count')
+    ).filter(
+        StudentBadge.date_awarded >= start_of_month
+    ).group_by(StudentBadge.student_id).subquery()
+    max_badge_count_query = db.session.query(func.max(subquery.c.badge_count)).scalar()
+    students_of_the_month = []
+    if max_badge_count_query:
+        top_students_ids = db.session.query(subquery.c.student_id).filter(subquery.c.badge_count == max_badge_count_query).all()
+        student_ids = [s_id[0] for s_id in top_students_ids]
+        students_of_the_month = Student.query.filter(Student.id.in_(student_ids)).all()
+
     return render_template('student_details.html',
+                         students_of_the_month=students_of_the_month,
                          student=student,
                          stats=stats,
                          recent_reports=recent_reports,
