@@ -25,6 +25,8 @@
                         <th>الاسم</th>
                         <th>اسم المستخدم</th>
                         <th>رقم الهاتف</th>
+                        <th>الوظيفة</th>
+                        <th>جهة العمل</th>
                         <th>عدد الأبناء المرتبطين</th>
                         <th>الحالة</th>
                         <th>إجراءات</th>
@@ -36,6 +38,8 @@
                         <td>{{ parent.name }}</td>
                         <td>{{ user.username if user else 'N/A' }}</td>
                         <td>{{ parent.phone }}</td>
+                        <td>{{ parent.job or 'غير محدد' }}</td>
+                        <td>{{ parent.workplace or 'غير محدد' }}</td>
                         <td>{{ parent.students|length }}</td>
                         <td>
                             {% if user and user.is_active %}

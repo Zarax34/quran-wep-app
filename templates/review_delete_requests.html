@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">مراجعة طلبات حذف الطلاب</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للوحة التحكم
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-user-minus"></i> طلبات الحذف المعلقة ({{ requests|length }})</h5>
+    </div>
+    <div class="card-body">
+        {% if requests %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>اسم الطالب</th>
+                        <th>الحلقة</th>
+                        <th>مقدم الطلب (المعلم)</th>
+                        <th>السبب</th>
+                        <th>تاريخ الطلب</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.student.name }}</td>
+                        <td>{{ req.student.circle.name }}</td>
+                        <td>{{ req.teacher.name }}</td>
+                        <td>{{ req.reason or 'لم يذكر سبب' }}</td>
+                        <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('process_delete_request', request_id=req.id, action='approve') }}" class="btn btn-sm btn-success" onclick="return confirm('هل أنت متأكد من الموافقة على حذف هذا الطالب؟')">
+                                <i class="fas fa-check"></i> موافقة
+                            </a>
+                            <a href="{{ url_for('process_delete_request', request_id=req.id, action='reject') }}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من رفض هذا الطلب؟')">
+                                <i class="fas fa-times"></i> رفض
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-success text-center">
+            <i class="fas fa-check-circle fa-3x mb-3"></i>
+            <h4>لا توجد طلبات حذف معلقة حالياً.</h4>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

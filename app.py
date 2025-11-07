@@ -99,6 +99,8 @@ class Parent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=False)
+    job = db.Column(db.String(100), nullable=True)
+    workplace = db.Column(db.String(100), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -300,6 +302,20 @@ class Work(db.Model):
     link = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+class StudentDeleteRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reason = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending') # pending, approved, rejected
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    reviewed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+
+    student = db.relationship('Student', backref='delete_requests')
+    teacher = db.relationship('User', foreign_keys=[teacher_id], backref='sent_delete_requests')
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by_id], backref='reviewed_delete_requests')
+
 # ===================
 # Courses and Tests Models
 # ===================
@@ -322,6 +338,11 @@ class CourseEnrollment(db.Model):
     enrollment_date = db.Column(db.DateTime, default=datetime.utcnow)
 
     student = db.relationship('Student', backref='course_enrollments')
+
+    @property
+    def certificate_url(self):
+        cert = Certificate.query.filter_by(student_id=self.student_id, course_id=self.course_id).first()
+        return cert.certificate_url if cert else None
 
 class Test(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -348,7 +369,8 @@ class Certificate(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
     issue_date = db.Column(db.DateTime, default=datetime.utcnow)
-    certificate_file = db.Column(db.String(255), nullable=False) # Stores the path to the PDF file
+    certificate_file = db.Column(db.String(255), nullable=True) # Stores the path to the PDF file
+    certificate_url = db.Column(db.String(500), nullable=True) # Stores an external URL for the certificate
 
     student = db.relationship('Student', backref='certificates')
     course_info = db.relationship('Course', backref='certificates')
@@ -396,25 +418,24 @@ def require_role(role):
     return decorator
 
 def create_parent_username(full_name):
-    # استخدام مسافات بدلاً من الشرطة السفلية
-    username = full_name.strip().replace(' ', '_')
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username}_{counter}"
+        username = f"{base_username} {counter}"
         counter += 1
     return username
 
 def create_student_username(full_name):
-    username = full_name.strip().replace(' ', '_')
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username}_{counter}"
+        username = f"{base_username} {counter}"
         counter += 1
     return username
 
-def get_or_create_parent(student_name, parent_phone):
+def get_or_create_parent(student_name, parent_phone, parent_job=None, parent_workplace=None):
     if not parent_phone:
         return None
     phone = re.sub(r'[^\d]', '', parent_phone)
@@ -431,14 +452,25 @@ def get_or_create_parent(student_name, parent_phone):
     # البحث عن ولي الأمر بالاسم أو رقم الهاتف
     parent = Parent.query.filter_by(name=parent_name).first()
     if parent:
+        # Update job and workplace if provided, as they might change
+        if parent_job:
+            parent.job = parent_job
+        if parent_workplace:
+            parent.workplace = parent_workplace
+        db.session.commit()
         return parent
     
     parent = Parent.query.filter_by(phone=phone).first()
     if parent:
+        if parent_job:
+            parent.job = parent_job
+        if parent_workplace:
+            parent.workplace = parent_workplace
+        db.session.commit()
         return parent
     
     # إنشاء ولي أمر جديد
-    parent = Parent(name=parent_name, phone=phone)
+    parent = Parent(name=parent_name, phone=phone, job=parent_job, workplace=parent_workplace)
     db.session.add(parent)
     
     # إنشاء حساب مستخدم لولي الأمر
@@ -919,7 +951,9 @@ def add_student():
         db.session.add(student)
         
         # إنشاء وربط ولي الأمر
-        parent = get_or_create_parent(name, parent_phone)
+        parent_job = request.form.get('parent_job')
+        parent_workplace = request.form.get('parent_workplace')
+        parent = get_or_create_parent(name, parent_phone, parent_job, parent_workplace)
         if parent:
             student.parent_id = parent.id
         
@@ -976,6 +1010,11 @@ def edit_student(student_id):
         student.date_of_birth = datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form.get('date_of_birth') else None
         student.previous_memorization = request.form.get('previous_memorization')
         student.enrollment_date = datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date() if request.form.get('enrollment_date') else student.enrollment_date
+
+        # Update parent's job and workplace
+        if student.parent:
+            student.parent.job = request.form.get('parent_job')
+            student.parent.workplace = request.form.get('parent_workplace')
 
         photo = request.files.get('photo')
         if photo and allowed_file(photo.filename):
@@ -1053,6 +1092,65 @@ def reject_student(student_id):
     
     flash('تم رفض الطالب وإشعار ولي الأمر', 'warning')
     return redirect(url_for('students'))
+
+@app.route('/request_student_delete/<int:student_id>', methods=['POST'])
+@require_role('teacher')
+def request_student_delete(student_id):
+    student = Student.query.get_or_404(student_id)
+    # Ensure teacher can only request deletion for their own students
+    teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+    if student.circle_id not in teacher_circles:
+        flash('ليس لديك الصلاحية لطلب حذف هذا الطالب.', 'error')
+        return redirect(url_for('students'))
+
+    reason = request.form.get('reason')
+
+    # Check if a pending request already exists
+    existing_request = StudentDeleteRequest.query.filter_by(student_id=student_id, status='pending').first()
+    if existing_request:
+        flash('يوجد بالفعل طلب حذف معلق لهذا الطالب.', 'warning')
+        return redirect(url_for('students'))
+
+    delete_request = StudentDeleteRequest(
+        student_id=student_id,
+        teacher_id=session['user_id'],
+        reason=reason
+    )
+    db.session.add(delete_request)
+    db.session.commit()
+
+    flash('تم إرسال طلب الحذف إلى المسؤول بنجاح.', 'success')
+    return redirect(url_for('students'))
+
+@app.route('/review_delete_requests')
+@require_role('admin')
+def review_delete_requests():
+    pending_requests = StudentDeleteRequest.query.filter_by(status='pending').order_by(StudentDeleteRequest.created_at.desc()).all()
+    return render_template('review_delete_requests.html', requests=pending_requests)
+
+@app.route('/process_delete_request/<int:request_id>/<action>')
+@require_role('admin')
+def process_delete_request(request_id, action):
+    delete_request = StudentDeleteRequest.query.get_or_404(request_id)
+    if action == 'approve':
+        delete_request.status = 'approved'
+        delete_request.reviewed_by_id = session['user_id']
+        delete_request.reviewed_at = datetime.now()
+
+        student = Student.query.get(delete_request.student_id)
+        if student:
+            student.is_active = False
+
+        flash(f'تمت الموافقة على حذف الطالب "{student.name}".', 'success')
+
+    elif action == 'reject':
+        delete_request.status = 'rejected'
+        delete_request.reviewed_by_id = session['user_id']
+        delete_request.reviewed_at = datetime.now()
+        flash(f'تم رفض طلب حذف الطالب.', 'warning')
+
+    db.session.commit()
+    return redirect(url_for('review_delete_requests'))
 
 # ---------- 9.  CIRCLES ----------
 @app.route('/circles')
@@ -2313,8 +2411,8 @@ def export_student_report(student_id):
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.add_font('NotoNaskhArabic', '', 'NotoNaskhArabic-Regular.ttf', uni=True)
-    pdf.set_font('NotoNaskhArabic', '', 12)
+    pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
+    pdf.set_font('DejaVu', '', 12)
 
     pdf.cell(0, 10, f'تقرير الطالب: {student.name}', 0, 1, 'C')
 
@@ -2337,9 +2435,9 @@ def export_student_report(student_id):
 def courses():
     # Admin sees all courses, teacher sees only their own
     if session['role'] == 'admin':
-        courses_list = Course.query.order_by(Course.created_at.desc()).all()
+        courses_list = Course.query.filter_by(is_active=True).order_by(Course.created_at.desc()).all()
     else: # teacher
-        courses_list = Course.query.filter_by(teacher_id=session['user_id']).order_by(Course.created_at.desc()).all()
+        courses_list = Course.query.filter_by(teacher_id=session['user_id'], is_active=True).order_by(Course.created_at.desc()).all()
     return render_template('courses.html', courses=courses_list)
 
 @app.route('/add_course', methods=['GET', 'POST'])
@@ -2599,6 +2697,62 @@ def record_scores(test_id):
     existing_scores = {score.student_id: score for score in test.scores}
     return render_template('record_scores.html', test=test, existing_scores=existing_scores)
 
+@app.route('/upload_certificates/<int:course_id>', methods=['POST'])
+@require_login
+def upload_certificates(course_id):
+    course = Course.query.get_or_404(course_id)
+    if not (session.get('role') == 'admin' or (session.get('role') == 'teacher' and course.teacher_id == session.get('user_id'))):
+        flash('ليس لديك الصلاحية لرفع شهادات لهذه الدورة.', 'error')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    if 'certificate_excel' not in request.files:
+        flash('لم يتم العثور على ملف.', 'error')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    file = request.files['certificate_excel']
+    if file.filename == '':
+        flash('لم يتم تحديد أي ملف.', 'error')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        try:
+            import openpyxl
+            workbook = openpyxl.load_workbook(file)
+            sheet = workbook.active
+
+            not_found_students = []
+            for row in sheet.iter_rows(min_row=2, values_only=True): # Assuming first row is header
+                student_name, certificate_url = row[0], row[1]
+
+                # Find student by name (case-insensitive and strip whitespace)
+                student = Student.query.filter(func.lower(Student.name) == func.lower(student_name.strip())).first()
+
+                if student:
+                    # Create or update certificate
+                    certificate = Certificate.query.filter_by(student_id=student.id, course_id=course_id).first()
+                    if certificate:
+                        certificate.certificate_url = certificate_url
+                    else:
+                        new_certificate = Certificate(student_id=student.id, course_id=course_id, certificate_url=certificate_url)
+                        db.session.add(new_certificate)
+                else:
+                    not_found_students.append(student_name)
+
+            db.session.commit()
+
+            if not_found_students:
+                flash(f'تم رفع الشهادات بنجاح، لكن لم يتم العثور على الطلاب التالية أسماؤهم: {", ".join(not_found_students)}', 'warning')
+            else:
+                flash('تم رفع جميع روابط الشهادات بنجاح!', 'success')
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء معالجة الملف: {e}', 'error')
+    else:
+        flash('صيغة الملف غير مدعومة. يرجى استخدام ملفات Excel (.xlsx, .xls).', 'error')
+
+    return redirect(url_for('course_details', course_id=course_id))
+
 # ---------- 22.  PARENT STUDENT DETAILS ----------
 @app.route('/student_dashboard')
 @require_login
@@ -2804,6 +2958,33 @@ def setup_database():
                 pass # Column already exists.
             else:
                 print(f"ERROR: Could not add 'user_id' column to 'parent' table: {e}")
+
+        # 3. Add 'certificate_url' to 'certificate' table
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text('ALTER TABLE certificate ADD COLUMN certificate_url VARCHAR(500)'))
+                trans.commit()
+            print("INFO: Added 'certificate_url' column to 'certificate' table.")
+        except Exception as e:
+            if 'duplicate column' in str(e).lower():
+                pass # Column already exists.
+            else:
+                print(f"ERROR: Could not add 'certificate_url' column to 'certificate' table: {e}")
+
+        # 4. Add 'job' and 'workplace' to 'parent' table
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text('ALTER TABLE parent ADD COLUMN job VARCHAR(100)'))
+                connection.execute(text('ALTER TABLE parent ADD COLUMN workplace VARCHAR(100)'))
+                trans.commit()
+            print("INFO: Added 'job' and 'workplace' columns to 'parent' table.")
+        except Exception as e:
+            if 'duplicate column' in str(e).lower():
+                pass # Columns already exist.
+            else:
+                print(f"ERROR: Could not add 'job' and 'workplace' columns to 'parent' table: {e}")
 
         # Seed initial data if it doesn't exist
         # 1. Default settings
