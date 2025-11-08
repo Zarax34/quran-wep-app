@@ -10,25 +10,25 @@
     {% endif %}
 </div>
 
-<div class="row row-cols-1 row-cols-md-2 g-4">
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     {% for announcement in announcements %}
     <div class="col">
-        <div class="card h-100 shadow-sm announcement-card">
-            {% if announcement.image %}
-                <img src="{{ url_for('uploaded_file', filename=announcement.image) }}" class="card-img-top" alt="{{ announcement.title }}">
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">{{ announcement.title }}</h5>
-                <p class="card-text">{{ announcement.content }}</p>
-            </div>
-            <div class="card-footer bg-light">
-                <small class="text-muted">نشر في: {{ announcement.date_posted.strftime('%Y-%m-%d') }}</small>
-                {% if session.role == 'admin' %}
-                <div class="float-end">
+        <div class="card announcement-card">
+            <div class="img" {% if announcement.image %}style="background: url({{ url_for('uploaded_file', filename=announcement.image) }}) no-repeat center center/cover;"{% endif %}>
+                 {% if session.role == 'admin' %}
+                <div class="save">
                     <a href="{{ url_for('edit_announcement', announcement_id=announcement.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
                     <a href="{{ url_for('delete_announcement', announcement_id=announcement.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('هل أنت متأكد؟')"><i class="fas fa-trash"></i></a>
                 </div>
                 {% endif %}
+            </div>
+            <div class="text">
+                <h3 class="h3">{{ announcement.title }}</h3>
+                <p class="p">{{ announcement.content|truncate(100) }}</p>
+                <div class="icon-box">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="span">{{ announcement.date_posted.strftime('%Y-%m-%d') }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -43,9 +43,93 @@
 </div>
 
 <style>
-.announcement-card img {
-    max-height: 250px;
-    object-fit: cover;
+.announcement-card {
+  width: 100%;
+  height: 265px;
+  background: var(--card-bg);
+  border-radius: 30px;
+  box-shadow: 15px 15px 30px #bebebe,
+             -15px -15px 30px #ffffff;
+  transition: 0.2s ease-in-out;
 }
+
+.dark-mode .announcement-card {
+    box-shadow: 15px 15px 30px #121212,
+             -15px -15px 30px #2a2a2a;
+}
+
+.announcement-card .img {
+  width: 100%;
+  height: 50%;
+  border-top-left-radius: 30px;
+  border-top-right-radius: 30px;
+  background: linear-gradient(#e66465, #9198e5);
+  display: flex;
+  align-items: top;
+  justify-content: right;
+}
+
+.announcement-card .save {
+  transition: 0.2s ease-in-out;
+  border-radius: 10px;
+  margin: 20px;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+}
+
+.announcement-card .text {
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: space-around;
+}
+
+.announcement-card .icon-box {
+  margin-top: 15px;
+  width: 70%;
+  padding: 10px;
+  background-color: #e3fff9;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+}
+
+.dark-mode .announcement-card .icon-box {
+    background-color: #2d3748;
+}
+
+.announcement-card .icon-box svg {
+  width: 17px;
+}
+
+.announcement-card .text .h3 {
+  font-family: 'Lucida Sans' sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.announcement-card .text .p {
+  font-family: 'Lucida Sans' sans-serif;
+  color: #999999;
+  font-size: 13px;
+}
+
+.announcement-card .icon-box .span {
+  margin-left: 10px;
+  font-family: 'Lucida Sans' sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9198e5;
+}
+
+.announcement-card:hover {
+  cursor: pointer;
+  box-shadow: 0px 10px 20px rgba(0,0,0,0.1);
+}
+
 </style>
 {% endblock %}

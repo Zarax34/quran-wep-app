@@ -11,61 +11,57 @@
 
     <!-- إحصائيات سريعة -->
     <div class="row mb-4 fade-in">
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-light">إجمالي الطلاب</h6>
-                        <h2 class="mb-0 counter" data-target="{{ total_students }}">0</h2>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="content">
+                    <div class="logo">
+                        <i class="fas fa-user-graduate fa-2x"></i>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-user-graduate fa-2x text-light"></i>
-                    </div>
+                    <div class="logo-bottom-text">إجمالي الطلاب</div>
                 </div>
+                <div class="bottom-text counter" data-target="{{ total_students }}">0</div>
+                <div class="border"></div>
             </div>
         </div>
         
         {% if session.role == 'admin' %}
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-light">إجمالي المعلمين</h6>
-                        <h2 class="mb-0 counter" data-target="{{ total_teachers }}">0</h2>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="content">
+                     <div class="logo">
+                        <i class="fas fa-chalkboard-teacher fa-2x"></i>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-chalkboard-teacher fa-2x text-light"></i>
-                    </div>
+                    <div class="logo-bottom-text">إجمالي المعلمين</div>
                 </div>
+                <div class="bottom-text counter" data-target="{{ total_teachers }}">0</div>
+                <div class="border"></div>
             </div>
         </div>
         {% endif %}
         
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-light">عدد الحلقات</h6>
-                        <h2 class="mb-0 counter" data-target="{{ total_circles }}">0</h2>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="content">
+                     <div class="logo">
+                        <i class="fas fa-users fa-2x"></i>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-2x text-light"></i>
-                    </div>
+                    <div class="logo-bottom-text">عدد الحلقات</div>
                 </div>
+                <div class="bottom-text counter" data-target="{{ total_circles }}">0</div>
+                <div class="border"></div>
             </div>
         </div>
         
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-light">التقارير اليوم</h6>
-                        <h2 class="mb-0 counter" data-target="{{ recent_reports|length }}">0</h2>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                 <div class="content">
+                     <div class="logo">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-clipboard-list fa-2x text-light"></i>
-                    </div>
+                    <div class="logo-bottom-text">التقارير اليوم</div>
                 </div>
+                <div class="bottom-text counter" data-target="{{ recent_reports|length }}">0</div>
+                <div class="border"></div>
             </div>
         </div>
     </div>
@@ -73,7 +69,7 @@
     <div class="row">
         <!-- إحصائيات الحضور -->
         <div class="col-md-6 mb-4">
-            <div class="card h-100 fade-in">
+            <div class="card h-100 fade-in main-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0"><i class="fas fa-chart-pie"></i> إحصائيات الحضور لهذا الأسبوع</h5>
                 </div>
@@ -111,7 +107,7 @@
 
         <!-- الإجراءات السريعة -->
         <div class="col-md-6 mb-4">
-            <div class="card h-100 fade-in">
+            <div class="card h-100 fade-in main-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0"><i class="fas fa-bolt"></i> إجراءات سريعة</h5>
                 </div>
@@ -178,7 +174,7 @@
     <!-- Announcements -->
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card">
+            <div class="card main-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0"><i class="fas fa-bullhorn"></i> الإعلانات</h5>
                 </div>
@@ -204,7 +200,7 @@
     <!-- آخر التقارير -->
     <div class="row slide-in-left">
         <div class="col-12">
-            <div class="card">
+            <div class="card main-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0"><i class="fas fa-history"></i> آخر التقارير</h5>
                     <a href="{{ url_for('reports') }}" class="btn btn-sm btn-outline-primary">عرض الكل</a>
@@ -276,7 +272,7 @@
             <h4 class="mb-3"><i class="fas fa-star text-warning"></i> طالب الشهر</h4>
             <div class="d-flex flex-wrap gap-3">
                 {% for student in students_of_the_month %}
-                <div class="card">
+                <div class="card student-card">
                     <div class="top-section">
                         <div class="border"></div>
                         <div class="icons">
@@ -309,8 +305,165 @@
 </div>
 
 <style>
+.stat-card {
+  width: 100%;
+  height: 200px;
+  background: #243137;
+  position: relative;
+  display: grid;
+  place-content: center;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.5s ease-in-out;
+}
+
+.stat-card .logo i {
+    color: #bd9f67;
+}
+
+.stat-card .border {
+  position: absolute;
+  inset: 0px;
+  border: 2px solid #bd9f67;
+  opacity: 0;
+  transform: rotate(10deg);
+  transition: all 0.5s ease-in-out;
+}
+
+.stat-card .bottom-text {
+  position: absolute;
+  left: 50%;
+  bottom: 13px;
+  transform: translateX(-50%);
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  padding: 0px 5px 0px 8px;
+  color: #bd9f67;
+  background: #243137;
+  opacity: 0;
+  letter-spacing: 7px;
+  transition: all 0.5s ease-in-out;
+}
+
+.stat-card .content {
+  transition: all 0.5s ease-in-out;
+}
+
+.stat-card .content .logo {
+  height: 35px;
+  position: relative;
+  width: 33px;
+  overflow: hidden;
+  transition: all 1s ease-in-out;
+}
+
+.stat-card .content .logo .logo1 {
+  height: 33px;
+  position: absolute;
+  left: 0;
+}
+
+.stat-card .content .logo .logo2 {
+  height: 33px;
+  position: absolute;
+  left: 33px;
+}
+
+.stat-card .content .logo .trail {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+}
+
+.stat-card .content .logo-bottom-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin-top: 30px;
+  color: #bd9f67;
+  padding-left: 8px;
+  font-size: 1rem;
+  opacity: 0;
+  letter-spacing: none;
+  transition: all 0.5s ease-in-out 0.5s;
+}
+
+.stat-card:hover {
+  border-radius: 0;
+  transform: scale(1.1);
+}
+
+.stat-card:hover .logo {
+  width: 134px;
+  animation: opacity 1s ease-in-out;
+}
+
+.stat-card:hover .border {
+  inset: 15px;
+  opacity: 1;
+  transform: rotate(0);
+}
+
+.stat-card:hover .bottom-text {
+  letter-spacing: 3px;
+  opacity: 1;
+  transform: translateX(-50%);
+}
+
+.stat-card:hover .content .logo-bottom-text {
+  opacity: 1;
+  letter-spacing: 9.5px;
+}
+
+.stat-card:hover .trail {
+  animation: trail 1s ease-in-out;
+}
+
+@keyframes opacity {
+  0% {
+    border-right: 1px solid transparent;
+  }
+
+  10% {
+    border-right: 1px solid #bd9f67;
+  }
+
+  80% {
+    border-right: 1px solid #bd9f67;
+  }
+
+  100% {
+    border-right: 1px solid transparent;
+  }
+}
+
+@keyframes trail {
+  0% {
+    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 90%, rgb(189, 159, 103) 100%);
+    opacity: 0;
+  }
+
+  30% {
+    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 70%, rgb(189, 159, 103) 100%);
+    opacity: 1;
+  }
+
+  70% {
+    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 70%, rgb(189, 159, 103) 100%);
+    opacity: 1;
+  }
+
+  95% {
+    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 90%, rgb(189, 159, 103) 100%);
+    opacity: 0;
+  }
+}
+
 /* From Uiverse.io by Smit-Prajapati */
-.card {
+.student-card {
     width: 230px;
     border-radius: 20px;
     background: #1b233d;
@@ -319,10 +472,10 @@
     box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 20px 0px;
     transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.card:hover {
+.student-card:hover {
     transform: scale(1.05);
 }
-.card .top-section {
+.student-card .top-section {
     height: 150px;
     border-radius: 15px;
     display: flex;
@@ -330,7 +483,7 @@
     background: linear-gradient(45deg, rgb(4, 159, 187) 0%, rgb(80, 246, 255) 100%);
     position: relative;
 }
-.card .top-section .border {
+.student-card .top-section .border {
     border-bottom-right-radius: 10px;
     height: 30px;
     width: 130px;
@@ -339,7 +492,7 @@
     transform: skew(-40deg);
     box-shadow: -10px -10px 0 0 #1b233d;
 }
-.card .top-section .border::before {
+.student-card .top-section .border::before {
     content: "";
     position: absolute;
     width: 15px;
@@ -350,7 +503,7 @@
     border-top-left-radius: 10px;
     box-shadow: -5px -5px 0 2px #1b233d;
 }
-.card .top-section::before {
+.student-card .top-section::before {
     content: "";
     position: absolute;
     top: 30px;
@@ -361,11 +514,11 @@
     border-top-left-radius: 15px;
     box-shadow: -5px -5px 0 2px #1b233d;
 }
-.card .bottom-section {
+.student-card .bottom-section {
     margin-top: 15px;
     padding: 10px 5px;
 }
-.card .bottom-section .title {
+.student-card .bottom-section .title {
     display: block;
     font-size: 17px;
     font-weight: bolder;
@@ -373,27 +526,32 @@
     text-align: center;
     letter-spacing: 2px;
 }
-.card .bottom-section .row {
+.student-card .bottom-section .row {
     display: flex;
     justify-content: space-between;
     margin-top: 20px;
 }
-.card .bottom-section .row .item {
+.student-card .bottom-section .row .item {
     flex: 30%;
     text-align: center;
     padding: 5px;
     color: rgba(170, 222, 243, 0.721);
 }
-.card .bottom-section .row .item .big-text {
+.student-card .bottom-section .row .item .big-text {
     font-size: 12px;
     display: block;
 }
-.card .bottom-section .row .item .regular-text {
+.student-card .bottom-section .row .item .regular-text {
     font-size: 9px;
 }
-.card .bottom-section .row .item:nth-child(2) {
+.student-card .bottom-section .row .item:nth-child(2) {
     border-left: 1px solid rgba(255, 255, 255, 0.126);
     border-right: 1px solid rgba(255, 255, 255, 0.126);
+}
+
+.main-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
 }
 </style>
 {% endblock %}

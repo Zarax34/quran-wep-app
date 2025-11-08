@@ -415,16 +415,64 @@
             background-color: var(--background-color); /* Match body background */
         }
 
-        /* The black rounded container from the provided code */
-        .parent-bottom-nav > div {
-            display: flex;
-            justify-content: space-around;
-            gap: 1rem; /* 16px */
+        /* New Parent Bottom Nav Styles */
+        .parent-bottom-nav #navbody {
+            width: 300px;
+            height: 60px;
+            background-color: var(--card-bg);
+            border-radius: 40px;
+            box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.041);
             align-items: center;
-            padding: 0.25rem 1rem; /* py-1 px-4 */
-            background-color: black;
-            border-radius: 15px;
-            border: 1px solid white;
+            justify-content: center;
+            display: flex;
+            border: 1px solid var(--border-color);
+        }
+
+        .dark-mode .parent-bottom-nav #navbody {
+             box-shadow: 0px 10px 15px rgba(255, 255, 255, 0.041);
+        }
+
+        .parent-bottom-nav .ul {
+            list-style: none;
+            width: 100%;
+            background-color: transparent;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            padding-right: 25px;
+        }
+
+        .parent-bottom-nav .ul .li {
+            display: inline-block;
+        }
+
+        .parent-bottom-nav .radio {
+            display: none;
+        }
+
+        .parent-bottom-nav .svg {
+            width: 70px;
+            height: 70px;
+            opacity: 80%;
+            cursor: pointer;
+            padding: 13px 20px;
+            transition: 0.2s;
+            fill: var(--text-color);
+        }
+
+        .parent-bottom-nav .ul .li .svg:hover {
+            transition: 0.1s;
+            color: var(--primary-color);
+            fill: var(--primary-color);
+            position: relative;
+            margin-top: -4px;
+            opacity: 100%;
+        }
+
+        .parent-bottom-nav .radio:checked + label .li .svg {
+            color: var(--primary-color);
+            fill: var(--primary-color);
+            fill-rule: evenodd;
         }
 
         /* Adjust main content to not be overlapped by the nav */
@@ -1039,40 +1087,40 @@
     <!-- شريط التنقل للهواتف -->
     <div class="mobile-menu {% if session.role == 'parent' %}parent-bottom-nav{% else %}mobile-only{% endif %}">
         {% if session.role == 'parent' %}
-        <div class="flex justify-around gap-4 items-center px-4 py-1 bg-black rounded-[15px] ring-1 ring-white">
-            <a href="{{ url_for('parent_dashboard') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M27.9167 30H20.4167C19.2658 30 18.3333 29.1392 18.3333 28.0769V21.1538C18.3333 20.3038 17.5875 19.6154 16.6667 19.6154H13.3333C12.4125 19.6154 11.6667 20.3038 11.6667 21.1538V28.0769C11.6667 29.1392 10.7342 30 9.58333 30H2.08333C0.9325 30 0 29.1392 0 28.0769V13.3946C0 11.6262 0.878334 9.95539 2.3825 8.86154L14.2258 0.246923C14.68 -0.0823077 15.32 -0.0823077 15.7733 0.246923L27.6183 8.86154C29.1225 9.95539 30 11.6254 30 13.3931V28.0769C30 29.1392 29.0675 30 27.9167 30Z" fill="white"></path></svg>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الرئيسية</span>
-            </a>
-            <a href="#" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="white"></path></svg>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">التقارير</span>
-            </a>
-            <a href="#" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10H10v-2h6v2zm-6-3H10V7h2v2zm4 0H14V7h2v2z" fill="white"></path></svg>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الدورات</span>
-            </a>
-            <a href="{{ url_for('activities') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 12H9v-2h2v2zm4-4h-2v2h2v-2zm-4-4H9V5h2v2z" fill="white"></path></svg>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الأنشطة</span>
-            </a>
-            <a href="{{ url_for('messaging') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10z" fill="white"></path></svg>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">المراسلة</span>
-            </a>
-            <a href="{{ url_for('support') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="white"></path></svg>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الدعم</span>
-            </a>
-             <a href="{{ url_for('notifications') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" fill="white"></path></svg>
-                <span class="notification-badge" style="display: none;"></span>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الإشعارات</span>
-            </a>
-             <a href="{{ url_for('parent_logout') }}" class="relative group hover:cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all duration-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" fill="white"></path></svg>
-                <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-max px-2 py-1 text-white bg-black rounded-md opacity-0 scale-50 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">الخروج</span>
-            </a>
+        <div id="navbody">
+            <ul class="ul">
+                <li class="li">
+                    <a href="{{ url_for('parent_dashboard') }}">
+                        <svg class="svg" fill-rule="evenodd" viewBox="0 0 1024 1024"><path d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path></svg>
+                    </a>
+                </li>
+                <li class="li">
+                    <a href="#">
+                        <svg class="svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path></svg>
+                    </a>
+                </li>
+                 <li class="li">
+                    <a href="#">
+                        <svg class="svg" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10H10v-2h6v2zm-6-3H10V7h2v2zm4 0H14V7h2v2z"></path></svg>
+                    </a>
+                </li>
+                 <li class="li">
+                    <a href="{{ url_for('activities') }}">
+                       <svg class="svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 12H9v-2h2v2zm4-4h-2v2h2v-2zm-4-4H9V5h2v2z"></path></svg>
+                    </a>
+                </li>
+                <li class="li">
+                    <a href="{{ url_for('messaging') }}">
+                        <svg class="svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10z"></path></svg>
+                    </a>
+                </li>
+                <li class="li">
+                     <a href="{{ url_for('notifications') }}" class="position-relative">
+                        <svg class="svg" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"></path></svg>
+                        <span class="notification-badge" style="display: none; top:15px; right: 20px;"></span>
+                    </a>
+                </li>
+            </ul>
         </div>
         {% else %}
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
