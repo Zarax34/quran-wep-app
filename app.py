@@ -550,7 +550,7 @@ def get_center_attendance_stats():
     return round(total_attendance_rate / students_with_attendance, 2) if students_with_attendance > 0 else 0
 
 def get_student_stats(student_id):
-    student = Student.query.get(student_id)
+    student = db.session.get(Student, student_id)
     if not student:
         return None
     end_date = datetime.now().date()
@@ -603,7 +603,7 @@ def create_whatsapp_message(student, reports, report_type, start_date, end_date,
     return f"https://wa.me/967{phone}?text={encoded_message}"
 
 def send_bulk_reports(circle_id, report_type):
-    circle = Circle.query.get(circle_id)
+    circle = db.session.get(Circle, circle_id)
     if not circle:
         return 0, 0
     students = Student.query.filter_by(circle_id=circle_id, is_active=True).all()
@@ -638,7 +638,7 @@ def award_badge(student_id, badge_id):
         flash(f'تهانينا! لقد حصلت على شارة جديدة!', 'success')
 
 def check_for_badges(student_id):
-    student = Student.query.get(student_id)
+    student = db.session.get(Student, student_id)
     if not student:
         return
 
@@ -1294,7 +1294,7 @@ def add_report():
             flash('تنسيق التاريخ أو أرقام الآيات غير صالح.', 'error')
             return redirect(url_for('add_report'))
         
-        student = Student.query.get(student_id)
+        student = db.session.get(Student, student_id)
         if not student:
             flash('الطالب غير موجود', 'error')
             return redirect(url_for('add_report'))
@@ -1380,7 +1380,7 @@ def collective_report():
         reports, attendances = improved_parse_collective_report(report_text, circle_id, date)
         
         for rep in reports:
-            student = Student.query.get(rep['student_id'])
+            student = db.session.get(Student, rep['student_id'])
             if student:
                 report = Report(
                     student_id=rep['student_id'],
@@ -1595,8 +1595,8 @@ def link_students_to_parents():
         student_id = request.form['student_id']
         parent_id = request.form['parent_id']
         
-        student = Student.query.get(student_id)
-        parent = Parent.query.get(parent_id)
+        student = db.session.get(Student, student_id)
+        parent = db.session.get(Parent, parent_id)
         
         if student and parent:
             student.parent_id = parent.id
@@ -2231,6 +2231,14 @@ def notifications():
     flash('لم يتم العثور على بيانات ولي الأمر', 'error')
     return redirect(url_for('dashboard'))
 
+@app.route('/api/unread_notifications_count')
+@require_login
+def unread_notifications_count():
+    count = 0
+    if 'user_id' in session:
+        count = Notification.query.filter_by(user_id=session['user_id'], is_read=False).count()
+    return jsonify({'count': count})
+
 # ---------- 18.  WHATSAPP ----------
 @app.route('/send_whatsapp_report/<int:student_id>/<report_type>')
 @require_login
@@ -2721,7 +2729,7 @@ def student_dashboard():
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
 
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     student = Student.query.filter_by(name=user.name).first()
     if not student:
         flash('لم يتم العثور على بيانات الطالب', 'error')
@@ -2853,8 +2861,8 @@ def certificates():
             flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
             return redirect(url_for('certificates'))
 
-        student = Student.query.get(student_id)
-        course = Course.query.get(course_id)
+        student = db.session.get(Student, student_id)
+        course = db.session.get(Course, course_id)
 
         # Create PDF certificate
         pdf = FPDF()
