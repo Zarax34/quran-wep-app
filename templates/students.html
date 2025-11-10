@@ -47,41 +47,61 @@
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     {% for student in students %}
     <div class="col">
-        <div class="card h-100 text-center student-card shadow-sm">
-            <div class="card-body">
-                <div class="mb-3">
-                    {% if student.photo %}
-                    <img src="{{ url_for('uploaded_file', filename=student.photo) }}" class="student-photo-lg" alt="{{ student.name }}">
-                    {% else %}
-                    <div class="student-photo-lg-placeholder">
+        <div class="card">
+            <div class="top-section">
+                 {% if student.photo %}
+                    <img src="{{ url_for('uploaded_file', filename=student.photo) }}" alt="{{ student.name }}" style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #1b233d;">
+                {% else %}
+                    <div style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background-color: #e9ecef; border: 4px solid #1b233d;">
                         <i class="fas fa-user fa-3x text-muted"></i>
                     </div>
-                    {% endif %}
+                {% endif %}
+                <div class="border"></div>
+                <div class="icons">
+                    <div class="logo">
+
+                    </div>
+                    <div class="social-media">
+
+                    </div>
                 </div>
-                <h5 class="card-title">{{ student.name }}</h5>
-                <p class="card-text text-muted">{{ student.circle.name }}</p>
-                <ul class="list-group list-group-flush mb-3">
-                    <li class="list-group-item"><strong>العمر:</strong> {{ student.age or '-' }}</li>
-                    <li class="list-group-item"><strong>ولي الأمر:</strong> {{ student.parent.name if student.parent else '-' }}</li>
-                </ul>
-                {% if student.pending_approval %}
+            </div>
+            <div class="bottom-section">
+                <span class="title">{{ student.name }}</span>
+                 {% if student.pending_approval %}
                     <span class="badge bg-warning text-dark mb-3">في انتظار الموافقة</span>
                 {% endif %}
-            </div>
-            <div class="card-footer bg-light">
-                <div class="d-grid gap-2">
-                    <div class="btn-group">
-                        <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary w-100">
-                            <i class="fas fa-chart-line"></i> التقارير
-                        </a>
-                        <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
-                            <i class="fas fa-edit"></i> تعديل
-                        </a>
+                <div class="row">
+                    <div class="item">
+                        <span class="big-text">{{ student.age or '-' }}</span>
+                        <span class="regular-text">العمر</span>
                     </div>
-                    {% if session.role == 'admin' and student.pending_approval %}
-                        <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success"><i class="fas fa-check-circle"></i> موافقة</a>
-                        <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times-circle"></i> رفض</a>
-                    {% endif %}
+                    <div class="item">
+                        <span class="big-text">{{ student.circle.name }}</span>
+                        <span class="regular-text">الحلقة</span>
+                    </div>
+                    <div class="item">
+                        <span class="big-text">{{ student.parent.name if student.parent else '-' }}</span>
+                        <span class="regular-text">ولي الأمر</span>
+                    </div>
+                </div>
+                 <div class="row" style="margin-top: 10px;">
+                    <div class="col-12">
+                        <div class="btn-group" style="width: 100%;">
+                            <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-chart-line"></i> التقارير
+                            </a>
+                            <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-edit"></i> تعديل
+                            </a>
+                        </div>
+                        {% if session.role == 'admin' and student.pending_approval %}
+                            <div class="d-grid gap-2 mt-2">
+                                <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success"><i class="fas fa-check-circle"></i> موافقة</a>
+                                <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times-circle"></i> رفض</a>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -101,35 +121,140 @@
 </div>
 
 <style>
-.student-card {
+/* From Uiverse.io by Smit-Prajapati */
+.card {
+    width: 230px;
+    border-radius: 20px;
+    background: #1b233d;
+    padding: 5px;
+    overflow: hidden;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 20px 0px;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin: auto;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.card .top-section {
+    height: 150px;
     border-radius: 15px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(45deg, rgb(4, 159, 187) 0%, rgb(80, 246, 255) 100%);
+    position: relative;
 }
-.student-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+
+.card .top-section .border {
+    border-bottom-right-radius: 10px;
+    height: 30px;
+    width: 130px;
+    background: white;
+    background: #1b233d;
+    position: relative;
+    transform: skew(-40deg);
+    box-shadow: -10px -10px 0 0 #1b233d;
 }
-.student-photo-lg {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid var(--primary-color);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+.card .top-section .border::before {
+    content: "";
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    top: 0;
+    right: -15px;
+    background: rgba(255, 255, 255, 0);
+    border-top-left-radius: 10px;
+    box-shadow: -5px -5px 0 2px #1b233d;
 }
-.student-photo-lg-placeholder {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #e9ecef;
-    border: 4px solid #dee2e6;
+
+.card .top-section::before {
+    content: "";
+    position: absolute;
+    top: 30px;
+    left: 0;
+    background: rgba(255, 255, 255, 0);
+    height: 15px;
+    width: 15px;
+    border-top-left-radius: 15px;
+    box-shadow: -5px -5px 0 2px #1b233d;
 }
-.card-footer {
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
+
+.card .top-section .icons {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.card .top-section .icons .logo {
+    height: 100%;
+    aspect-ratio: 1;
+    padding: 7px 0 7px 15px;
+}
+
+.card .top-section .icons .logo .top-section {
+    height: 100%;
+}
+
+.card .top-section .icons .social-media {
+    height: 100%;
+    padding: 8px 15px;
+    display: flex;
+    gap: 7px;
+}
+
+.card .top-section .icons .social-media .svg {
+    height: 100%;
+    fill: #1b233d;
+}
+
+.card .top-section .icons .social-media .svg:hover {
+    fill: white;
+}
+
+.card .bottom-section {
+    margin-top: 15px;
+    padding: 10px 5px;
+}
+
+.card .bottom-section .title {
+    display: block;
+    font-size: 17px;
+    font-weight: bolder;
+    color: white;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.card .bottom-section .row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.card .bottom-section .row .item {
+    flex: 30%;
+    text-align: center;
+    padding: 5px;
+    color: rgba(170, 222, 243, 0.721);
+}
+
+.card .bottom-section .row .item .big-text {
+    font-size: 12px;
+    display: block;
+}
+
+.card .bottom-section .row .item .regular-text {
+    font-size: 9px;
+}
+
+.card .bottom-section .row .item:nth-child(2) {
+    border-left: 1px solid rgba(255, 255, 255, 0.126);
+    border-right: 1px solid rgba(255, 255, 255, 0.126);
 }
 
 /* From Uiverse.io by OnlyCodeChannel */
