@@ -133,6 +133,9 @@ class Student(db.Model):
     date_of_birth = db.Column(db.Date)
     previous_memorization = db.Column(db.String(200))
     enrollment_date = db.Column(db.Date, default=datetime.now().date)
+    last_memorized_sura = db.Column(db.String(100), default='الفاتحة')
+    last_memorized_ayah = db.Column(db.Integer, default=0)
+    memorization_direction = db.Column(db.String(50), default='BaqarahToNas') # or 'NasToBaqarah'
     circle = db.relationship('Circle', backref='students')
     parent = db.relationship('Parent', backref='students')
 
@@ -499,9 +502,11 @@ def improved_parse_collective_report(text, circle_id, date):
         elif 'متأخر' in line.lower():
             attendance_status = 'متأخر'
         if ':' in clean_line:
+            # The student's name is the part before the first colon
             name_part, recitation_part = clean_line.split(':', 1)
             student_name = name_part.strip()
             student = find_student_by_name(student_name, circle_id)
+
             if student:
                 if attendance_status:
                     attendances.append(Attendance(student_id=student.id, date=current_date, status=attendance_status, notes='تم الإضافة من التقرير الجماعي'))
@@ -513,8 +518,29 @@ def improved_parse_collective_report(text, circle_id, date):
                         surah = match.group(1).strip()
                         from_verse = int(match.group(2))
                         to_verse = int(match.group(3))
-                        has_plus = match.group(4)
-                        report_type = 'مراجعة' if (has_plus or 'مراجعة' in recitation_clean.lower() or '+' in recitation_clean) else 'حفظ'
+
+                        # Automatic Hifz/Muraja'ah logic
+                        is_hifz = False
+                        try:
+                            last_sura_index = surah_names.index(student.last_memorized_sura)
+                            report_sura_index = surah_names.index(surah)
+
+                            if student.memorization_direction == 'BaqarahToNas':
+                                if report_sura_index > last_sura_index:
+                                    is_hifz = True
+                                elif report_sura_index == last_sura_index and from_verse > student.last_memorized_ayah:
+                                    is_hifz = True
+                            else: # NasToBaqarah
+                                if report_sura_index < last_sura_index:
+                                    is_hifz = True
+                                elif report_sura_index == last_sura_index and to_verse < student.last_memorized_ayah:
+                                    is_hifz = True
+                        except (ValueError, IndexError):
+                            # Default to Hifz if surah not found or other errors
+                            is_hifz = True
+
+                        report_type = 'حفظ' if is_hifz else 'مراجعة'
+
                         grade = 'جيد'
                         if 'ممتاز' in recitation_clean:
                             grade = 'ممتاز'
@@ -522,6 +548,7 @@ def improved_parse_collective_report(text, circle_id, date):
                             grade = 'جيد جدا'
                         elif 'مقبول' in recitation_clean:
                             grade = 'مقبول'
+
                         reports.append({'student_id': student.id, 'surah': surah, 'from_verse': from_verse, 'to_verse': to_verse, 'type': report_type, 'grade': grade})
     return reports, attendances
 
@@ -949,6 +976,9 @@ def add_student():
             date_of_birth=datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form.get('date_of_birth') else None,
             previous_memorization=request.form.get('previous_memorization'),
             enrollment_date=datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date() if request.form.get('enrollment_date') else datetime.now().date(),
+            last_memorized_sura=request.form.get('last_memorized_sura'),
+            last_memorized_ayah=request.form.get('last_memorized_ayah', type=int),
+            memorization_direction=request.form.get('memorization_direction'),
             pending_approval=requires_approval()
         )
         db.session.add(student)
@@ -974,7 +1004,7 @@ def add_student():
             flash(f'حدث خطأ أثناء إضافة الطالب: {str(e)}', 'error')
     
     circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('add_student.html', circles=circles)
+    return render_template('add_student.html', circles=circles, surah_names=surah_names)
 
 
 @app.route('/upload_students_excel', methods=['GET', 'POST'])
@@ -1022,6 +1052,9 @@ def edit_student(student_id):
         student.date_of_birth = datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form.get('date_of_birth') else None
         student.previous_memorization = request.form.get('previous_memorization')
         student.enrollment_date = datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date() if request.form.get('enrollment_date') else student.enrollment_date
+        student.last_memorized_sura = request.form.get('last_memorized_sura')
+        student.last_memorized_ayah = request.form.get('last_memorized_ayah', type=int)
+        student.memorization_direction = request.form.get('memorization_direction')
 
         photo = request.files.get('photo')
         if photo and allowed_file(photo.filename):
@@ -1038,7 +1071,7 @@ def edit_student(student_id):
             flash(f'حدث خطأ أثناء تعديل الطالب: {str(e)}', 'error')
     
     circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('edit_student.html', student=student, circles=circles)
+    return render_template('edit_student.html', student=student, circles=circles, surah_names=surah_names)
 
 @app.route('/delete_student/<int:student_id>')
 @require_login
@@ -1376,10 +1409,35 @@ def collective_report():
         circle_id = request.form['circle_id']
         date = request.form['date']
         report_text = request.form['report_text']
-        
-        reports, attendances = improved_parse_collective_report(report_text, circle_id, date)
-        
-        for rep in reports:
+        confirm = request.form.get('confirm')
+
+        reports_data, attendances_data = improved_parse_collective_report(report_text, circle_id, date)
+
+        if not confirm:
+            # First step: Show preview
+            reports_for_preview = []
+            for rep in reports_data:
+                student = db.session.get(Student, rep['student_id'])
+                if student:
+                    # Create temporary Report objects for rendering in the template
+                    temp_report = {
+                        'student': student,
+                        'surah': rep['surah'],
+                        'from_verse': rep['from_verse'],
+                        'to_verse': rep['to_verse'],
+                        'type': rep['type'],
+                        'grade': rep['grade']
+                    }
+                    reports_for_preview.append(temp_report)
+
+            return render_template('collective_report_preview.html',
+                                   reports=reports_for_preview,
+                                   circle_id=circle_id,
+                                   date=date,
+                                   report_text=report_text)
+
+        # Second step: Confirmed, save the data
+        for rep in reports_data:
             student = db.session.get(Student, rep['student_id'])
             if student:
                 report = Report(
@@ -1394,18 +1452,28 @@ def collective_report():
                     grade=rep['grade']
                 )
                 db.session.add(report)
-        
-        for att in attendances:
-            db.session.add(att)
+
+                if report.type == 'حفظ':
+                    student.last_memorized_sura = report.surah
+                    student.last_memorized_ayah = report.to_verse
+
+        for att_data in attendances_data:
+            attendance = Attendance(
+                student_id=att_data.student_id,
+                date=att_data.date,
+                status=att_data.status,
+                notes=att_data.notes
+            )
+            db.session.add(attendance)
         
         try:
             db.session.commit()
-            flash(f'تم رفع {len(reports)} تقرير وتحديث {len(attendances)} حضور', 'success')
+            flash(f'تم رفع {len(reports_data)} تقرير وتحديث {len(attendances_data)} حضور', 'success')
             return redirect(url_for('reports'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء رفع التقرير الجماعي: {str(e)}', 'error')
-    
+
     circles = Circle.query.filter_by(is_active=True).all()
     return render_template('collective_report.html', circles=circles)
 
@@ -2943,6 +3011,21 @@ def setup_database():
                 pass # Column already exists.
             else:
                 print(f"ERROR: Could not add 'user_id' column to 'parent' table: {e}")
+
+        # Add social media columns to 'settings' table if they don't exist
+        social_columns = ['social_instagram', 'social_facebook', 'social_whatsapp', 'social_telegram']
+        for column in social_columns:
+            try:
+                with db.engine.connect() as connection:
+                    trans = connection.begin()
+                    connection.execute(text(f'ALTER TABLE settings ADD COLUMN {column} VARCHAR(200)'))
+                    trans.commit()
+                print(f"INFO: Added '{column}' column to 'settings' table.")
+            except Exception as e:
+                if 'duplicate column' in str(e).lower():
+                    pass  # Column already exists, which is fine.
+                else:
+                    print(f"ERROR: Could not add '{column}' column to 'settings' table: {e}")
 
         # Seed initial data if it doesn't exist
         # 1. Default settings
