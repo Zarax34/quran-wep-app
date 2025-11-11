@@ -133,6 +133,9 @@ class Student(db.Model):
     date_of_birth = db.Column(db.Date)
     previous_memorization = db.Column(db.String(200))
     enrollment_date = db.Column(db.Date, default=datetime.now().date)
+    last_memorized_sura = db.Column(db.String(100), default='الفاتحة')
+    last_memorized_ayah = db.Column(db.Integer, default=0)
+    memorization_direction = db.Column(db.String(50), default='BaqarahToNas') # or 'NasToBaqarah'
     circle = db.relationship('Circle', backref='students')
     parent = db.relationship('Parent', backref='students')
 
@@ -191,6 +194,10 @@ class Settings(db.Model):
     dark_mode_enabled = db.Column(db.Boolean, default=False)
     teacher_requires_approval = db.Column(db.Boolean, default=True)
     allow_custom_teacher_name = db.Column(db.Boolean, default=True)
+    social_instagram = db.Column(db.String(200))
+    social_facebook = db.Column(db.String(200))
+    social_whatsapp = db.Column(db.String(200))
+    social_telegram = db.Column(db.String(200))
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -276,6 +283,14 @@ class CenterActivity(db.Model):
     image = db.Column(db.String(200))
     fee = db.Column(db.Float, nullable=True)  # Add this line for the fee
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+class ActivityApproval(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    activity_id = db.Column(db.Integer, db.ForeignKey('center_activity.id'), nullable=False)
+    approved = db.Column(db.Boolean, default=False)
+    student = db.relationship('Student', backref='approvals')
+    activity = db.relationship('CenterActivity', backref='approvals')
 
 class Alumni(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -487,9 +502,11 @@ def improved_parse_collective_report(text, circle_id, date):
         elif 'متأخر' in line.lower():
             attendance_status = 'متأخر'
         if ':' in clean_line:
+            # The student's name is the part before the first colon
             name_part, recitation_part = clean_line.split(':', 1)
             student_name = name_part.strip()
             student = find_student_by_name(student_name, circle_id)
+
             if student:
                 if attendance_status:
                     attendances.append(Attendance(student_id=student.id, date=current_date, status=attendance_status, notes='تم الإضافة من التقرير الجماعي'))
@@ -501,8 +518,29 @@ def improved_parse_collective_report(text, circle_id, date):
                         surah = match.group(1).strip()
                         from_verse = int(match.group(2))
                         to_verse = int(match.group(3))
-                        has_plus = match.group(4)
-                        report_type = 'مراجعة' if (has_plus or 'مراجعة' in recitation_clean.lower() or '+' in recitation_clean) else 'حفظ'
+
+                        # Automatic Hifz/Muraja'ah logic
+                        is_hifz = False
+                        try:
+                            last_sura_index = surah_names.index(student.last_memorized_sura)
+                            report_sura_index = surah_names.index(surah)
+
+                            if student.memorization_direction == 'BaqarahToNas':
+                                if report_sura_index > last_sura_index:
+                                    is_hifz = True
+                                elif report_sura_index == last_sura_index and from_verse > student.last_memorized_ayah:
+                                    is_hifz = True
+                            else: # NasToBaqarah
+                                if report_sura_index < last_sura_index:
+                                    is_hifz = True
+                                elif report_sura_index == last_sura_index and to_verse < student.last_memorized_ayah:
+                                    is_hifz = True
+                        except (ValueError, IndexError):
+                            # Default to Hifz if surah not found or other errors
+                            is_hifz = True
+
+                        report_type = 'حفظ' if is_hifz else 'مراجعة'
+
                         grade = 'جيد'
                         if 'ممتاز' in recitation_clean:
                             grade = 'ممتاز'
@@ -510,6 +548,7 @@ def improved_parse_collective_report(text, circle_id, date):
                             grade = 'جيد جدا'
                         elif 'مقبول' in recitation_clean:
                             grade = 'مقبول'
+
                         reports.append({'student_id': student.id, 'surah': surah, 'from_verse': from_verse, 'to_verse': to_verse, 'type': report_type, 'grade': grade})
     return reports, attendances
 
@@ -538,7 +577,7 @@ def get_center_attendance_stats():
     return round(total_attendance_rate / students_with_attendance, 2) if students_with_attendance > 0 else 0
 
 def get_student_stats(student_id):
-    student = Student.query.get(student_id)
+    student = db.session.get(Student, student_id)
     if not student:
         return None
     end_date = datetime.now().date()
@@ -591,7 +630,7 @@ def create_whatsapp_message(student, reports, report_type, start_date, end_date,
     return f"https://wa.me/967{phone}?text={encoded_message}"
 
 def send_bulk_reports(circle_id, report_type):
-    circle = Circle.query.get(circle_id)
+    circle = db.session.get(Circle, circle_id)
     if not circle:
         return 0, 0
     students = Student.query.filter_by(circle_id=circle_id, is_active=True).all()
@@ -626,7 +665,7 @@ def award_badge(student_id, badge_id):
         flash(f'تهانينا! لقد حصلت على شارة جديدة!', 'success')
 
 def check_for_badges(student_id):
-    student = Student.query.get(student_id)
+    student = db.session.get(Student, student_id)
     if not student:
         return
 
@@ -836,7 +875,30 @@ def dashboard():
     active_circles = Circle.query.filter_by(is_active=True).all()
     announcements = Announcement.query.filter_by(is_active=True).order_by(Announcement.date_posted.desc()).all()
     
+    # Student of the Month
+    today = datetime.now().date()
+    start_of_month = today.replace(day=1)
+
+    # Subquery to count badges per student this month
+    subquery = db.session.query(
+        StudentBadge.student_id,
+        func.count(StudentBadge.id).label('badge_count')
+    ).filter(
+        StudentBadge.date_awarded >= start_of_month
+    ).group_by(StudentBadge.student_id).subquery()
+
+    # Find the max badge count
+    max_badge_count_query = db.session.query(func.max(subquery.c.badge_count)).scalar()
+
+    students_of_the_month = []
+    if max_badge_count_query:
+        # Find all students with that max count
+        top_students_ids = db.session.query(subquery.c.student_id).filter(subquery.c.badge_count == max_badge_count_query).all()
+        student_ids = [s_id[0] for s_id in top_students_ids]
+        students_of_the_month = Student.query.filter(Student.id.in_(student_ids)).all()
+
     return render_template('dashboard.html',
+                         students_of_the_month=students_of_the_month,
                          total_students=total_students,
                          total_teachers=total_teachers,
                          total_circles=total_circles,
@@ -914,6 +976,9 @@ def add_student():
             date_of_birth=datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form.get('date_of_birth') else None,
             previous_memorization=request.form.get('previous_memorization'),
             enrollment_date=datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date() if request.form.get('enrollment_date') else datetime.now().date(),
+            last_memorized_sura=request.form.get('last_memorized_sura'),
+            last_memorized_ayah=request.form.get('last_memorized_ayah', type=int),
+            memorization_direction=request.form.get('memorization_direction'),
             pending_approval=requires_approval()
         )
         db.session.add(student)
@@ -939,7 +1004,18 @@ def add_student():
             flash(f'حدث خطأ أثناء إضافة الطالب: {str(e)}', 'error')
     
     circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('add_student.html', circles=circles)
+    return render_template('add_student.html', circles=circles, surah_names=surah_names)
+
+
+@app.route('/upload_students_excel', methods=['GET', 'POST'])
+@require_role('admin')
+def upload_students_excel():
+    if request.method == 'POST':
+        # Logic to handle file upload and processing will be added here
+        flash('File upload functionality is not yet implemented.', 'info')
+        return redirect(url_for('upload_students_excel'))
+    return render_template('upload_excel.html')
+
 
 @app.route('/move_student/<int:student_id>', methods=['POST'])
 @require_login
@@ -976,6 +1052,9 @@ def edit_student(student_id):
         student.date_of_birth = datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form.get('date_of_birth') else None
         student.previous_memorization = request.form.get('previous_memorization')
         student.enrollment_date = datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date() if request.form.get('enrollment_date') else student.enrollment_date
+        student.last_memorized_sura = request.form.get('last_memorized_sura')
+        student.last_memorized_ayah = request.form.get('last_memorized_ayah', type=int)
+        student.memorization_direction = request.form.get('memorization_direction')
 
         photo = request.files.get('photo')
         if photo and allowed_file(photo.filename):
@@ -992,7 +1071,7 @@ def edit_student(student_id):
             flash(f'حدث خطأ أثناء تعديل الطالب: {str(e)}', 'error')
     
     circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('edit_student.html', student=student, circles=circles)
+    return render_template('edit_student.html', student=student, circles=circles, surah_names=surah_names)
 
 @app.route('/delete_student/<int:student_id>')
 @require_login
@@ -1248,7 +1327,7 @@ def add_report():
             flash('تنسيق التاريخ أو أرقام الآيات غير صالح.', 'error')
             return redirect(url_for('add_report'))
         
-        student = Student.query.get(student_id)
+        student = db.session.get(Student, student_id)
         if not student:
             flash('الطالب غير موجود', 'error')
             return redirect(url_for('add_report'))
@@ -1330,11 +1409,36 @@ def collective_report():
         circle_id = request.form['circle_id']
         date = request.form['date']
         report_text = request.form['report_text']
-        
-        reports, attendances = improved_parse_collective_report(report_text, circle_id, date)
-        
-        for rep in reports:
-            student = Student.query.get(rep['student_id'])
+        confirm = request.form.get('confirm')
+
+        reports_data, attendances_data = improved_parse_collective_report(report_text, circle_id, date)
+
+        if not confirm:
+            # First step: Show preview
+            reports_for_preview = []
+            for rep in reports_data:
+                student = db.session.get(Student, rep['student_id'])
+                if student:
+                    # Create temporary Report objects for rendering in the template
+                    temp_report = {
+                        'student': student,
+                        'surah': rep['surah'],
+                        'from_verse': rep['from_verse'],
+                        'to_verse': rep['to_verse'],
+                        'type': rep['type'],
+                        'grade': rep['grade']
+                    }
+                    reports_for_preview.append(temp_report)
+
+            return render_template('collective_report_preview.html',
+                                   reports=reports_for_preview,
+                                   circle_id=circle_id,
+                                   date=date,
+                                   report_text=report_text)
+
+        # Second step: Confirmed, save the data
+        for rep in reports_data:
+            student = db.session.get(Student, rep['student_id'])
             if student:
                 report = Report(
                     student_id=rep['student_id'],
@@ -1348,18 +1452,28 @@ def collective_report():
                     grade=rep['grade']
                 )
                 db.session.add(report)
-        
-        for att in attendances:
-            db.session.add(att)
+
+                if report.type == 'حفظ':
+                    student.last_memorized_sura = report.surah
+                    student.last_memorized_ayah = report.to_verse
+
+        for att_data in attendances_data:
+            attendance = Attendance(
+                student_id=att_data.student_id,
+                date=att_data.date,
+                status=att_data.status,
+                notes=att_data.notes
+            )
+            db.session.add(attendance)
         
         try:
             db.session.commit()
-            flash(f'تم رفع {len(reports)} تقرير وتحديث {len(attendances)} حضور', 'success')
+            flash(f'تم رفع {len(reports_data)} تقرير وتحديث {len(attendances_data)} حضور', 'success')
             return redirect(url_for('reports'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء رفع التقرير الجماعي: {str(e)}', 'error')
-    
+
     circles = Circle.query.filter_by(is_active=True).all()
     return render_template('collective_report.html', circles=circles)
 
@@ -1535,7 +1649,7 @@ def add_parents():
             
             db.session.commit()
             flash(f'تم إضافة {created_count} من أولياء الأمور بنجاح', 'success')
-            return redirect(url_for('parents'))
+            return redirect(url_for('parent_management'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة أولياء الأمور: {str(e)}', 'error')
@@ -1549,8 +1663,8 @@ def link_students_to_parents():
         student_id = request.form['student_id']
         parent_id = request.form['parent_id']
         
-        student = Student.query.get(student_id)
-        parent = Parent.query.get(parent_id)
+        student = db.session.get(Student, student_id)
+        parent = db.session.get(Parent, parent_id)
         
         if student and parent:
             student.parent_id = parent.id
@@ -1655,7 +1769,23 @@ def delete_announcement(announcement_id):
 @require_login
 def activities():
     activities = CenterActivity.query.order_by(CenterActivity.date.desc()).all()
-    return render_template('activities.html', activities=activities)
+
+    parent_children = []
+    approvals = {}
+    if session.get('role') == 'parent':
+        parent = Parent.query.filter_by(user_id=session['user_id']).first()
+        if parent:
+            parent_children = parent.students
+            # Get all approvals for this parent's children in one query
+            child_ids = [child.id for child in parent_children]
+            approval_list = ActivityApproval.query.filter(ActivityApproval.student_id.in_(child_ids)).all()
+            for approval in approval_list:
+                approvals[(approval.student_id, approval.activity_id)] = approval.approved
+
+    return render_template('activities.html',
+                         activities=activities,
+                         parent_children=parent_children,
+                         approvals=approvals)
 
 @app.route('/add_activity', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1767,6 +1897,28 @@ def delete_fee(fee_id):
     db.session.commit()
     flash('تم حذف الرسوم بنجاح!', 'success')
     return redirect(url_for('fees'))
+
+@app.route('/approve_activity/<int:student_id>/<int:activity_id>', methods=['POST'])
+@require_login
+def approve_activity(student_id, activity_id):
+    if session.get('role') != 'parent':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
+    student = Student.query.get_or_404(student_id)
+    if not parent or student.parent_id != parent.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    approval = ActivityApproval.query.filter_by(student_id=student_id, activity_id=activity_id).first()
+    if not approval:
+        approval = ActivityApproval(student_id=student_id, activity_id=activity_id, approved=True)
+        db.session.add(approval)
+    else:
+        approval.approved = not approval.approved
+
+    db.session.commit()
+    return jsonify({'success': True, 'approved': approval.approved})
+
 
 @app.route('/delete_activity/<int:activity_id>', methods=['POST'])
 @require_role('admin')
@@ -2058,6 +2210,11 @@ def settings():
         settings_obj.allow_custom_teacher_name = bool(request.form.get('allow_custom_teacher_name'))
         settings_obj.dark_mode_enabled = bool(request.form.get('dark_mode_enabled'))
         
+        settings_obj.social_instagram = request.form.get('social_instagram')
+        settings_obj.social_facebook = request.form.get('social_facebook')
+        settings_obj.social_whatsapp = request.form.get('social_whatsapp')
+        settings_obj.social_telegram = request.form.get('social_telegram')
+
         logo = request.files.get('logo')
         if logo and allowed_file(logo.filename):
             filename = secure_filename(logo.filename)
@@ -2142,6 +2299,14 @@ def notifications():
     flash('لم يتم العثور على بيانات ولي الأمر', 'error')
     return redirect(url_for('dashboard'))
 
+@app.route('/api/unread_notifications_count')
+@require_login
+def unread_notifications_count():
+    count = 0
+    if 'user_id' in session:
+        count = Notification.query.filter_by(user_id=session['user_id'], is_read=False).count()
+    return jsonify({'count': count})
+
 # ---------- 18.  WHATSAPP ----------
 @app.route('/send_whatsapp_report/<int:student_id>/<report_type>')
 @require_login
@@ -2179,6 +2344,14 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # ---------- 20.  PARENT DASHBOARD ----------
+@app.route('/messaging')
+@require_login
+def messaging():
+    if session.get('role') != 'parent':
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+        return redirect(url_for('dashboard'))
+    return render_template('messaging.html')
+
 @app.route('/parent_dashboard')
 @require_login
 def parent_dashboard():
@@ -2223,8 +2396,25 @@ def parent_dashboard():
         'average_attendance': get_center_attendance_stats(),
         'total_verses_this_month': Report.query.filter(Report.date >= datetime.now().date() - timedelta(days=30)).count()
     }
+
+    # Student of the Month
+    today = datetime.now().date()
+    start_of_month = today.replace(day=1)
+    subquery = db.session.query(
+        StudentBadge.student_id,
+        func.count(StudentBadge.id).label('badge_count')
+    ).filter(
+        StudentBadge.date_awarded >= start_of_month
+    ).group_by(StudentBadge.student_id).subquery()
+    max_badge_count_query = db.session.query(func.max(subquery.c.badge_count)).scalar()
+    students_of_the_month = []
+    if max_badge_count_query:
+        top_students_ids = db.session.query(subquery.c.student_id).filter(subquery.c.badge_count == max_badge_count_query).all()
+        student_ids = [s_id[0] for s_id in top_students_ids]
+        students_of_the_month = Student.query.filter(Student.id.in_(student_ids)).all()
     
     return render_template('parent_dashboard.html', 
+                         students_of_the_month=students_of_the_month,
                          parent=parent, 
                          student_stats=student_stats,
                          total_children=total_children,
@@ -2607,7 +2797,7 @@ def student_dashboard():
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
 
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     student = Student.query.filter_by(name=user.name).first()
     if not student:
         flash('لم يتم العثور على بيانات الطالب', 'error')
@@ -2668,7 +2858,24 @@ def student_details(student_id):
 
     educational_notes = EducationalNote.query.filter_by(student_id=student_id).order_by(EducationalNote.date.desc()).all()
 
+    # Student of the Month
+    today = datetime.now().date()
+    start_of_month = today.replace(day=1)
+    subquery = db.session.query(
+        StudentBadge.student_id,
+        func.count(StudentBadge.id).label('badge_count')
+    ).filter(
+        StudentBadge.date_awarded >= start_of_month
+    ).group_by(StudentBadge.student_id).subquery()
+    max_badge_count_query = db.session.query(func.max(subquery.c.badge_count)).scalar()
+    students_of_the_month = []
+    if max_badge_count_query:
+        top_students_ids = db.session.query(subquery.c.student_id).filter(subquery.c.badge_count == max_badge_count_query).all()
+        student_ids = [s_id[0] for s_id in top_students_ids]
+        students_of_the_month = Student.query.filter(Student.id.in_(student_ids)).all()
+
     return render_template('student_details.html',
+                         students_of_the_month=students_of_the_month,
                          student=student,
                          stats=stats,
                          recent_reports=recent_reports,
@@ -2722,8 +2929,8 @@ def certificates():
             flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
             return redirect(url_for('certificates'))
 
-        student = Student.query.get(student_id)
-        course = Course.query.get(course_id)
+        student = db.session.get(Student, student_id)
+        course = db.session.get(Course, course_id)
 
         # Create PDF certificate
         pdf = FPDF()
@@ -2804,6 +3011,21 @@ def setup_database():
                 pass # Column already exists.
             else:
                 print(f"ERROR: Could not add 'user_id' column to 'parent' table: {e}")
+
+        # Add social media columns to 'settings' table if they don't exist
+        social_columns = ['social_instagram', 'social_facebook', 'social_whatsapp', 'social_telegram']
+        for column in social_columns:
+            try:
+                with db.engine.connect() as connection:
+                    trans = connection.begin()
+                    connection.execute(text(f'ALTER TABLE settings ADD COLUMN {column} VARCHAR(200)'))
+                    trans.commit()
+                print(f"INFO: Added '{column}' column to 'settings' table.")
+            except Exception as e:
+                if 'duplicate column' in str(e).lower():
+                    pass  # Column already exists, which is fine.
+                else:
+                    print(f"ERROR: Could not add '{column}' column to 'settings' table: {e}")
 
         # Seed initial data if it doesn't exist
         # 1. Default settings

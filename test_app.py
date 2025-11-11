@@ -1,5 +1,5 @@
 import unittest
-from app import app, db, User, Parent
+from app import app, db, User, Parent, setup_database
 from werkzeug.security import generate_password_hash
 
 class TestApp(unittest.TestCase):
@@ -8,7 +8,8 @@ class TestApp(unittest.TestCase):
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.app = app.test_client()
         with app.app_context():
-            db.create_all()
+            db.drop_all()  # Ensure a clean slate
+            setup_database()
 
     def tearDown(self):
         with app.app_context():
@@ -17,11 +18,7 @@ class TestApp(unittest.TestCase):
 
     def test_add_parents_with_spaces_in_name(self):
         with self.app as client:
-            with app.app_context():
-                admin_user = User(username='admin', password=generate_password_hash('admin123'), name='Admin', role='admin')
-                db.session.add(admin_user)
-                db.session.commit()
-
+            # The admin user is now created by setup_database
             client.post('/login', data={'username': 'admin', 'password': 'admin123'})
 
             client.post('/add_parents', data={'parents_text': 'Test User: 777123456'})

@@ -94,6 +94,35 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="last_memorized_sura" class="form-label">آخر سورة تم حفظها</label>
+                                <select class="form-control" id="last_memorized_sura" name="last_memorized_sura">
+                                    {% for surah in surah_names %}
+                                    <option value="{{ surah }}" {% if surah == student.last_memorized_sura %}selected{% endif %}>{{ surah }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="last_memorized_ayah" class="form-label">آخر آية تم حفظها</label>
+                                <input type="number" class="form-control" id="last_memorized_ayah" name="last_memorized_ayah" value="{{ student.last_memorized_ayah or 0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="memorization_direction" class="form-label">اتجاه الحفظ</label>
+                                <select class="form-control" id="memorization_direction" name="memorization_direction">
+                                    <option value="BaqarahToNas" {% if student.memorization_direction == 'BaqarahToNas' %}selected{% endif %}>من البقرة إلى الناس</option>
+                                    <option value="NasToBaqarah" {% if student.memorization_direction == 'NasToBaqarah' %}selected{% endif %}>من الناس إلى البقرة</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="circle_id" class="form-label">الحلقة</label>
                         <select class="form-control" id="circle_id" name="circle_id" required>

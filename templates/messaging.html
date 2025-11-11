@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">المراسلة</h1>
+</div>
+
+<div class="messaging-container">
+    <div class="alert alert-info text-center">
+        <i class="fas fa-tools fa-3x mb-3"></i>
+        <h4>هذه الميزة قيد التطوير</h4>
+        <p>ستتوفر خدمة المراسلة قريبًا للتواصل المباشر مع المعلمين والإدارة.</p>
+    </div>
+
+    <!-- Static UI for demonstration -->
+    <div class="chat-ui-placeholder">
+        <div class="chat-sidebar">
+            <div class="chat-user active">المعلم: أحمد علي</div>
+            <div class="chat-user">الإدارة</div>
+            <div class="chat-user">الدعم الفني</div>
+        </div>
+        <div class="chat-window">
+            <div class="chat-messages">
+                <div class="message received">السلام عليكم، كيف حال ابني محمد؟</div>
+                <div class="message sent">وعليكم السلام، محمد بخير ويظهر تقدماً ملحوظاً.</div>
+                <div class="message received">الحمد لله، شكراً لجهودكم.</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" placeholder="اكتب رسالتك هنا..." disabled>
+                <button disabled><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.messaging-container {
+    opacity: 0.6;
+    pointer-events: none;
+}
+.chat-ui-placeholder {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 60vh;
+}
+.chat-sidebar {
+    width: 200px;
+    background-color: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 10px;
+}
+.chat-user {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    cursor: not-allowed;
+}
+.chat-user.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+.chat-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.message {
+    padding: 10px 15px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    max-width: 70%;
+}
+.message.sent {
+    background-color: var(--primary-color);
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 5px;
+}
+.message.received {
+    background-color: #e9ecef;
+    color: #000;
+    margin-right: auto;
+    border-bottom-left-radius: 5px;
+}
+.chat-input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
+}
+.chat-input input {
+    flex: 1;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    padding: 10px 15px;
+}
+.chat-input button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-right: 10px;
+}
+</style>
+{% endblock %}
