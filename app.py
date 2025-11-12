@@ -2374,6 +2374,18 @@ def parent_dashboard():
             stats['points'] = db.session.query(func.sum(Point.points)).filter_by(student_id=student.id).scalar() or 0
             stats['badges'] = StudentBadge.query.filter_by(student_id=student.id).all()
             stats['notes'] = EducationalNote.query.filter_by(student_id=student.id).order_by(EducationalNote.date.desc()).limit(3).all()
+
+            # Add enrolled courses and certificates
+            enrollments = CourseEnrollment.query.filter_by(student_id=student.id).all()
+            student_courses = []
+            for enrollment in enrollments:
+                certificate = Certificate.query.filter_by(student_id=student.id, course_id=enrollment.course_id).first()
+                student_courses.append({
+                    'course': enrollment.course,
+                    'certificate': certificate
+                })
+            stats['courses'] = student_courses
+
             student_stats.append(stats)
     
     total_children = len(students)

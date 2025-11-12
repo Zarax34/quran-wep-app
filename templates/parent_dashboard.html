@@ -108,6 +108,25 @@
                             {% endfor %}
                         </ul>
                     </div>
+
+                    <!-- Enrolled Courses -->
+                    <div class="mb-3">
+                        <strong>الدورات المسجلة:</strong>
+                        <ul class="list-group list-group-flush">
+                            {% for course_info in stats.courses %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ course_info.course.name }}
+                                {% if course_info.certificate %}
+                                    <a href="{{ url_for('uploaded_file', filename=course_info.certificate.certificate_file) }}" class="btn btn-sm btn-outline-success" download>
+                                        <i class="fas fa-download"></i> تحميل الشهادة
+                                    </a>
+                                {% endif %}
+                            </li>
+                            {% else %}
+                            <li class="list-group-item">لم يتم تسجيل الطالب في أي دورة.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
                 <div class="card-footer bg-transparent">
                     <a href="{{ url_for('student_details', student_id=stats.student.id) }}" class="btn btn-primary btn-sm w-100 btn-hover">
