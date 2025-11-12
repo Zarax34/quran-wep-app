@@ -228,54 +228,48 @@
     </div>
     {% endif %}
 
-    <!-- مقارنة مع إحصائيات المركز -->
-    {% if center_stats %}
+    <!-- إحصائيات المركز -->
     <div class="row mt-4 fade-in">
         <div class="col-12">
-            <div class="card main-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0"><i class="fas fa-chart-line"></i> مقارنة مع إحصائيات المركز</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <div class="border rounded p-3">
-                                <h6>متوسط الحضور</h6>
-                                <h3 class="text-{{ 'success' if total_attendance_rate >= center_stats.average_attendance else 'warning' }}">
-                                    {{ "%.1f"|format(total_attendance_rate) }}%
-                                </h3>
-                                <small>متوسط المركز: {{ "%.1f"|format(center_stats.average_attendance) }}%</small>
-                                {% if total_attendance_rate >= center_stats.average_attendance %}
-                                <div class="text-success mt-2">
-                                    <i class="fas fa-arrow-up"></i> أعلى من المتوسط
-                                </div>
-                                {% else %}
-                                <div class="text-warning mt-2">
-                                    <i class="fas fa-arrow-down"></i> أقل من المتوسط
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="border rounded p-3">
-                                <h6>إجمالي الآيات</h6>
-                                <h3 class="text-info">{{ children_stats|sum(attribute='total_verses') }}</h3>
-                                <small>متوسط المركز: {{ center_stats.total_verses_this_month }}</small>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="border rounded p-3">
-                                <h6>عدد الأبناء</h6>
-                                <h3 class="text-primary">{{ total_children }}</h3>
-                                <small>إجمالي طلاب المركز: {{ center_stats.total_students }}</small>
-                            </div>
-                        </div>
+            <h4 class="mb-3">إحصائيات المركز العامة</h4>
+        </div>
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="content">
+                    <div class="logo">
+                        <i class="fas fa-user-graduate fa-2x"></i>
                     </div>
+                    <div class="logo-bottom-text">إجمالي الطلاب</div>
                 </div>
+                <div class="bottom-text counter" data-target="{{ center_stats.total_students }}">0</div>
+                <div class="border"></div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="content">
+                     <div class="logo">
+                        <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                    </div>
+                    <div class="logo-bottom-text">إجمالي المعلمين</div>
+                </div>
+                <div class="bottom-text counter" data-target="{{ center_stats.total_teachers }}">0</div>
+                <div class="border"></div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="content">
+                     <div class="logo">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <div class="logo-bottom-text">عدد الحلقات</div>
+                </div>
+                <div class="bottom-text counter" data-target="{{ center_stats.total_circles }}">0</div>
+                <div class="border"></div>
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
 
 <style>

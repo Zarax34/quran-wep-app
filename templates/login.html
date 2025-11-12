@@ -17,6 +17,12 @@
 
         body {
             background-color: var(--primary-color);
+            {% if settings.login_background_image %}
+            background-image: url("{{ url_for('uploaded_file', filename=settings.login_background_image) }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            {% else %}
             background-image: repeating-linear-gradient(
                 45deg,
                 var(--secondary-color) 0,
@@ -25,6 +31,7 @@
                 transparent 10px
             );
             background-size: 15px 15px;
+            {% endif %}
             min-height: 100vh;
             display: flex;
             align-items: center;

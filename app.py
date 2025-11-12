@@ -198,6 +198,7 @@ class Settings(db.Model):
     social_facebook = db.Column(db.String(200))
     social_whatsapp = db.Column(db.String(200))
     social_telegram = db.Column(db.String(200))
+    login_background_image = db.Column(db.String(200))
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -2220,6 +2221,12 @@ def settings():
             filename = secure_filename(logo.filename)
             logo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             settings_obj.logo = filename
+
+        login_bg = request.files.get('login_background_image')
+        if login_bg and allowed_file(login_bg.filename):
+            filename = secure_filename(login_bg.filename)
+            login_bg.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            settings_obj.login_background_image = filename
         
         try:
             db.session.commit()
@@ -2275,6 +2282,27 @@ def delete_logo():
             db.session.rollback()
             flash(f'حدث خطأ أثناء حذف الشعار: {str(e)}', 'error')
     
+    return redirect(url_for('settings'))
+
+@app.route('/delete_login_background')
+@require_role('admin')
+def delete_login_background():
+    settings_obj = Settings.query.first()
+    if settings_obj and settings_obj.login_background_image:
+        try:
+            # Delete the image file
+            bg_path = os.path.join(app.config['UPLOAD_FOLDER'], settings_obj.login_background_image)
+            if os.path.exists(bg_path):
+                os.remove(bg_path)
+
+            # Remove the reference from the database
+            settings_obj.login_background_image = None
+            db.session.commit()
+            flash('تم حذف خلفية تسجيل الدخول بنجاح', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء حذف الخلفية: {str(e)}', 'error')
+
     return redirect(url_for('settings'))
 
 # ---------- 16.  SUPPORT ----------
@@ -2374,18 +2402,6 @@ def parent_dashboard():
             stats['points'] = db.session.query(func.sum(Point.points)).filter_by(student_id=student.id).scalar() or 0
             stats['badges'] = StudentBadge.query.filter_by(student_id=student.id).all()
             stats['notes'] = EducationalNote.query.filter_by(student_id=student.id).order_by(EducationalNote.date.desc()).limit(3).all()
-
-            # Add enrolled courses and certificates
-            enrollments = CourseEnrollment.query.filter_by(student_id=student.id).all()
-            student_courses = []
-            for enrollment in enrollments:
-                certificate = Certificate.query.filter_by(student_id=student.id, course_id=enrollment.course_id).first()
-                student_courses.append({
-                    'course': enrollment.course,
-                    'certificate': certificate
-                })
-            stats['courses'] = student_courses
-
             student_stats.append(stats)
     
     total_children = len(students)
@@ -2434,6 +2450,44 @@ def parent_dashboard():
                          total_monthly_reports=total_monthly_reports,
                          center_stats=center_stats,
                          honor_students=honor_students)
+
+
+@app.route('/parent_settings', methods=['GET', 'POST'])
+@require_login
+@require_role('parent')
+def parent_settings():
+    user = User.query.get_or_404(session['user_id'])
+    if request.method == 'POST':
+        new_username = request.form.get('username')
+        new_password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        # Update username
+        if new_username and new_username != user.username:
+            # Check if username already exists
+            existing_user = User.query.filter(User.username == new_username, User.id != user.id).first()
+            if existing_user:
+                flash('اسم المستخدم هذا موجود بالفعل. الرجاء اختيار اسم آخر.', 'error')
+            else:
+                user.username = new_username
+                flash('تم تحديث اسم المستخدم بنجاح.', 'success')
+
+        # Update password
+        if new_password:
+            if new_password == confirm_password:
+                user.password = generate_password_hash(new_password)
+                flash('تم تحديث كلمة المرور بنجاح.', 'success')
+            else:
+                flash('كلمتا المرور غير متطابقتين.', 'error')
+
+        try:
+            db.session.commit()
+            return redirect(url_for('parent_settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تحديث الإعدادات: {e}', 'error')
+
+    return render_template('parent_settings.html', user=user)
 
 # ---------- 21.  STUDENT REPORTS ----------
 @app.route('/add_educational_note/<int:student_id>', methods=['POST'])
@@ -3069,4 +3123,4 @@ def setup_database():
 
 if __name__ == '__main__':
     setup_database()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
