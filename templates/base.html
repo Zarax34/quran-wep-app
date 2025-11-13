@@ -126,30 +126,6 @@
             transform: scale(1.1) rotate(90deg);
         }
 
-        .dark-mode-toggle {
-            position: fixed;
-            top: 90px;
-            right: 30px;
-            z-index: 1060;
-            background: linear-gradient(135deg, #6c757d, #495057);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            font-size: 1.2rem;
-        }
-
-        .dark-mode-toggle:hover {
-            transform: scale(1.1);
-        }
-
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
@@ -412,25 +388,28 @@
             justify-content: center; /* Center the nav bar itself */
             padding: 10px 0;
             z-index: 1040;
-            background-color: var(--background-color); /* Match body background */
         }
 
         /* New Parent Bottom Nav Styles */
         .parent-bottom-nav #navbody {
             width: 300px;
             height: 60px;
-            background-color: var(--card-bg);
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border-radius: 40px;
-            box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.041);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             align-items: center;
             justify-content: center;
             display: flex;
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             overflow: hidden; /* Fix for clipping overflowing icons */
         }
 
         .dark-mode .parent-bottom-nav #navbody {
-             box-shadow: 0px 10px 15px rgba(255, 255, 255, 0.041);
+            background-color: rgba(45, 55, 72, 0.2);
+            border-color: rgba(74, 85, 104, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
 
         .parent-bottom-nav .ul {
@@ -835,11 +814,6 @@
     <button class="sidebar-toggle" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
     </button>
-
-    <!-- زر الوضع الليلي -->
-    <button class="dark-mode-toggle" onclick="toggleDarkMode()">
-        <i class="fas {% if session.get('dark_mode') or settings.dark_mode_enabled %}fa-sun{% else %}fa-moon{% endif %}"></i>
-    </button>
     {% endif %}
 
     {% if session.user_id %}
@@ -1128,6 +1102,12 @@
                     </a>
                 </li>
                 <li class="li">
+                    <a href="{{ url_for('parent_courses') }}" class="{{ 'active' if request.endpoint == 'parent_courses' }}">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <span>الدورات</span>
+                    </a>
+                </li>
+                <li class="li">
                     <a href="{{ url_for('activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
                        <i class="fas fa-cubes"></i>
                        <span>الأنشطة</span>
@@ -1230,21 +1210,6 @@
             });
         });
 
-        // تبديل الوضع الليلي
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            const icon = document.querySelector('.dark-mode-toggle i');
-            if (document.body.classList.contains('dark-mode')) {
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-            } else {
-                icon.classList.remove('fa-sun');
-                icon.classList.add('fa-moon');
-            }
-            // حفظ التفضيل في localStorage
-            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-        }
-
         // تعيين السنة الدراسية
         function setAcademicYear(year) {
             showLoading();
@@ -1256,9 +1221,6 @@
             const darkMode = localStorage.getItem('darkMode') === 'true';
             if (darkMode) {
                 document.body.classList.add('dark-mode');
-                const icon = document.querySelector('.dark-mode-toggle i');
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
             }
 
             // إغلاق القائمة تلقائياً على الهواتف
