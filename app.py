@@ -593,7 +593,8 @@ def get_student_stats(student_id):
         'monthly_attendance': monthly_attendance,
         'total_reports': total_reports,
         'total_verses': total_verses,
-        'attendance_rate': monthly_attendance['نسبة الحضور']
+        'attendance_rate': monthly_attendance['نسبة الحضور'],
+        'student': student
     }
 
 def create_whatsapp_message(student, reports, report_type, start_date, end_date, teacher_name):
