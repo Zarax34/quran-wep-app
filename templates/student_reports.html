@@ -3,6 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">تقارير الطالب: {{ student.name }}</h1>
+    {% if session.role != 'parent' %}
     <div>
         <a href="{{ url_for('send_whatsapp_report', student_id=student.id, report_type='أسبوعي') }}" 
            class="btn btn-success me-2" target="_blank">
@@ -16,6 +17,7 @@
             <i class="fas fa-file-pdf"></i> تصدير PDF
         </a>
     </div>
+    {% endif %}
 </div>
 
 <div class="row mb-4">

@@ -2884,6 +2884,52 @@ def student_details(student_id):
                          progress_percentage=progress_percentage,
                          educational_notes=educational_notes)
 
+
+@app.route('/parent_courses')
+@require_login
+@require_role('parent')
+def parent_courses():
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
+    if not parent:
+        flash('لم يتم العثور على بيانات ولي الأمر', 'error')
+        return redirect(url_for('logout'))
+
+    # Get all students of the parent
+    student_ids = [student.id for student in parent.students]
+
+    # Get all courses these students are enrolled in
+    enrollments = db.session.query(Course, Student).select_from(Student).join(CourseEnrollment).join(Course).filter(
+        Student.id.in_(student_ids)
+    ).all()
+
+    # Organize courses by student
+    courses_by_student = {}
+    for course, student in enrollments:
+        if student.name not in courses_by_student:
+            courses_by_student[student.name] = []
+
+        # Get tests and scores for this course and student
+        tests = Test.query.filter_by(course_id=course.id).all()
+        scores = TestScore.query.filter(
+            TestScore.student_id == student.id,
+            TestScore.test_id.in_([t.id for t in tests])
+        ).all()
+        scores_map = {score.test_id: score for score in scores}
+
+        course_data = {
+            'course': course,
+            'tests': []
+        }
+        for test in tests:
+            course_data['tests'].append({
+                'test': test,
+                'score': scores_map.get(test.id)
+            })
+
+        courses_by_student[student.name].append(course_data)
+
+    return render_template('parent_courses.html', courses_by_student=courses_by_student)
+
 @app.route('/grades', methods=['GET', 'POST'])
 @require_login
 def grades():
@@ -3055,6 +3101,7 @@ def setup_database():
                 print(f"ERROR: Could not create default admin user: {e}")
                 db.session.rollback()
 
+
 if __name__ == '__main__':
     setup_database()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
