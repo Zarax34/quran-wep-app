@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}الدورات التدريبية - {{ settings.site_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">الدورات التدريبية لأبنائك</h1>
+</div>
+
+{% if courses_by_student %}
+    {% for student_name, courses_data in courses_by_student.items() %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i> دورات الطالب: {{ student_name }}</h5>
+            </div>
+            <div class="card-body">
+                {% for data in courses_data %}
+                    <div class="accordion" id="accordion-{{ loop.index }}">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading-{{ loop.index }}">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}" aria-expanded="true" aria-controls="collapse-{{ loop.index }}">
+                                    <strong>{{ data.course.name }}</strong>
+                                </button>
+                            </h2>
+                            <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse show" aria-labelledby="heading-{{ loop.index }}" data-bs-parent="#accordion-{{ loop.index }}">
+                                <div class="accordion-body">
+                                    <p>{{ data.course.description }}</p>
+                                    <h6>الاختبارات والدرجات:</h6>
+                                    {% if data.tests %}
+                                        <ul class="list-group">
+                                            {% for test_data in data.tests %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    {{ test_data.test.name }}
+                                                    <span class="badge bg-success rounded-pill">
+                                                        {% if test_data.score %}
+                                                            {{ test_data.score.score }} / {{ test_data.test.max_score }}
+                                                        {% else %}
+                                                            لم تسجل بعد
+                                                        {% endif %}
+                                                    </span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="text-muted">لا توجد اختبارات لهذه الدورة بعد.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        لم يتم تسجيل أي من أبنائك في دورات تدريبية حتى الآن.
+    </div>
+{% endif %}
+{% endblock %}
