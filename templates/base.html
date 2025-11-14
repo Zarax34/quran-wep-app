@@ -380,70 +380,65 @@
 
         /* Show for parents */
         .parent-bottom-nav {
-            display: flex;
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            justify-content: center; /* Center the nav bar itself */
-            padding: 10px 0;
+            bottom: 15px; /* Floating effect */
+            left: 15px;
+            right: 15px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 35px; /* Curved shape */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             z-index: 1040;
-        }
-
-        /* New Parent Bottom Nav Styles */
-
-        .parent-bottom-nav {
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            background-color: rgba(255, 255, 255, 0.2);
-            border-top: none;
-            box-shadow: none;
-            justify-content: space-around;
+            overflow: hidden; /* Hide scrollbar visually */
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
         }
 
         .dark-mode .parent-bottom-nav {
-            background-color: rgba(45, 55, 72, 0.2);
+             background-color: rgba(45, 55, 72, 0.8);
+        }
+
+        .parent-bottom-nav .nav-scroll-container {
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .parent-bottom-nav .nav-scroll-container::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
         }
 
         .parent-bottom-nav a {
-             display: flex;
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-decoration: none;
             color: var(--text-color);
-            padding: 5px 12px;
-            height: 60px; /* Match navbody height */
-            transition: all 0.2s ease;
-            position: relative;
+            flex-shrink: 0; /* Prevent items from shrinking */
+            width: 80px; /* Fixed width for each item */
+            height: 100%;
+            transition: all 0.3s ease;
+            font-size: 0.75rem;
         }
 
         .parent-bottom-nav a i {
-            font-size: 1.4rem; /* Larger icon */
-            margin-bottom: 3px;
+            font-size: 1.5rem;
+            margin-bottom: 4px;
         }
 
-        .parent-bottom-nav a span {
-            font-size: 0.7rem; /* Smaller text */
-            font-weight: 500;
-        }
-
-        .parent-bottom-nav a:hover,
         .parent-bottom-nav a.active {
             color: var(--primary-color);
-            transform: translateY(-5px); /* Nice hover effect */
+            transform: scale(1.15); /* Scale up effect */
         }
 
-        .parent-bottom-nav a.active::after {
-            content: '';
-            position: absolute;
-            bottom: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background-color: var(--primary-color);
-            border-radius: 50%;
+        .parent-bottom-nav a:hover {
+            color: var(--primary-color);
         }
 
         /* Reposition notification badge */
@@ -1058,43 +1053,45 @@
     <!-- شريط التنقل للهواتف -->
     <div class="mobile-menu {% if session.role == 'parent' %}parent-bottom-nav{% else %}mobile-only{% endif %}">
         {% if session.role == 'parent' %}
-            <a href="{{ url_for('parent_dashboard') }}" class="{{ 'active' if request.endpoint == 'parent_dashboard' }}">
-                <i class="fas fa-home"></i>
-                <span>الرئيسية</span>
-            </a>
-            <a href="{{ url_for('parent_reports') }}" class="{{ 'active' if request.endpoint == 'parent_reports' }}">
-                <i class="fas fa-file-alt"></i>
-                <span>التقارير</span>
-            </a>
-            <a href="{{ url_for('parent_courses') }}" class="{{ 'active' if request.endpoint == 'parent_courses' }}">
-                <i class="fas fa-chalkboard-teacher"></i>
-                <span>الدورات</span>
-            </a>
-            <a href="{{ url_for('activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
-               <i class="fas fa-cubes"></i>
-               <span>الأنشطة</span>
-            </a>
-            <a href="{{ url_for('messaging') }}" class="{{ 'active' if request.endpoint == 'messaging' }}">
-                <i class="fas fa-comments"></i>
-                <span>المراسلة</span>
-            </a>
-            <a href="{{ url_for('notifications') }}" class="position-relative {{ 'active' if request.endpoint == 'notifications' }}">
-                <i class="fas fa-bell"></i>
-                <span>الإشعارات</span>
-                <span class="notification-badge" style="display: none;"></span>
-            </a>
-            <a href="{{ url_for('support') }}" class="{{ 'active' if request.endpoint == 'support' }}">
-                <i class="fas fa-hand-holding-heart"></i>
-                <span>الدعم</span>
-            </a>
-            <a href="{{ url_for('parent_settings') }}" class="{{ 'active' if request.endpoint == 'parent_settings' }}">
-                <i class="fas fa-cog"></i>
-                <span>الإعدادات</span>
-            </a>
-            <a href="{{ url_for('parent_logout') }}">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>الخروج</span>
-            </a>
+            <div class="nav-scroll-container">
+                <a href="{{ url_for('parent_dashboard') }}" class="{{ 'active' if request.endpoint == 'parent_dashboard' }}">
+                    <i class="fas fa-home"></i>
+                    <span>الرئيسية</span>
+                </a>
+                <a href="{{ url_for('parent_reports') }}" class="{{ 'active' if request.endpoint == 'parent_reports' }}">
+                    <i class="fas fa-file-alt"></i>
+                    <span>التقارير</span>
+                </a>
+                <a href="{{ url_for('parent_courses') }}" class="{{ 'active' if request.endpoint == 'parent_courses' }}">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>الدورات</span>
+                </a>
+                <a href="{{ url_for('activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
+                   <i class="fas fa-cubes"></i>
+                   <span>الأنشطة</span>
+                </a>
+                <a href="{{ url_for('messaging') }}" class="{{ 'active' if request.endpoint == 'messaging' }}">
+                    <i class="fas fa-comments"></i>
+                    <span>المراسلة</span>
+                </a>
+                <a href="{{ url_for('notifications') }}" class="position-relative {{ 'active' if request.endpoint == 'notifications' }}">
+                    <i class="fas fa-bell"></i>
+                    <span>الإشعارات</span>
+                    <span class="notification-badge" style="display: none;"></span>
+                </a>
+                <a href="{{ url_for('support') }}" class="{{ 'active' if request.endpoint == 'support' }}">
+                    <i class="fas fa-hand-holding-heart"></i>
+                    <span>الدعم</span>
+                </a>
+                <a href="{{ url_for('parent_settings') }}" class="{{ 'active' if request.endpoint == 'parent_settings' }}">
+                    <i class="fas fa-cog"></i>
+                    <span>الإعدادات</span>
+                </a>
+                <a href="{{ url_for('parent_logout') }}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>الخروج</span>
+                </a>
+            </div>
         {% else %}
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
             <i class="fas fa-home"></i>
