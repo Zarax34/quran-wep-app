@@ -2790,6 +2790,49 @@ def record_scores(test_id):
     return render_template('record_scores.html', test=test, existing_scores=existing_scores)
 
 # ---------- 22.  PARENT STUDENT DETAILS ----------
+@app.route('/parent/courses')
+@require_login
+@require_role('parent')
+def parent_courses():
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
+    if not parent:
+        flash('لم يتم العثور على بيانات ولي الأمر', 'error')
+        return redirect(url_for('logout'))
+
+    # استعلام لجلب الدورات المسجل فيها أبناء ولي الأمر
+    student_ids = [student.id for student in parent.students]
+
+    # جلب الدورات مع الطلاب المسجلين فيها والشهادات
+    courses_with_students = db.session.query(
+        Course, Student, Certificate
+    ).join(
+        CourseEnrollment, Course.id == CourseEnrollment.course_id
+    ).join(
+        Student, Student.id == CourseEnrollment.student_id
+    ).outerjoin(
+        Certificate, (Certificate.student_id == Student.id) & (Certificate.course_id == Course.id)
+    ).filter(
+        Student.id.in_(student_ids)
+    ).all()
+
+    # تنظيم البيانات للعرض في القالب
+    courses_data = {}
+    for course, student, certificate in courses_with_students:
+        if course.id not in courses_data:
+            courses_data[course.id] = {
+                'course': course,
+                'students': []
+            }
+
+        # التأكد من عدم إضافة الطالب أكثر من مرة
+        if not any(s['student'].id == student.id for s in courses_data[course.id]['students']):
+            courses_data[course.id]['students'].append({
+                'student': student,
+                'certificate': certificate
+            })
+
+    return render_template('parent_courses.html', courses_data=courses_data.values())
+
 @app.route('/student_dashboard')
 @require_login
 def student_dashboard():
