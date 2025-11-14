@@ -2435,11 +2435,8 @@ def parent_settings():
 
 @app.route('/parent_courses')
 @require_login
+@require_role('parent')
 def parent_courses():
-    if session.get('role') != 'parent':
-        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
-        return redirect(url_for('dashboard'))
-
     return render_template('parent_courses.html')
 
 @app.route('/parent_reports')
