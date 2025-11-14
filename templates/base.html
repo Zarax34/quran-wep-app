@@ -390,60 +390,96 @@
             z-index: 1040;
         }
 
-        /* New Parent Bottom Nav Styles */
-
+        /* New Parent Bottom Nav Styles - Curved Notched Design */
         .parent-bottom-nav {
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            background-color: rgba(255, 255, 255, 0.2);
-            border-top: none;
-            box-shadow: none;
             justify-content: space-around;
+            align-items: center;
+            height: 65px;
+            background-color: rgba(255, 255, 255, 0.7); /* Transparency */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            overflow: visible; /* Allow active icon to pop out */
         }
 
         .dark-mode .parent-bottom-nav {
-            background-color: rgba(45, 55, 72, 0.2);
+            background-color: rgba(45, 55, 72, 0.7);
         }
 
         .parent-bottom-nav a {
-             display: flex;
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-decoration: none;
             color: var(--text-color);
-            padding: 5px 12px;
-            height: 60px; /* Match navbody height */
-            transition: all 0.2s ease;
+            width: 65px; /* Fixed width for alignment */
+            height: 100%;
             position: relative;
+            transition: all 0.4s ease-in-out;
         }
 
         .parent-bottom-nav a i {
-            font-size: 1.4rem; /* Larger icon */
-            margin-bottom: 3px;
+            font-size: 1.4rem;
+            margin-bottom: 4px;
+            transition: all 0.4s ease-in-out;
         }
 
         .parent-bottom-nav a span {
-            font-size: 0.7rem; /* Smaller text */
+            font-size: 0.7rem;
             font-weight: 500;
         }
 
-        .parent-bottom-nav a:hover,
         .parent-bottom-nav a.active {
-            color: var(--primary-color);
-            transform: translateY(-5px); /* Nice hover effect */
+            transform: translateY(-20px);
         }
 
+        .parent-bottom-nav a.active i {
+            color: var(--primary-color);
+        }
+
+        /* The circular background for the active icon */
+        .parent-bottom-nav a.active::before {
+            content: '';
+            position: absolute;
+            top: 5px; /* Adjust vertical position */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 55px; /* Circle size */
+            height: 55px;
+            background-color: white; /* White background as in image */
+            border-radius: 50%;
+            z-index: -1;
+            box-shadow: 0 0 15px rgba(0,0,0,0.15);
+        }
+
+        .dark-mode .parent-bottom-nav a.active::before {
+            background-color: var(--card-bg);
+        }
+
+        /* The CURVE/NOTCH effect */
         .parent-bottom-nav a.active::after {
             content: '';
             position: absolute;
-            bottom: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background-color: var(--primary-color);
-            border-radius: 50%;
+            bottom: -25px; /* Position the curve creator */
+            left: -32.5px; /* Half of width */
+            width: 130px; /* Must be wide enough */
+            height: 65px; /* Must be tall enough */
+            border-top-left-radius: 65px;
+            border-top-right-radius: 65px;
+            box-shadow: 0 -15px 0 0 var(--background-color); /* This is the magic! */
+            z-index: -2;
+            transition: all 0.4s ease-in-out;
+        }
+
+        .dark-mode .parent-bottom-nav a.active::after {
+             box-shadow: 0 -15px 0 0 var(--background-color);
+        }
+
+        /* Hide the default hover effect */
+        .parent-bottom-nav a:hover {
+            transform: translateY(0);
+            color: var(--primary-color);
         }
 
         /* Reposition notification badge */
