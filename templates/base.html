@@ -393,16 +393,33 @@
         /* New Parent Bottom Nav Styles */
 
         .parent-bottom-nav {
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            background-color: rgba(255, 255, 255, 0.2);
-            border-top: none;
-            box-shadow: none;
-            justify-content: space-around;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.05), transparent);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 0; /* Remove padding from the main container */
+            overflow: hidden; /* Hide overflowing content */
+            position: relative; /* Needed for the fading effect */
         }
 
         .dark-mode .parent-bottom-nav {
-            background-color: rgba(45, 55, 72, 0.2);
+            background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
+        }
+
+        .nav-scroll-container {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none; /* For Firefox */
+            -ms-overflow-style: none; /* For Internet Explorer and Edge */
+            padding: 10px 0;
+            justify-content: flex-start; /* Align icons to the start */
+            align-items: center;
+            flex-wrap: nowrap; /* Prevent wrapping */
+        }
+
+        .nav-scroll-container::-webkit-scrollbar {
+            display: none; /* For Chrome, Safari, and Opera */
         }
 
         .parent-bottom-nav a {
@@ -416,11 +433,63 @@
             height: 60px; /* Match navbody height */
             transition: all 0.2s ease;
             position: relative;
+            flex-shrink: 0; /* Prevent icons from shrinking */
+            margin: 0 5px;
+        }
+
+        /* Fading effect at the edges */
+        .parent-bottom-nav::before,
+        .parent-bottom-nav::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 30px; /* Adjust the width of the fade */
+            pointer-events: none; /* Allows clicking through the fade */
+            z-index: 2;
+        }
+
+        .parent-bottom-nav::before {
+            left: 0;
+            background: linear-gradient(to left, transparent, var(--background-color));
+        }
+
+        .parent-bottom-nav::after {
+            right: 0;
+            background: linear-gradient(to right, transparent, var(--background-color));
+        }
+
+        .dark-mode .parent-bottom-nav::before {
+            background: linear-gradient(to left, transparent, #1a1a1a); /* Match dark mode background */
+        }
+
+        .dark-mode .parent-bottom-nav::after {
+            background: linear-gradient(to right, transparent, #1a1a1a); /* Match dark mode background */
         }
 
         .parent-bottom-nav a i {
             font-size: 1.4rem; /* Larger icon */
             margin-bottom: 3px;
+        }
+
+        /* Icon Click Animations */
+        @keyframes assemble-cubes {
+            0% {
+                transform: scale(0.5) rotate(45deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(-10deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .animate-cubes {
+            animation: assemble-cubes 0.5s ease-in-out;
         }
 
         .parent-bottom-nav a span {
@@ -431,7 +500,7 @@
         .parent-bottom-nav a:hover,
         .parent-bottom-nav a.active {
             color: var(--primary-color);
-            transform: translateY(-5px); /* Nice hover effect */
+            transform: translateY(-5px) scale(1.1); /* Slightly larger on hover/active */
         }
 
         .parent-bottom-nav a.active::after {
@@ -1058,6 +1127,7 @@
     <!-- شريط التنقل للهواتف -->
     <div class="mobile-menu {% if session.role == 'parent' %}parent-bottom-nav{% else %}mobile-only{% endif %}">
         {% if session.role == 'parent' %}
+        <div class="nav-scroll-container">
             <a href="{{ url_for('parent_dashboard') }}" class="{{ 'active' if request.endpoint == 'parent_dashboard' }}">
                 <i class="fas fa-home"></i>
                 <span>الرئيسية</span>
@@ -1095,6 +1165,7 @@
                 <i class="fas fa-sign-out-alt"></i>
                 <span>الخروج</span>
             </a>
+        </div>
         {% else %}
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
             <i class="fas fa-home"></i>
@@ -1312,6 +1383,17 @@
                     }
                 }, 5000); // 5 seconds
             });
+
+            // Add animation to the activities icon on click
+            const activitiesIcon = document.querySelector('a[href="{{ url_for('activities') }}"] i');
+            if (activitiesIcon) {
+                activitiesIcon.parentElement.addEventListener('click', function(e) {
+                    activitiesIcon.classList.add('animate-cubes');
+                    activitiesIcon.addEventListener('animationend', () => {
+                        activitiesIcon.classList.remove('animate-cubes');
+                    });
+                });
+            }
         });
     </script>
 </body>
