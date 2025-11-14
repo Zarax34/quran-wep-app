@@ -1,8 +1,26 @@
 {% extends "base.html" %}
 
+{% block title %}إعدادات ولي الأمر{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
-    <h2>إعدادات ولي الأمر</h2>
-    <p>هذه الصفحة مخصصة لإعدادات ولي الأمر.</p>
+    <h1 class="text-center mb-4">إعدادات الحساب</h1>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <p class="lead">هذه الصفحة مخصصة لإعدادات ولي الأمر.</p>
+                    <p>المزيد من الخيارات ستكون متاحة هنا قريباً.</p>
+
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>الاسم:</strong> {{ user.name }}</li>
+                        <li class="list-group-item"><strong>اسم المستخدم:</strong> {{ user.username }}</li>
+                    </ul>
+
+                    <a href="{{ url_for('parent_dashboard') }}" class="btn btn-primary mt-3">العودة إلى لوحة التحكم</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

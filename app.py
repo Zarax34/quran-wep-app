@@ -2423,6 +2423,34 @@ def parent_dashboard():
                          center_stats=center_stats,
                          honor_students=honor_students)
 
+@app.route('/parent_settings')
+@require_login
+def parent_settings():
+    if session.get('role') != 'parent':
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(session['user_id'])
+    return render_template('parent_settings.html', user=user)
+
+@app.route('/parent_courses')
+@require_login
+def parent_courses():
+    if session.get('role') != 'parent':
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+        return redirect(url_for('dashboard'))
+
+    return render_template('parent_courses.html')
+
+@app.route('/parent_reports')
+@require_login
+def parent_reports():
+    if session.get('role') != 'parent':
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+        return redirect(url_for('dashboard'))
+
+    return render_template('parent_reports.html')
+
 # ---------- 21.  STUDENT REPORTS ----------
 @app.route('/add_educational_note/<int:student_id>', methods=['POST'])
 @require_login
@@ -3055,6 +3083,8 @@ def setup_database():
                 print(f"ERROR: Could not create default admin user: {e}")
                 db.session.rollback()
 
+
+
 if __name__ == '__main__':
     setup_database()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
