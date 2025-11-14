@@ -1,86 +1,77 @@
 {% extends "base.html" %}
 
-{% block title %}الدورات - {{ settings.site_name }}{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4">الدورات المسجل بها أبناؤك</h2>
-        <a href="{{ url_for('parent_dashboard') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-right"></i> العودة للوحة التحكم
-        </a>
-    </div>
+<div class="page-transition">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>دورات أبنائك</h2>
+    <small class="text-muted">عرض الدورات التي يشارك فيها أبناء {{ parent.name }}</small>
+  </div>
 
-    {% if courses_by_student %}
-        {% for student_name, courses in courses_by_student.items() %}
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="h5 mb-0"><i class="fas fa-user-graduate me-2"></i> {{ student_name }}</h3>
-                </div>
-                <div class="card-body">
-                    {% if courses %}
-                        {% for data in courses %}
-                            <div class="course-section mb-3">
-                                <h4 class="h6 text-primary">{{ data.course.name }}</h4>
-                                <p>{{ data.course.description }}</p>
+  {% if courses %}
+    <div class="row g-3">
+      {% for entry in courses %}
+        <div class="col-md-6">
+          <div class="card main-card h-100">
+            <div class="card-body">
+              <h5 class="card-title">{{ entry.course.name }}</h5>
+              {% if entry.course.description %}
+                <p class="card-text text-muted">{{ entry.course.description }}</p>
+              {% endif %}
 
-                                {% if data.tests %}
-                                    <table class="table table-bordered table-striped table-sm">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>الاختبار</th>
-                                                <th>تاريخ الاختبار</th>
-                                                <th>الدرجة القصوى</th>
-                                                <th>درجة الطالب</th>
-                                                <th>النسبة المئوية</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for test_data in data.tests %}
-                                                <tr>
-                                                    <td>{{ test_data.test.name }}</td>
-                                                    <td>{{ test_data.test.test_date.strftime('%Y-%m-%d') }}</td>
-                                                    <td>{{ test_data.test.max_score }}</td>
-                                                    <td>
-                                                        {% if test_data.score %}
-                                                            {{ test_data.score.score }}
-                                                        {% else %}
-                                                            <span class="text-muted">لم ترصد</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {% if test_data.score %}
-                                                            {% set percentage = (test_data.score.score / test_data.test.max_score) * 100 %}
-                                                            <div class="progress" style="height: 20px;">
-                                                                <div class="progress-bar {% if percentage >= 85 %}bg-success{% elif percentage >= 70 %}bg-info{% elif percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">
-                                                                    {{ "%.2f"|format(percentage) }}%
-                                                                </div>
-                                                            </div>
-                                                        {% else %}
-                                                            -
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                {% else %}
-                                    <p class="text-muted">لا توجد اختبارات لهذه الدورة بعد.</p>
-                                {% endif %}
-                            </div>
-                            {% if not loop.last %}<hr>{% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <p>لم يتم تسجيل الطالب في أي دورات بعد.</p>
-                    {% endif %}
-                </div>
+              <hr>
+
+              <strong>الأبناء المسجلون في هذه الدورة:</strong>
+              <ul class="list-group list-group-flush my-2">
+                {% for student in entry.students %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                      {{ student.name }}
+                      <div class="small text-muted">{{ student.circle.name if student.circle else '' }}</div>
+                    </div>
+
+                    <div>
+                      <a href="{{ url_for('student_details', student_id=student.id) }}" class="btn btn-sm btn-outline-primary me-2">
+                        عرض الطالب
+                      </a>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+
+              {% if entry.certificates %}
+                <hr>
+                <strong>الشهادات:</strong>
+                <ul class="list-group list-group-flush mt-2">
+                  {% for c in entry.certificates %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <div>
+                        {{ c.student.name }}
+                      </div>
+                      <div>
+                        <a href="{{ url_for('uploaded_file', filename=c.certificate.certificate_file) }}" class="btn btn-sm btn-success" download>
+                          <i class="fas fa-download"></i> تحميل الشهادة
+                        </a>
+                      </div>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
             </div>
-        {% endfor %}
-    {% else %}
-        <div class="alert alert-info text-center" role="alert">
-            <h4 class="alert-heading">لا توجد دورات</h4>
-            <p>لم يتم تسجيل أي من أبنائك في دورات حالياً.</p>
+
+            <div class="card-footer bg-transparent d-flex justify-content-between">
+              <small class="text-muted">منشأة بتاريخ: {{ entry.course.created_at.strftime('%Y-%m-%d') if entry.course.created_at else '-' }}</small>
+              <a href="{{ url_for('course_details', course_id=entry.course.id) }}" class="btn btn-sm btn-primary">
+                تفاصيل الدورة
+              </a>
+            </div>
+          </div>
         </div>
-    {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      لا يوجد دورات مسجلة لأبناءك حتى الآن.
+    </div>
+  {% endif %}
 </div>
 {% endblock %}
