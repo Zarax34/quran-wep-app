@@ -28,29 +28,29 @@ def create_test_data():
             db.session.commit()
             print("Test circle created.")
 
-        # 3. Create Parent and User
-        parent_user = User.query.filter_by(username='test_parent').first()
+        # 3. Create Parent and User 'sara_ahmed'
+        parent_user = User.query.filter_by(username='sara_ahmed').first()
         if not parent_user:
             parent_user = User(
-                username='test_parent',
+                username='sara_ahmed',
                 password=generate_password_hash('password123'),
-                name='Test Parent',
+                name='Sara Ahmed',
                 role='parent'
             )
             db.session.add(parent_user)
             db.session.commit()
-            print("Test parent user created.")
+            print("Test parent user 'sara_ahmed' created.")
 
         parent = Parent.query.filter_by(user_id=parent_user.id).first()
         if not parent:
             parent = Parent(
-                name='Test Parent',
-                phone='123456789',
+                name='Sara Ahmed',
+                phone='987654321',
                 user_id=parent_user.id
             )
             db.session.add(parent)
             db.session.commit()
-            print("Test parent profile created.")
+            print("Test parent profile for 'sara_ahmed' created.")
 
         # 4. Create an Approved Student
         student = Student.query.filter_by(name='Test Student').first()
