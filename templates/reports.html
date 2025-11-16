@@ -17,6 +17,7 @@
     {% endif %}
     </div>
 
+    {% if session.role != 'parent' %}
     <div class="card fade-in mb-3">
         <div class="card-header">
             <h5 class="card-title mb-0"><i class="fas fa-filter"></i> فلترة التقارير</h5>
@@ -39,12 +40,13 @@
             </form>
         </div>
     </div>
+    {% endif %}
 
 
     {% if reports %}
     <div class="card fade-in">
         <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-list"></i> سجل التقارير</h5>
+            <h5 class="card-title mb-0"><i class="fas fa-list"></i> {% if session.role == 'parent' %}تقارير أبنائي{% else %}سجل التقارير{% endif %}</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -60,7 +62,9 @@
                             <th>نهاية التسميع</th>
                             <th>النوع</th>
                             <th>التقدير</th>
+                            {% if session.role != 'parent' %}
                             <th>الإجراءات</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -89,15 +93,15 @@
                                     {{ report.grade }}
                                 </span>
                             </td>
+                            {% if session.role != 'parent' %}
                             <td>
-                                {% if session.role != 'parent' %}
                                 <div class="btn-group btn-group-sm">
                                     <a href="{{ url_for('edit_report', report_id=report.id) }}" class="btn btn-outline-warning" title="تعديل">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                 </div>
-                                {% endif %}
                             </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -109,16 +113,20 @@
     <div class="alert alert-info text-center fade-in">
         <i class="fas fa-clipboard-list fa-3x mb-3"></i>
         <h4>لا توجد تقارير</h4>
+        {% if session.role != 'parent' %}
         <p>يمكنك بدء إضافة التقارير الفردية أو الجماعية</p>
         <div class="mt-3">
             <a href="{{ url_for('add_report') }}" class="btn btn-primary me-2 btn-hover">إضافة تقرير فردي</a>
             <a href="{{ url_for('collective_report') }}" class="btn btn-success btn-hover">إضافة تقرير جماعي</a>
         </div>
+        {% else %}
+        <p>لا توجد تقارير لعرضها حالياً.</p>
+        {% endif %}
     </div>
     {% endif %}
 
     <!-- إحصائيات سريعة -->
-    {% if reports %}
+    {% if reports and session.role != 'parent' %}
     <div class="row mt-4 slide-in-left">
         <div class="col-md-3">
             <div class="card text-center">
