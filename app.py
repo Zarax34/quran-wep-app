@@ -1291,6 +1291,16 @@ def reports():
 
     query = Report.query
 
+    # If the user is a parent, restrict the query to their children's reports
+    if session.get('role') == 'parent':
+        parent = Parent.query.filter_by(user_id=session['user_id']).first()
+        if parent:
+            child_ids = [student.id for student in parent.students]
+            query = query.filter(Report.student_id.in_(child_ids))
+        else:
+            # If for some reason a parent user has no parent object, show no reports
+            query = query.filter(Report.id == -1) # No reports will match this
+
     if from_date_str:
         from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
         query = query.filter(Report.date >= from_date)
@@ -2790,6 +2800,82 @@ def record_scores(test_id):
     return render_template('record_scores.html', test=test, existing_scores=existing_scores)
 
 # ---------- 22.  PARENT STUDENT DETAILS ----------
+@app.route('/parent/courses')
+@require_login
+@require_role('parent')
+def parent_courses():
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
+    if not parent:
+        flash('لم يتم العثور على بيانات ولي الأمر', 'error')
+        return redirect(url_for('logout'))
+
+    # استعلام لجلب الدورات المسجل فيها أبناء ولي الأمر
+    student_ids = [student.id for student in parent.students]
+
+    # جلب الدورات مع الطلاب المسجلين فيها والشهادات
+    courses_with_students = db.session.query(
+        Course, Student, Certificate
+    ).join(
+        CourseEnrollment, Course.id == CourseEnrollment.course_id
+    ).join(
+        Student, Student.id == CourseEnrollment.student_id
+    ).outerjoin(
+        Certificate, (Certificate.student_id == Student.id) & (Certificate.course_id == Course.id)
+    ).filter(
+        Student.id.in_(student_ids)
+    ).all()
+
+    # تنظيم البيانات للعرض في القالب
+    courses_data = {}
+    for course, student, certificate in courses_with_students:
+        if course.id not in courses_data:
+            courses_data[course.id] = {
+                'course': course,
+                'students': []
+            }
+
+        # التأكد من عدم إضافة الطالب أكثر من مرة
+        if not any(s['student'].id == student.id for s in courses_data[course.id]['students']):
+            courses_data[course.id]['students'].append({
+                'student': student,
+                'certificate': certificate
+            })
+
+    return render_template('parent_courses.html', courses_data=courses_data.values())
+
+@app.route('/parent/settings', methods=['GET', 'POST'])
+@require_login
+@require_role('parent')
+def parent_settings():
+    user = User.query.get_or_404(session['user_id'])
+    parent = Parent.query.filter_by(user_id=session['user_id']).first_or_404()
+
+    if request.method == 'POST':
+        # Update user information
+        user.username = request.form['username']
+        user.name = request.form['name']
+        user.email = request.form.get('email')
+
+        # Update password if provided
+        new_password = request.form.get('password')
+        if new_password:
+            user.password = generate_password_hash(new_password)
+
+        # Update parent information
+        parent.phone = request.form['phone']
+
+        try:
+            db.session.commit()
+            flash('تم تحديث إعداداتك بنجاح!', 'success')
+            # Update session data in case the name changed
+            session['name'] = user.name
+            return redirect(url_for('parent_settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تحديث الإعدادات: {e}', 'error')
+
+    return render_template('parent_settings.html', user=user, parent=parent)
+
 @app.route('/student_dashboard')
 @require_login
 def student_dashboard():

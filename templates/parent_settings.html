@@ -14,15 +14,42 @@
                     <!-- Form for updating user settings -->
                     <form method="POST" action="{{ url_for('parent_settings') }}">
 
-                        <!-- Username -->
-                        <div class="mb-3">
-                            <label for="username" class="form-label"><strong>اسم المستخدم</strong></label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                        <!-- Personal Information -->
+                        <h5 class="mb-3">المعلومات الشخصية</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label"><strong>الاسم الكامل</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user-circle"></i></span>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                                </div>
                             </div>
-                            <small class="form-text text-muted">يمكنك استخدام هذا الاسم لتسجيل الدخول بدلاً من رقم الهاتف.</small>
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label"><strong>اسم المستخدم</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label"><strong>رقم الهاتف</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ parent.phone }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label"><strong>البريد الإلكتروني (اختياري)</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+                                </div>
+                            </div>
+                        </div>
+
 
                         <hr class="my-4">
 
