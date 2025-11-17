@@ -281,16 +281,18 @@ class CenterActivity(db.Model):
     description = db.Column(db.Text, nullable=False)
     date = db.Column(db.Date, nullable=False)
     image = db.Column(db.String(200))
-    fee = db.Column(db.Float, nullable=True)  # Add this line for the fee
+    fee = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    participants = db.relationship('Student', secondary='activity_approval', backref='activities', overlaps="approvals,activity")
 
 class ActivityApproval(db.Model):
+    __tablename__ = 'activity_approval'
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     activity_id = db.Column(db.Integer, db.ForeignKey('center_activity.id'), nullable=False)
-    approved = db.Column(db.Boolean, default=False)
-    student = db.relationship('Student', backref='approvals')
-    activity = db.relationship('CenterActivity', backref='approvals')
+    status = db.Column(db.String(20), default='Pending') # Pending, Approved, Rejected
+    student = db.relationship('Student', backref='approvals', overlaps="activities,participants")
+    activity = db.relationship('CenterActivity', backref='approvals', overlaps="activities,participants,student")
 
 class Alumni(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1779,23 +1781,13 @@ def delete_announcement(announcement_id):
 @require_login
 def activities():
     activities = CenterActivity.query.order_by(CenterActivity.date.desc()).all()
-
-    parent_children = []
-    approvals = {}
+    parent = None
     if session.get('role') == 'parent':
         parent = Parent.query.filter_by(user_id=session['user_id']).first()
-        if parent:
-            parent_children = parent.students
-            # Get all approvals for this parent's children in one query
-            child_ids = [child.id for child in parent_children]
-            approval_list = ActivityApproval.query.filter(ActivityApproval.student_id.in_(child_ids)).all()
-            for approval in approval_list:
-                approvals[(approval.student_id, approval.activity_id)] = approval.approved
 
     return render_template('activities.html',
                          activities=activities,
-                         parent_children=parent_children,
-                         approvals=approvals)
+                         parent=parent)
 
 @app.route('/add_activity', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1806,7 +1798,7 @@ def add_activity():
         date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
         image = request.files.get('image')
         fee = request.form.get('fee', type=float)
-
+        student_ids = request.form.getlist('student_ids')
 
         filename = None
         if image and allowed_file(image.filename):
@@ -1815,22 +1807,29 @@ def add_activity():
 
         activity = CenterActivity(title=title, description=description, date=date, image=filename, fee=fee)
         db.session.add(activity)
+        db.session.commit() # Commit to get activity.id
 
-        # Notify all parents
-        parents = Parent.query.join(User).filter(Parent.user_id.isnot(None)).all()
-        for parent in parents:
-            notification = Notification(
-                user_id=parent.user_id,
-                title='نشاط جديد في المركز',
-                message=f'تم إضافة نشاط جديد بعنوان "{title}". يمكنكم الاطلاع عليه في صفحة الأنشطة.'
-            )
-            db.session.add(notification)
+        for student_id in student_ids:
+            student = Student.query.get(student_id)
+            if student:
+                approval = ActivityApproval(student_id=student.id, activity_id=activity.id, status='Pending')
+                db.session.add(approval)
+
+                # Notify parent
+                if student.parent and student.parent.user_id:
+                    notification = Notification(
+                        user_id=student.parent.user_id,
+                        title='دعوة للمشاركة في نشاط',
+                        message=f'تمت دعوة ابنك "{student.name}" للمشاركة في نشاط "{title}". يرجى الموافقة أو الرفض.'
+                    )
+                    db.session.add(notification)
 
         db.session.commit()
         flash('تم إضافة النشاط وإشعار أولياء الأمور بنجاح!', 'success')
         return redirect(url_for('activities'))
 
-    return render_template('add_activity.html')
+    students = Student.query.filter_by(is_active=True).all()
+    return render_template('add_activity.html', students=students)
 
 @app.route('/edit_activity/<int:activity_id>', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1916,18 +1915,25 @@ def approve_activity(student_id, activity_id):
 
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     student = Student.query.get_or_404(student_id)
+    activity = CenterActivity.query.get_or_404(activity_id)
+
     if not parent or student.parent_id != parent.id:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
 
+    if datetime.now().date() > activity.date:
+        return jsonify({'success': False, 'message': 'Activity has already passed.'}), 400
+
     approval = ActivityApproval.query.filter_by(student_id=student_id, activity_id=activity_id).first()
     if not approval:
-        approval = ActivityApproval(student_id=student_id, activity_id=activity_id, approved=True)
-        db.session.add(approval)
-    else:
-        approval.approved = not approval.approved
+        return jsonify({'success': False, 'message': 'No approval record found.'}), 404
 
-    db.session.commit()
-    return jsonify({'success': True, 'approved': approval.approved})
+    status = request.json.get('status')
+    if status in ['Approved', 'Rejected']:
+        approval.status = status
+        db.session.commit()
+        return jsonify({'success': True, 'status': approval.status})
+
+    return jsonify({'success': False, 'message': 'Invalid status.'}), 400
 
 
 @app.route('/delete_activity/<int:activity_id>', methods=['POST'])
@@ -2300,12 +2306,16 @@ def notifications():
     if session.get('role') != 'parent':
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
-    
+
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if parent and parent.user_id:
+        # Mark all notifications as read
+        Notification.query.filter_by(user_id=parent.user_id, is_read=False).update({'is_read': True})
+        db.session.commit()
+
         notifs = Notification.query.filter_by(user_id=parent.user_id).order_by(Notification.created_at.desc()).all()
         return render_template('notifications.html', notifications=notifs)
-    
+
     flash('لم يتم العثور على بيانات ولي الأمر', 'error')
     return redirect(url_for('dashboard'))
 
@@ -3143,4 +3153,4 @@ def setup_database():
 
 if __name__ == '__main__':
     setup_database()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
