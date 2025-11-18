@@ -36,6 +36,15 @@
                         <label for="image" class="form-label">صورة النشاط (اختياري)</label>
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                     </div>
+                    <div class="mb-3">
+                        <label for="student_ids" class="form-label">الطلاب المشاركون</label>
+                        <select multiple class="form-control" id="student_ids" name="student_ids">
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">يمكنك تحديد أكثر من طالب بالضغط على Ctrl/Cmd.</small>
+                    </div>
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="fas fa-save"></i> حفظ النشاط
                     </button>
