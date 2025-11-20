@@ -3789,6 +3789,68 @@ def setup_database():
         except Exception as e:
             pass # Ignore if columns already exist
 
+        # Migrate Fee table to allow nullable date_paid (if needed)
+        try:
+            with db.engine.connect() as connection:
+                # Check if date_paid is NOT NULL
+                # SQLite PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+                result = connection.execute(text("PRAGMA table_info(fee)"))
+                columns = result.fetchall()
+                date_paid_col = next((c for c in columns if c[1] == 'date_paid'), None)
+
+                if date_paid_col and date_paid_col[3] == 1: # notnull is 1 (True)
+                    print("INFO: Migrating Fee table to allow nullable date_paid...")
+
+                    try:
+                        # We use a nested transaction or rely on the connection's context
+                        # Since we are inside connection.begin() implicitly or explicitly via Flask-SQLAlchemy context if active
+                        # But here we got the connection via db.engine.connect() which is raw.
+                        # The issue is transaction management conflict.
+                        # Let's try to perform operations directly without explicit begin/commit if auto-commit is enabled,
+                        # or manage it carefully.
+
+                        # 1. Rename existing table
+                        connection.execute(text("ALTER TABLE fee RENAME TO fee_old"))
+
+                        # 2. Create new table
+                        create_table_sql = """
+                        CREATE TABLE fee (
+                            id INTEGER NOT NULL,
+                            student_id INTEGER NOT NULL,
+                            amount FLOAT NOT NULL,
+                            date_paid DATE,
+                            status VARCHAR(20),
+                            title VARCHAR(100),
+                            notes TEXT,
+                            PRIMARY KEY (id),
+                            FOREIGN KEY(student_id) REFERENCES student (id)
+                        )
+                        """
+                        connection.execute(text(create_table_sql))
+
+                        # 3. Copy data
+                        connection.execute(text("""
+                            INSERT INTO fee (id, student_id, amount, date_paid, status, title, notes)
+                            SELECT id, student_id, amount, date_paid, status, title, notes FROM fee_old
+                        """))
+
+                        # 4. Drop old table
+                        connection.execute(text("DROP TABLE fee_old"))
+
+                        # Commit if a transaction is active and we started it, but 'connection' here
+                        # might be part of a pool.
+                        if not connection.in_transaction():
+                             connection.commit()
+
+                        print("INFO: Successfully migrated Fee table.")
+                    except Exception as inner_e:
+                        print(f"ERROR: Migration failed: {inner_e}")
+                        # Attempt rollback if possible
+                        # connection.rollback()
+                        raise inner_e
+        except Exception as e:
+             print(f"ERROR: Could not migrate Fee table: {e}")
+
         # Seed initial data if it doesn't exist
         # 1. Default settings
         if not Settings.query.first():
