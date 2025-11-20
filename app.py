@@ -132,6 +132,18 @@ def check_upcoming_events():
 scheduler.add_job(check_upcoming_events, 'cron', hour=8)
 
 # ---------- 3.  MODELS  ----------
+
+# Association tables for many-to-many relationships
+activity_circles = db.Table('activity_circles',
+    db.Column('activity_id', db.Integer, db.ForeignKey('center_activity.id'), primary_key=True),
+    db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
+)
+
+holiday_circles = db.Table('holiday_circles',
+    db.Column('holiday_id', db.Integer, db.ForeignKey('holiday.id'), primary_key=True),
+    db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
+)
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -340,17 +352,6 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.now)
-
-# Association tables for many-to-many relationships
-activity_circles = db.Table('activity_circles',
-    db.Column('activity_id', db.Integer, db.ForeignKey('center_activity.id'), primary_key=True),
-    db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
-)
-
-holiday_circles = db.Table('holiday_circles',
-    db.Column('holiday_id', db.Integer, db.ForeignKey('holiday.id'), primary_key=True),
-    db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
-)
 
 class CenterActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)

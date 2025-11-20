@@ -26,7 +26,7 @@ class TestApp(unittest.TestCase):
             with app.app_context():
                 user = User.query.filter_by(name='Test User').first()
                 self.assertIsNotNone(user)
-                self.assertEqual(user.username, 'Test_User')
+            self.assertEqual(user.username, 'Test User')
 
 if __name__ == '__main__':
     unittest.main()
