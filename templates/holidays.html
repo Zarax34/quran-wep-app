@@ -21,7 +21,8 @@
                         <th>التاريخ</th>
                         <th>المناسبة</th>
                         <th>نوع اليوم</th>
-                        <th>الحالة</th>
+                        <th>حالة الطلب</th>
+                        <th>الحالة الزمنية</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -38,6 +39,13 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if holiday.status == 'Pending' %}
+                            <span class="badge bg-warning text-dark">قيد الانتظار</span>
+                            {% else %}
+                            <span class="badge bg-success">معتمد</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             {% if holiday.date < datetime.now().date() %}
                             <span class="badge bg-secondary">منتهية</span>
                             {% elif holiday.date == datetime.now().date() %}
@@ -47,6 +55,11 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if holiday.status == 'Pending' and session.role == 'admin' %}
+                            <a href="{{ url_for('approve_holiday', holiday_id=holiday.id) }}" class="btn btn-sm btn-success" title="موافقة">
+                                <i class="fas fa-check"></i>
+                            </a>
+                            {% endif %}
                             <a href="{{ url_for('delete_holiday', holiday_id=holiday.id) }}" 
                                class="btn btn-sm btn-outline-danger"
                                onclick="return confirm('هل أنت متأكد من حذف هذه العطلة؟')">

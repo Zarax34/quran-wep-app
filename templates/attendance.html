@@ -16,10 +16,12 @@
                     <label for="date" class="form-label">التاريخ</label>
                     <input type="date" class="form-control" id="date" name="date" value="{{ selected_date }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4" {% if session.role == 'teacher' %}style="display:none;"{% endif %}>
                     <label for="circle_id" class="form-label">الحلقة</label>
                     <select class="form-control" id="circle_id" name="circle_id">
+                        {% if session.role == 'admin' or session.role == 'communication_officer' %}
                         <option value="">جميع الحلقات</option>
+                        {% endif %}
                         {% for circle in circles %}
                         <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
                             {{ circle.name }}
