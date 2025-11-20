@@ -36,6 +36,30 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="parent_name" class="form-label">اسم ولي الأمر</label>
+                                <input type="text" class="form-control" id="parent_name" name="parent_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_relationship" class="form-label">صلة القرابة</label>
+                                <select class="form-control" id="parent_relationship" name="parent_relationship">
+                                    <option value="أب">أب</option>
+                                    <option value="أم">أم</option>
+                                    <option value="أخ">أخ</option>
+                                    <option value="عم">عم</option>
+                                    <option value="خال">خال</option>
+                                    <option value="جد">جد</option>
+                                    <option value="ولي أمر">ولي أمر</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="student_phone" class="form-label">رقم هاتف الطالب</label>
                                 <input type="tel" class="form-control" id="student_phone" name="student_phone"
                                        placeholder="7xxxxxxxx">
@@ -146,9 +170,9 @@
                     <div class="alert alert-info">
                         <h6><i class="fas fa-info-circle"></i> معلومات مهمة:</h6>
                         <ul class="mb-0">
-                            <li>سيتم استخراج اسم ولي الأمر تلقائياً من اسم الطالب (الجزء الثاني والثالث واللقب) <strong>مع المسافات</strong>.</li>
-                            <li>سيتم إنشاء حساب ولي الأمر تلقائياً بناءً على الاسم المستخرج ورقم الهاتف.</li>
-                            <li>اسم المستخدم لولي الأمر: اسم الأب مع المسافات (مثال: أحمد_علي).</li>
+                            <li>سيتم استخدام "اسم ولي الأمر" المدخل لإنشاء حسابه بدلاً من الاستخراج التلقائي من اسم الطالب.</li>
+                            <li>سيتم إنشاء حساب ولي الأمر تلقائياً بناءً على الاسم المدخل ورقم الهاتف.</li>
+                            <li>اسم المستخدم لولي الأمر: اسم ولي الأمر المدخل مع المسافات.</li>
                             <li>كلمة المرور لولي الأمر: رقم الهاتف.</li>
                             <li>رقم ولي الأمر مطلوب لإرسال التقارير الأسبوعية.</li>
                             <li>سيتم ربط الطالب بالحلقة المحددة.</li>

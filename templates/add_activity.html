@@ -37,13 +37,28 @@
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                     </div>
                     <div class="mb-3">
-                        <label for="student_ids" class="form-label">الطلاب المشاركون</label>
+                        <label class="form-label">الحلقات المستهدفة</label>
+                        <div class="card p-3" style="max-height: 200px; overflow-y: auto;">
+                            {% for circle in circles %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="circle_ids" value="{{ circle.id }}" id="circle_{{ circle.id }}">
+                                <label class="form-check-label" for="circle_{{ circle.id }}">
+                                    {{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">اختر الحلقات التي يمكن لطلابها رؤية النشاط.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="student_ids" class="form-label">الطلاب المشاركون (دعوة خاصة)</label>
                         <select multiple class="form-control" id="student_ids" name="student_ids">
                             {% for student in students %}
                             <option value="{{ student.id }}">{{ student.name }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">يمكنك تحديد أكثر من طالب بالضغط على Ctrl/Cmd.</small>
+                        <small class="form-text text-muted">اختياري. يمكنك تحديد طلاب محددين بالإضافة للحلقات.</small>
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="fas fa-save"></i> حفظ النشاط

@@ -37,7 +37,19 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="attendance_status" class="form-label">حالة الحضور</label>
+                                <select class="form-control" id="attendance_status" name="attendance_status">
+                                    <option value="حاضر">حاضر</option>
+                                    <option value="غائب بعذر">غائب بعذر</option>
+                                    <option value="غائب بلا عذر">غائب بلا عذر</option>
+                                    <option value="متأخر">متأخر</option>
+                                    <option value="هروب">هروب</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="page_number" class="form-label">رقم الصفحة</label>
                                 <input type="text" class="form-control" id="page_number" name="page_number" readonly>

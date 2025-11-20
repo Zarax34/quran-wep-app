@@ -53,6 +53,21 @@
                             سيتم تطبيق هذه العطلة تلقائياً في نفس التاريخ كل سنة
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">الحلقات المستهدفة (اختياري)</label>
+                        <div class="card p-3" style="max-height: 200px; overflow-y: auto;">
+                            {% for circle in circles %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="circle_ids" value="{{ circle.id }}" id="circle_{{ circle.id }}">
+                                <label class="form-check-label" for="circle_{{ circle.id }}">
+                                    {{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">إذا لم تختر أي حلقة، ستطبق العطلة على جميع الحلقات.</small>
+                    </div>
                     
                     <div class="alert alert-info">
                         <h6><i class="fas fa-info-circle"></i> معلومات:</h6>
