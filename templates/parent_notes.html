@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}ملاحظاتي - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">ملاحظاتي للمسؤول</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('parent_dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع
+            </a>
+        </div>
+    </div>
+
+    <div class="row fade-in">
+        <div class="col-md-6 mb-4">
+            <div class="card main-card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-pen"></i> إرسال ملاحظة جديدة</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="content" class="form-label">نص الملاحظة</label>
+                            <textarea class="form-control" id="content" name="content" rows="5" required placeholder="اكتب ملاحظاتك هنا بشأن تصرفات ابنك في المنزل أو أي أمر آخر..."></textarea>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> هذه الملاحظات سرية وتظهر للمسؤول فقط لمساعدتكم في تقويم سلوك الطالب.
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-paper-plane"></i> إرسال الملاحظة
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card main-card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-history"></i> سجل الملاحظات</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% if parent.notes %}
+                            {% for note in parent.notes|reverse %}
+                            <div class="list-group-item bg-transparent">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">ملاحظة بتاريخ {{ note.created_at.strftime('%Y-%m-%d') }}</h6>
+                                    <small class="text-muted">
+                                        {% if note.is_read %}
+                                        <span class="badge bg-success"><i class="fas fa-check-double"></i> تمت القراءة</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary"><i class="fas fa-check"></i> تم الإرسال</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <p class="mb-1">{{ note.content }}</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center p-4 text-muted">
+                                <i class="fas fa-clipboard fa-2x mb-2"></i>
+                                <p>لم تقم بإرسال أي ملاحظات بعد.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

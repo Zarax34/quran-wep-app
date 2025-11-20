@@ -1063,6 +1063,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_notes' }}" href="{{ url_for('parent_notes') }}">
+                        <i class="fas fa-pen me-2"></i> ملاحظاتي
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
                         <i class="fas fa-hand-holding-heart me-2"></i> الدعم
                     </a>
@@ -1157,6 +1162,12 @@
                     <a class="nav-link {{ 'active' if request.endpoint == 'parent_management' }}" href="{{ url_for('parent_management') }}">
                         <i class="fas fa-user-friends me-2"></i>
                         إدارة أولياء الأمور
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin_parent_notes' }}" href="{{ url_for('admin_parent_notes') }}">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        ملاحظات أولياء الأمور
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1304,6 +1315,10 @@
                 <a href="{{ url_for('messaging') }}" class="{{ 'active' if request.endpoint == 'messaging' }}">
                     <i class="fas fa-comments"></i>
                     <span>المراسلة</span>
+                </a>
+                <a href="{{ url_for('parent_notes') }}" class="{{ 'active' if request.endpoint == 'parent_notes' }}">
+                    <i class="fas fa-pen"></i>
+                    <span>ملاحظاتي</span>
                 </a>
                 <a href="{{ url_for('notifications') }}" class="position-relative {{ 'active' if request.endpoint == 'notifications' }}">
                     <i class="fas fa-bell"></i>

@@ -400,6 +400,14 @@ class Work(db.Model):
     link = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+class ParentNote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('parent.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    is_read = db.Column(db.Boolean, default=False)
+    parent = db.relationship('Parent', backref='notes')
+
 # ===================
 # Courses and Tests Models
 # ===================
@@ -2790,6 +2798,50 @@ def messaging():
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
     return render_template('messaging.html')
+
+@app.route('/parent/notes', methods=['GET', 'POST'])
+@require_login
+def parent_notes():
+    if session.get('role') != 'parent':
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+        return redirect(url_for('dashboard'))
+
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
+    if not parent:
+        flash('لم يتم العثور على بيانات ولي الأمر', 'error')
+        return redirect(url_for('logout'))
+
+    if request.method == 'POST':
+        content = request.form.get('content')
+        if content:
+            note = ParentNote(parent_id=parent.id, content=content)
+            db.session.add(note)
+            try:
+                db.session.commit()
+                flash('تم إرسال الملاحظة بنجاح', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'حدث خطأ أثناء إرسال الملاحظة: {e}', 'error')
+        else:
+             flash('لا يمكن إرسال ملاحظة فارغة', 'error')
+        return redirect(url_for('parent_notes'))
+
+    return render_template('parent_notes.html', parent=parent)
+
+@app.route('/admin/parent_notes')
+@require_role('admin')
+def admin_parent_notes():
+    notes = ParentNote.query.order_by(ParentNote.created_at.desc()).all()
+    return render_template('admin_parent_notes.html', notes=notes)
+
+@app.route('/admin/mark_note_read/<int:note_id>')
+@require_role('admin')
+def mark_note_read(note_id):
+    note = ParentNote.query.get_or_404(note_id)
+    note.is_read = True
+    db.session.commit()
+    flash('تم تحديد الملاحظة كمقروءة', 'success')
+    return redirect(url_for('admin_parent_notes'))
 
 @app.route('/parent_dashboard')
 @require_login
