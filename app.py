@@ -3925,30 +3925,33 @@ def setup_database():
                     print(f"ERROR: Could not add '{column}' column to 'settings' table: {e}")
 
         # Add new columns for requested features
-        try:
-            with db.engine.connect() as connection:
-                trans = connection.begin()
-                connection.execute(text("ALTER TABLE course ADD COLUMN start_date DATE"))
-                connection.execute(text("ALTER TABLE course ADD COLUMN end_date DATE"))
-                connection.execute(text("ALTER TABLE test ADD COLUMN min_passing_score FLOAT"))
-                connection.execute(text("ALTER TABLE center_activity ADD COLUMN start_time TIME"))
-                connection.execute(text("ALTER TABLE center_activity ADD COLUMN end_time TIME"))
-                connection.execute(text("ALTER TABLE certificate ADD COLUMN certificate_url VARCHAR(500)"))
-                connection.execute(text("ALTER TABLE fee ADD COLUMN status VARCHAR(20) DEFAULT 'Paid'"))
-                connection.execute(text("ALTER TABLE fee ADD COLUMN title VARCHAR(100)"))
-                # Add status columns for approval workflow
+        # We execute these one by one to ensure that if one exists, others are still attempted.
+        migrations = [
+            "ALTER TABLE course ADD COLUMN start_date DATE",
+            "ALTER TABLE course ADD COLUMN end_date DATE",
+            "ALTER TABLE test ADD COLUMN min_passing_score FLOAT",
+            "ALTER TABLE center_activity ADD COLUMN start_time TIME",
+            "ALTER TABLE center_activity ADD COLUMN end_time TIME",
+            "ALTER TABLE certificate ADD COLUMN certificate_url VARCHAR(500)",
+            "ALTER TABLE fee ADD COLUMN status VARCHAR(20) DEFAULT 'Paid'",
+            "ALTER TABLE fee ADD COLUMN title VARCHAR(100)",
+            "ALTER TABLE report ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'",
+            "ALTER TABLE holiday ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'"
+        ]
+
+        with db.engine.connect() as connection:
+            for statement in migrations:
                 try:
-                    connection.execute(text("ALTER TABLE report ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'"))
-                except Exception:
+                    # Begin a nested transaction (savepoint) if supported, or just a transaction
+                    # But since we are looping, we want each execution to be atomic.
+                    # Using connection.begin() context manager handles commit/rollback automatically.
+                    with connection.begin():
+                        connection.execute(text(statement))
+                    print(f"INFO: Executed migration: {statement}")
+                except Exception as e:
+                    # If the column already exists, we expect an error, which we can safely ignore.
+                    # However, printing it helps with debugging.
                     pass
-                try:
-                    connection.execute(text("ALTER TABLE holiday ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'"))
-                except Exception:
-                    pass
-                trans.commit()
-            print("INFO: Added new columns for requested features.")
-        except Exception as e:
-            pass # Ignore if columns already exist
 
         # Migrate Fee table to allow nullable date_paid (if needed)
         try:
