@@ -43,7 +43,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="role" class="form-label">الدور</label>
-                                <select class="form-control" id="role" name="role" required>
+                                <select class="form-control" id="role" name="role" required onchange="toggleCircleSelect()">
                                     <option value="teacher">معلم</option>
                                     <option value="admin">مسؤول</option>
                                 </select>
@@ -51,6 +51,17 @@
                         </div>
                     </div>
                     
+                    <div class="mb-3" id="circle_select_container" style="display: none;">
+                        <label for="circle_id" class="form-label">تعيين كمعلم للحلقة</label>
+                        <select class="form-control" id="circle_id" name="circle_id">
+                            <option value="">اختر حلقة (اختياري)</option>
+                            {% for circle in circles %}
+                            <option value="{{ circle.id }}">{{ circle.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">يمكنك اختيار حلقة لتعيين هذا المعلم مسؤولاً عنها مباشرة.</div>
+                    </div>
+
                     <div class="alert alert-info">
                         <h6><i class="fas fa-info-circle"></i> معلومات:</h6>
                         <ul class="mb-0">
@@ -69,4 +80,19 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleCircleSelect() {
+    var role = document.getElementById('role').value;
+    var container = document.getElementById('circle_select_container');
+    if (role === 'teacher') {
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+        document.getElementById('circle_id').value = '';
+    }
+}
+// Initial check
+document.addEventListener('DOMContentLoaded', toggleCircleSelect);
+</script>
 {% endblock %}

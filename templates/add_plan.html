@@ -3,90 +3,76 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">إضافة خطة شهرية للطالب: {{ student.name }}</h1>
-    <a href="{{ url_for('students') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-right"></i> رجوع للطلاب
+    <a href="{{ url_for('student_details', student_id=student.id) }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع
     </a>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0"><i class="fas fa-calendar-plus"></i> تفاصيل الخطة</h5>
-            </div>
             <div class="card-body">
                 <form method="POST">
-                    <div class="row">
+                    <div class="row mb-3">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="start_date" class="form-label">تاريخ البداية</label>
-                                <input type="date" class="form-control" id="start_date" name="start_date" required>
-                            </div>
+                            <label for="start_date" class="form-label">تاريخ البداية</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required value="{{ now().strftime('%Y-%m-%d') }}">
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="end_date" class="form-label">تاريخ النهاية</label>
-                                <input type="date" class="form-control" id="end_date" name="end_date" required>
+                            <label for="end_date" class="form-label">تاريخ النهاية</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">نوع الخطة</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="plan_type" id="type_hifz" value="حفظ" checked>
+                            <label class="btn btn-outline-primary" for="type_hifz">حفظ</label>
+                            <input type="radio" class="btn-check" name="plan_type" id="type_review" value="مراجعة">
+                            <label class="btn btn-outline-info" for="type_review">مراجعة</label>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">نطاق الخطة (اختياري للحساب التلقائي)</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">من:</label>
+                                    <div class="input-group mb-2">
+                                        <select class="form-select" name="start_surah">
+                                            <option value="">اختر السورة</option>
+                                            {% for surah in surah_names %}
+                                            <option value="{{ surah }}">{{ surah }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="number" class="form-control" name="start_verse" placeholder="الآية">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">إلى:</label>
+                                    <div class="input-group mb-2">
+                                        <select class="form-select" name="end_surah">
+                                            <option value="">اختر السورة</option>
+                                            {% for surah in surah_names %}
+                                            <option value="{{ surah }}">{{ surah }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="number" class="form-control" name="end_verse" placeholder="الآية">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                إذا قمت بتحديد النطاق، سيقوم النظام بحساب عدد الصفحات وتقسيمها على الأيام (باستثناء الجمعة).
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="plan_type" class="form-label">نوع الخطة</label>
-                        <select class="form-control" id="plan_type" name="plan_type">
-                            <option value="حفظ">حفظ</option>
-                            <option value="مراجعة">مراجعة</option>
-                        </select>
-                    </div>
-
-                    <hr>
-                    <h6>نطاق الخطة (اختياري إذا تم تحديد عدد الصفحات اليومي)</h6>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="start_surah" class="form-label">من سورة</label>
-                                <select class="form-control" id="start_surah" name="start_surah">
-                                    <option value="">اختر السورة</option>
-                                    {% for surah in surah_names %}
-                                    <option value="{{ surah }}">{{ surah }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="start_verse" class="form-label">من آية</label>
-                                <input type="number" class="form-control" id="start_verse" name="start_verse">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="end_surah" class="form-label">إلى سورة</label>
-                                <select class="form-control" id="end_surah" name="end_surah">
-                                    <option value="">اختر السورة</option>
-                                    {% for surah in surah_names %}
-                                    <option value="{{ surah }}">{{ surah }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="end_verse" class="form-label">إلى آية</label>
-                                <input type="number" class="form-control" id="end_verse" name="end_verse">
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr>
-                    <div class="mb-3">
-                        <label for="daily_pages" class="form-label">المطلوب يومياً (عدد الصفحات)</label>
-                        <input type="number" step="0.5" class="form-control" id="daily_pages" name="daily_pages" placeholder="أتركه فارغاً ليقوم النظام بالحساب بناءً على النطاق">
-                        <div class="form-text">سيقوم النظام بحساب الكمية تلقائياً إذا تم تحديد البداية والنهاية، مع مراعاة عطلة الجمعة.</div>
+                        <label for="daily_pages" class="form-label">أو حدد المقدار اليومي (صفحات)</label>
+                        <input type="number" step="0.5" class="form-control" id="daily_pages" name="daily_pages" placeholder="مثال: 2.5">
+                        <div class="form-text">اتركه فارغاً إذا كنت تريد أن يقوم النظام بالحساب بناءً على النطاق أعلاه.</div>
                     </div>
 
                     <div class="mb-3">
@@ -94,8 +80,8 @@
                         <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
                     </div>
 
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <button type="submit" class="btn btn-primary">حفظ الخطة</button>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">حفظ الخطة</button>
                     </div>
                 </form>
             </div>

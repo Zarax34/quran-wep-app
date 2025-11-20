@@ -94,6 +94,9 @@
                             <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
                                 <i class="fas fa-edit"></i> تعديل
                             </a>
+                            <button type="button" class="btn btn-outline-info w-100" onclick="showStudentDetails({{ student.id }})">
+                                <i class="fas fa-info-circle"></i> التفاصيل
+                            </button>
                         </div>
                         {% if session.role == 'admin' and student.pending_approval %}
                             <div class="d-grid gap-2 mt-2">
@@ -345,5 +348,50 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.classList.remove('visible');
     });
 });
+
+function showStudentDetails(studentId) {
+    fetch(`/api/student_details/${studentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const modalBody = document.getElementById('studentDetailsModalBody');
+            modalBody.innerHTML = `
+                <div class="text-center mb-3">
+                    ${data.photo ? `<img src="/uploads/${data.photo}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">` : '<i class="fas fa-user-circle fa-4x text-secondary"></i>'}
+                    <h4>${data.name}</h4>
+                    <p class="text-muted">${data.circle}</p>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>العمر:</strong> ${data.age || '-'}</li>
+                    <li class="list-group-item"><strong>رقم الهاتف:</strong> ${data.student_phone || '-'}</li>
+                    <li class="list-group-item"><strong>ولي الأمر:</strong> ${data.parent_name || '-'} (${data.parent_phone || '-'})</li>
+                    <li class="list-group-item"><strong>المعلم:</strong> ${data.teacher || '-'}</li>
+                    <li class="list-group-item"><strong>السكن:</strong> ${data.current_address || '-'}</li>
+                    <li class="list-group-item"><strong>تاريخ الميلاد:</strong> ${data.date_of_birth || '-'}</li>
+                    <li class="list-group-item"><strong>تاريخ الالتحاق:</strong> ${data.enrollment_date || '-'}</li>
+                </ul>
+            `;
+            var modal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
+            modal.show();
+        });
+}
 </script>
+
+<!-- Student Details Modal -->
+<div class="modal fade" id="studentDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تفاصيل الطالب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="studentDetailsModalBody">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

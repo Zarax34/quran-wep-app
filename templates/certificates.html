@@ -35,6 +35,11 @@
                         <label for="reason" class="form-label">سبب الشهادة</label>
                         <input type="text" class="form-control" id="reason" name="reason" placeholder="مثال: لإتمام دورة التجويد بنجاح">
                     </div>
+                    <div class="mb-3">
+                        <label for="certificate_url" class="form-label">رابط شهادة خارجي (اختياري)</label>
+                        <input type="url" class="form-control" id="certificate_url" name="certificate_url" placeholder="https://example.com/cert.pdf">
+                        <div class="form-text">إذا تم إدخال رابط، سيظهر لولي الأمر بدلاً من ملف PDF المولد.</div>
+                    </div>
                     <button type="submit" class="btn btn-primary">إنشاء الشهادة</button>
                 </form>
             </div>

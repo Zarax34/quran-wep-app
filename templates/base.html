@@ -1082,7 +1082,7 @@
                     </a>
                 </li>
                 {% if session.role in ['admin', 'teacher', 'support'] %}
-                {% if session.role != 'teacher' %}
+                {% if session.role == 'admin' %}
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'circles' }}" href="{{ url_for('circles') }}">
                         <i class="fas fa-users me-2"></i>
