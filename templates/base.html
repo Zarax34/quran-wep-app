@@ -985,7 +985,7 @@
     }
     </script>
 </head>
-<body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %} {% if session.role == 'parent' %}parent-view{% endif %}">
+<body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %} {% if session.role == 'parent' or session.role == 'teacher' or session.role == 'communication_officer' %}parent-view{% endif %}">
     
     <!-- شعار المركز في الأعلى -->
     {% if settings.logo or settings.site_name %}
@@ -1011,7 +1011,7 @@
 
     {% if session.user_id %}
     <!-- شريط التنقل للكمبيوتر -->
-    <nav class="sidebar {% if session.get('view_type') == 'mobile' %}collapsed{% endif %}">
+    <nav class="sidebar {% if session.get('view_type') == 'mobile' %}collapsed{% endif %}" {% if session.role == 'teacher' or session.role == 'communication_officer' %}style="display:none !important;"{% endif %}>
         <button class="sidebar-close" onclick="toggleSidebar()">
             <i class="fas fa-times"></i>
         </button>
@@ -1060,6 +1060,11 @@
                  <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'messaging' }}" href="{{ url_for('messaging') }}">
                         <i class="fas fa-comments me-2"></i> المراسلة
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_notes' }}" href="{{ url_for('parent_notes') }}">
+                        <i class="fas fa-pen me-2"></i> ملاحظاتي
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1157,6 +1162,12 @@
                     <a class="nav-link {{ 'active' if request.endpoint == 'parent_management' }}" href="{{ url_for('parent_management') }}">
                         <i class="fas fa-user-friends me-2"></i>
                         إدارة أولياء الأمور
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin_parent_notes' }}" href="{{ url_for('admin_parent_notes') }}">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        ملاحظات أولياء الأمور
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1305,6 +1316,10 @@
                     <i class="fas fa-comments"></i>
                     <span>المراسلة</span>
                 </a>
+                <a href="{{ url_for('parent_notes') }}" class="{{ 'active' if request.endpoint == 'parent_notes' }}">
+                    <i class="fas fa-pen"></i>
+                    <span>ملاحظاتي</span>
+                </a>
                 <a href="{{ url_for('notifications') }}" class="position-relative {{ 'active' if request.endpoint == 'notifications' }}">
                     <i class="fas fa-bell"></i>
                     <span>الإشعارات</span>
@@ -1322,6 +1337,50 @@
                     <i class="fas fa-sign-out-alt"></i>
                     <span>الخروج</span>
                 </a>
+            </div>
+        </div>
+        {% elif session.role == 'teacher' or session.role == 'communication_officer' %}
+        <!-- Teacher Bottom Nav -->
+        <div class="parent-bottom-nav">
+            <div class="parent-nav-container">
+                <div class="parent-nav-scroll">
+                    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>الرئيسية</span>
+                    </a>
+                    <a href="{{ url_for('students') }}" class="{{ 'active' if request.endpoint == 'students' }}">
+                        <i class="fas fa-users"></i>
+                        <span>الطلاب</span>
+                    </a>
+                    <a href="{{ url_for('attendance') }}" class="{{ 'active' if request.endpoint == 'attendance' }}">
+                        <i class="fas fa-clipboard-check"></i>
+                        <span>الحضور</span>
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
+                        <i class="fas fa-file-alt"></i>
+                        <span>التقارير</span>
+                    </a>
+                    <a href="{{ url_for('add_report') }}" class="{{ 'active' if request.endpoint in ['add_report', 'collective_report'] }}">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>إضافة</span>
+                    </a>
+                    <a href="{{ url_for('holidays') }}" class="{{ 'active' if request.endpoint == 'holidays' }}">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>العطل</span>
+                    </a>
+                    <a href="{{ url_for('fees') }}" class="{{ 'active' if request.endpoint == 'fees' }}">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>الرسوم</span>
+                    </a>
+                    <a href="{{ url_for('teacher_settings') }}" class="{{ 'active' if request.endpoint == 'teacher_settings' }}">
+                        <i class="fas fa-cog"></i>
+                        <span>الإعدادات</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>الخروج</span>
+                    </a>
+                </div>
             </div>
         </div>
         {% else %}

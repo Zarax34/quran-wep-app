@@ -58,6 +58,7 @@
                                 </button>
                             </form>
                             {% endif %}
+                            {% if session.role == 'admin' %}
                             <a href="{{ url_for('edit_fee', fee_id=fee.id) }}" class="btn btn-sm btn-outline-primary" title="تعديل">
                                 <i class="fas fa-edit"></i>
                             </a>
@@ -66,6 +67,7 @@
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

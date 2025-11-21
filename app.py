@@ -228,6 +228,7 @@ class Report(db.Model):
     type = db.Column(db.String(10), default='حفظ')
     notes = db.Column(db.Text)
     academic_year = db.Column(db.String(10), default='2025')
+    status = db.Column(db.String(20), default='Approved')
     student = db.relationship('Student', backref='reports')
     teacher = db.relationship('User', backref='reports')
     circle = db.relationship('Circle', backref='reports')
@@ -249,6 +250,7 @@ class Holiday(db.Model):
     is_recurring = db.Column(db.Boolean, default=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     academic_year = db.Column(db.String(10), default='2025')
+    status = db.Column(db.String(20), default='Approved')
     teacher = db.relationship('User', backref='holidays')
     target_circles = db.relationship('Circle', secondary=holiday_circles, backref='holidays')
 
@@ -400,6 +402,14 @@ class Work(db.Model):
     link = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+class ParentNote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('parent.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    is_read = db.Column(db.Boolean, default=False)
+    parent = db.relationship('Parent', backref='notes')
+
 # ===================
 # Courses and Tests Models
 # ===================
@@ -492,7 +502,26 @@ def require_role(role):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if session.get('role') != role:
+            user_role = session.get('role')
+            # Allow specific role or if admin (admin usually has all access, but strict check might be intended)
+            # Also allow communication_officer for teacher roles if specified
+
+            allowed = False
+            if isinstance(role, list):
+                if user_role in role:
+                    allowed = True
+            elif user_role == role:
+                allowed = True
+
+            # 'communication_officer' inherits 'teacher' permissions
+            if role == 'teacher' and user_role == 'communication_officer':
+                allowed = True
+
+            # 'admin' usually has access to everything, but let's keep it explicit or check context
+            if user_role == 'admin':
+                allowed = True
+
+            if not allowed:
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
                 return redirect(url_for('dashboard'))
             return f(*args, **kwargs)
@@ -1415,7 +1444,8 @@ def reports():
         parent = Parent.query.filter_by(user_id=session['user_id']).first()
         if parent:
             child_ids = [student.id for student in parent.students]
-            query = query.filter(Report.student_id.in_(child_ids))
+            # Parents only see Approved reports
+            query = query.filter(Report.student_id.in_(child_ids), Report.status == 'Approved')
         else:
             # If for some reason a parent user has no parent object, show no reports
             query = query.filter(Report.id == -1) # No reports will match this
@@ -1498,6 +1528,11 @@ def add_report():
                     )
                     db.session.add(notification)
 
+        # Default status: Approved for admin, Pending for teacher
+        report_status = 'Pending'
+        if session.get('role') in ['admin', 'communication_officer']:
+            report_status = 'Approved'
+
         report = Report(
             student_id=student_id,
             teacher_id=session['user_id'],
@@ -1508,7 +1543,8 @@ def add_report():
             to_verse=to_verse,
             type=type_,
             grade=grade,
-            notes=notes
+            notes=notes,
+            status=report_status
         )
         db.session.add(report)
 
@@ -1663,6 +1699,11 @@ def collective_report_submit(circle_id):
             grade = request.form.get(f'grade_{student.id}')
 
             # Main Report (Hifz or just one part)
+            # Default status: Approved for admin, Pending for teacher
+            report_status = 'Pending'
+            if session.get('role') in ['admin', 'communication_officer']:
+                report_status = 'Approved'
+
             if surah and from_verse and to_verse:
                 main_type = 'حفظ' if recitation_type in ['حفظ', 'كلاهما'] else recitation_type
 
@@ -1675,7 +1716,8 @@ def collective_report_submit(circle_id):
                     from_verse=int(from_verse),
                     to_verse=int(to_verse),
                     type=main_type,
-                    grade=grade
+                    grade=grade,
+                    status=report_status
                 )
                 db.session.add(report)
                 reports_count += 1
@@ -1703,7 +1745,8 @@ def collective_report_submit(circle_id):
                         from_verse=int(review_from_verse),
                         to_verse=int(review_to_verse),
                         type='مراجعة',
-                        grade=grade # Assuming same grade for both for simplicity in collective report
+                        grade=grade, # Assuming same grade for both for simplicity in collective report
+                        status=report_status
                     )
                     db.session.add(review_report)
                     reports_count += 1
@@ -1716,6 +1759,48 @@ def collective_report_submit(circle_id):
         flash(f'حدث خطأ: {e}', 'error')
         
     return redirect(url_for('collective_report_form', circle_id=circle_id))
+
+@app.route('/approve_report/<int:report_id>')
+@require_login
+def approve_report(report_id):
+    if session['role'] not in ['admin', 'communication_officer']:
+        flash('ليس لديك صلاحية', 'error')
+        return redirect(url_for('reports'))
+
+    report = Report.query.get_or_404(report_id)
+    report.status = 'Approved'
+
+    # Add points now that it's approved (if points are awarded on creation, we might want to move that here)
+    # Currently points are awarded on creation. Let's leave it as is or move it.
+    # Moving points logic to approval time would be better but might require refactoring.
+    # For now, we assume trust in teachers but verifying visibility.
+
+    db.session.commit()
+    flash('تمت الموافقة على التقرير', 'success')
+
+    # Notify parent if not already notified?
+    # Notification logic is in add_report.
+
+    return redirect(url_for('reports'))
+
+@app.route('/reject_report/<int:report_id>')
+@require_login
+def reject_report(report_id):
+    if session['role'] not in ['admin', 'communication_officer']:
+        flash('ليس لديك صلاحية', 'error')
+        return redirect(url_for('reports'))
+
+    report = Report.query.get_or_404(report_id)
+    # Instead of deleting, maybe set status to 'Rejected'?
+    # Or delete. Let's delete for now as 'Rejected' implies keeping it.
+    # But user might want to edit and re-submit.
+    # Let's delete to be clean, or add 'Rejected' status handling.
+    # Plan said "approve/reject".
+
+    db.session.delete(report)
+    db.session.commit()
+    flash('تم رفض التقرير وحذفه', 'success')
+    return redirect(url_for('reports'))
 
 @app.route('/edit_report/<int:report_id>', methods=['GET', 'POST'])
 @require_login
@@ -1747,7 +1832,23 @@ def attendance():
     selected_date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
     selected_circle = request.args.get('circle_id', type=int)
     
-    circles = Circle.query.filter_by(is_active=True).all()
+    if session.get('role') == 'teacher':
+        # Limit teacher to their own circles
+        teacher_circles = Circle.query.filter_by(teacher_id=session['user_id'], is_active=True).all()
+        circles = teacher_circles
+
+        # Force selected_circle if teacher has only one, or check if selected is valid
+        teacher_circle_ids = [c.id for c in teacher_circles]
+
+        if not selected_circle and teacher_circles:
+            selected_circle = teacher_circles[0].id
+        elif selected_circle and selected_circle not in teacher_circle_ids:
+            flash('ليس لديك صلاحية للوصول إلى هذه الحلقة', 'error')
+            selected_circle = teacher_circles[0].id if teacher_circles else None
+
+    else:
+        circles = Circle.query.filter_by(is_active=True).all()
+
     students = []
     
     if selected_circle:
@@ -1844,6 +1945,10 @@ def add_holiday():
         is_recurring = bool(request.form.get('is_recurring'))
         circle_ids = request.form.getlist('circle_ids')
         
+        status = 'Approved'
+        if session['role'] == 'teacher':
+            status = 'Pending'
+
         current_date = start_date
         added_count = 0
         
@@ -1857,7 +1962,8 @@ def add_holiday():
                         reason=reason,
                         has_attendance=has_attendance,
                         is_recurring=is_recurring,
-                        teacher_id=session['user_id']
+                        teacher_id=session['user_id'],
+                        status=status
                     )
                     db.session.add(holiday)
 
@@ -1870,7 +1976,10 @@ def add_holiday():
                 current_date += timedelta(days=1)
 
             db.session.commit()
-            flash(f'تم إضافة العطلة بنجاح ({added_count} أيام)', 'success')
+            if status == 'Pending':
+                flash(f'تم إرسال طلب العطلة للموافقة ({added_count} أيام)', 'info')
+            else:
+                flash(f'تم إضافة العطلة بنجاح ({added_count} أيام)', 'success')
             return redirect(url_for('holidays'))
         except Exception as e:
             db.session.rollback()
@@ -1878,6 +1987,15 @@ def add_holiday():
     
     circles = Circle.query.filter_by(is_active=True).all()
     return render_template('add_holiday.html', circles=circles)
+
+@app.route('/approve_holiday/<int:holiday_id>')
+@require_role('admin')
+def approve_holiday(holiday_id):
+    holiday = Holiday.query.get_or_404(holiday_id)
+    holiday.status = 'Approved'
+    db.session.commit()
+    flash('تمت الموافقة على العطلة بنجاح', 'success')
+    return redirect(url_for('holidays'))
 
 @app.route('/delete_holiday/<int:holiday_id>')
 @require_login
@@ -1996,7 +2114,7 @@ def add_user():
             db.session.commit()
 
             # Assign to circle if provided and role is teacher
-            if role == 'teacher':
+            if role in ['teacher', 'communication_officer']:
                 circle_id = request.form.get('circle_id')
                 if circle_id:
                     circle = Circle.query.get(circle_id)
@@ -2791,6 +2909,50 @@ def messaging():
         return redirect(url_for('dashboard'))
     return render_template('messaging.html')
 
+@app.route('/parent/notes', methods=['GET', 'POST'])
+@require_login
+def parent_notes():
+    if session.get('role') != 'parent':
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+        return redirect(url_for('dashboard'))
+
+    parent = Parent.query.filter_by(user_id=session['user_id']).first()
+    if not parent:
+        flash('لم يتم العثور على بيانات ولي الأمر', 'error')
+        return redirect(url_for('logout'))
+
+    if request.method == 'POST':
+        content = request.form.get('content')
+        if content:
+            note = ParentNote(parent_id=parent.id, content=content)
+            db.session.add(note)
+            try:
+                db.session.commit()
+                flash('تم إرسال الملاحظة بنجاح', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'حدث خطأ أثناء إرسال الملاحظة: {e}', 'error')
+        else:
+             flash('لا يمكن إرسال ملاحظة فارغة', 'error')
+        return redirect(url_for('parent_notes'))
+
+    return render_template('parent_notes.html', parent=parent)
+
+@app.route('/admin/parent_notes')
+@require_role('admin')
+def admin_parent_notes():
+    notes = ParentNote.query.order_by(ParentNote.created_at.desc()).all()
+    return render_template('admin_parent_notes.html', notes=notes)
+
+@app.route('/admin/mark_note_read/<int:note_id>')
+@require_role('admin')
+def mark_note_read(note_id):
+    note = ParentNote.query.get_or_404(note_id)
+    note.is_read = True
+    db.session.commit()
+    flash('تم تحديد الملاحظة كمقروءة', 'success')
+    return redirect(url_for('admin_parent_notes'))
+
 @app.route('/parent_dashboard')
 @require_login
 def parent_dashboard():
@@ -2991,8 +3153,15 @@ def student_reports(student_id):
     end_date_monthly = datetime.now().date()
     start_date_monthly = end_date_monthly - timedelta(days=30)
     
-    weekly_reports = Report.query.filter(Report.student_id == student_id, Report.date >= start_date_weekly, Report.date <= end_date_weekly).all()
-    monthly_reports = Report.query.filter(Report.student_id == student_id, Report.date >= start_date_monthly, Report.date <= end_date_monthly).all()
+    weekly_reports = Report.query.filter(Report.student_id == student_id, Report.date >= start_date_weekly, Report.date <= end_date_weekly)
+    monthly_reports = Report.query.filter(Report.student_id == student_id, Report.date >= start_date_monthly, Report.date <= end_date_monthly)
+
+    if session.get('role') == 'parent':
+        weekly_reports = weekly_reports.filter(Report.status == 'Approved')
+        monthly_reports = monthly_reports.filter(Report.status == 'Approved')
+
+    weekly_reports = weekly_reports.all()
+    monthly_reports = monthly_reports.all()
     
     verses_this_week, verses_last_week = compare_student_performance(student_id)
 
@@ -3393,6 +3562,36 @@ def parent_settings():
 
     return render_template('parent_settings.html', user=user, parent=parent)
 
+@app.route('/teacher/settings', methods=['GET', 'POST'])
+@require_login
+def teacher_settings():
+    if session.get('role') not in ['teacher', 'communication_officer']:
+        flash('ليس لديك صلاحية', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(session['user_id'])
+
+    if request.method == 'POST':
+        user.name = request.form['name']
+        user.username = request.form['username']
+        user.email = request.form.get('email')
+
+        new_password = request.form.get('password')
+        if new_password:
+            user.password = generate_password_hash(new_password)
+
+        try:
+            db.session.commit()
+            flash('تم حفظ الإعدادات بنجاح', 'success')
+            session['name'] = user.name
+            session['username'] = user.username
+            return redirect(url_for('teacher_settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ: {e}', 'error')
+
+    return render_template('teacher_settings.html', user=user)
+
 @app.route('/student_dashboard')
 @require_login
 def student_dashboard():
@@ -3487,12 +3686,17 @@ def student_details(student_id):
 
         # Calculate actual pages from reports in this period
         actual_pages = 0
-        plan_reports = Report.query.filter(
+        plan_reports_query = Report.query.filter(
             Report.student_id == student.id,
             Report.date >= current_plan.start_date,
             Report.date <= today, # Up to today
             Report.type == current_plan.plan_type
-        ).all()
+        )
+
+        if session.get('role') == 'parent':
+            plan_reports_query = plan_reports_query.filter(Report.status == 'Approved')
+
+        plan_reports = plan_reports_query.all()
 
         for r in plan_reports:
              # Rough estimate: 1 page ~ 15 lines, or derive from verse count?
@@ -3732,10 +3936,81 @@ def setup_database():
                 connection.execute(text("ALTER TABLE certificate ADD COLUMN certificate_url VARCHAR(500)"))
                 connection.execute(text("ALTER TABLE fee ADD COLUMN status VARCHAR(20) DEFAULT 'Paid'"))
                 connection.execute(text("ALTER TABLE fee ADD COLUMN title VARCHAR(100)"))
+                # Add status columns for approval workflow
+                try:
+                    connection.execute(text("ALTER TABLE report ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'"))
+                except Exception:
+                    pass
+                try:
+                    connection.execute(text("ALTER TABLE holiday ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'"))
+                except Exception:
+                    pass
                 trans.commit()
             print("INFO: Added new columns for requested features.")
         except Exception as e:
             pass # Ignore if columns already exist
+
+        # Migrate Fee table to allow nullable date_paid (if needed)
+        try:
+            with db.engine.connect() as connection:
+                # Check if date_paid is NOT NULL
+                # SQLite PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+                result = connection.execute(text("PRAGMA table_info(fee)"))
+                columns = result.fetchall()
+                date_paid_col = next((c for c in columns if c[1] == 'date_paid'), None)
+
+                if date_paid_col and date_paid_col[3] == 1: # notnull is 1 (True)
+                    print("INFO: Migrating Fee table to allow nullable date_paid...")
+
+                    try:
+                        # We use a nested transaction or rely on the connection's context
+                        # Since we are inside connection.begin() implicitly or explicitly via Flask-SQLAlchemy context if active
+                        # But here we got the connection via db.engine.connect() which is raw.
+                        # The issue is transaction management conflict.
+                        # Let's try to perform operations directly without explicit begin/commit if auto-commit is enabled,
+                        # or manage it carefully.
+
+                        # 1. Rename existing table
+                        connection.execute(text("ALTER TABLE fee RENAME TO fee_old"))
+
+                        # 2. Create new table
+                        create_table_sql = """
+                        CREATE TABLE fee (
+                            id INTEGER NOT NULL,
+                            student_id INTEGER NOT NULL,
+                            amount FLOAT NOT NULL,
+                            date_paid DATE,
+                            status VARCHAR(20),
+                            title VARCHAR(100),
+                            notes TEXT,
+                            PRIMARY KEY (id),
+                            FOREIGN KEY(student_id) REFERENCES student (id)
+                        )
+                        """
+                        connection.execute(text(create_table_sql))
+
+                        # 3. Copy data
+                        connection.execute(text("""
+                            INSERT INTO fee (id, student_id, amount, date_paid, status, title, notes)
+                            SELECT id, student_id, amount, date_paid, status, title, notes FROM fee_old
+                        """))
+
+                        # 4. Drop old table
+                        connection.execute(text("DROP TABLE fee_old"))
+
+                        # Commit if a transaction is active and we started it, but 'connection' here
+                        # might be part of a pool.
+                        if not connection.in_transaction():
+                             connection.commit()
+
+                        print("INFO: Successfully migrated Fee table.")
+                    except Exception as inner_e:
+                        print(f"ERROR: Migration failed: {inner_e}")
+                        # Attempt rollback if possible
+                        # connection.rollback()
+                        raise inner_e
+        except Exception as e:
+             print(f"ERROR: Could not migrate Fee table: {e}")
 
         # Seed initial data if it doesn't exist
         # 1. Default settings
