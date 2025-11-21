@@ -1011,7 +1011,7 @@
 
     {% if session.user_id %}
     <!-- شريط التنقل للكمبيوتر -->
-    <nav class="sidebar {% if session.get('view_type') == 'mobile' %}collapsed{% endif %}" {% if session.role == 'teacher' or session.role == 'communication_officer' %}style="display:none !important;"{% endif %}>
+    <nav class="sidebar {% if session.get('view_type') == 'mobile' %}collapsed{% endif %}">
         <button class="sidebar-close" onclick="toggleSidebar()">
             <i class="fas fa-times"></i>
         </button>
@@ -1291,7 +1291,7 @@
 
     {% if session.user_id %}
     <!-- شريط التنقل للهواتف -->
-    <div class="{% if session.role == 'parent' %}{% else %}mobile-menu mobile-only{% endif %}">
+    <div class="{% if session.role == 'parent' or session.role == 'teacher' or session.role == 'communication_officer' %}{% else %}mobile-menu mobile-only{% endif %}">
         {% if session.role == 'parent' %}
         <div class="parent-bottom-nav">
         <div class="parent-nav-container">
