@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">تقرير جماعي للحلقة: {{ circle.name }}</h1>
+    <a href="@{/reports}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع للتقارير
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('collective_report_submit', circle_id=circle.id) }}">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="date" class="form-label">تاريخ التقرير</label>
+                    <input type="date" class="form-control" id="date" name="date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr class="table-primary text-center">
+                            <th style="width: 20%;">الطالب</th>
+                            <th style="width: 15%;">الحالة</th>
+                            <th style="width: 15%;">النوع</th>
+                            <th style="width: 35%;">التفاصيل (من - إلى)</th>
+                            <th style="width: 15%;">التقدير</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr class="align-middle">
+                            <td class="fw-bold">{{ student.name }}</td>
+                            <td>
+                                <select class="form-select form-select-sm attendance-select" name="status_{{ student.id }}" data-student-id="{{ student.id }}">
+                                    <option value="حاضر" selected>حاضر</option>
+                                    <option value="غائب بعذر">غائب بعذر</option>
+                                    <option value="غائب بلا عذر">غائب بلا عذر</option>
+                                    <option value="هروب">هروب</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="recitation-fields" id="recitation_type_container_{{ student.id }}">
+                                    <select class="form-select form-select-sm" name="type_{{ student.id }}">
+                                        <option value="حفظ" selected>حفظ</option>
+                                        <option value="مراجعة">مراجعة</option>
+                                        <option value="كلاهما">كلاهما</option>
+                                        <option value="تلقين">تلقين</option>
+                                        <option value="تلاوة">تلاوة</option>
+                                    </select>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="recitation-fields" id="recitation_details_container_{{ student.id }}">
+                                    <!-- Hifz Fields -->
+                                    <div class="hifz-section mb-2">
+                                        <label class="small text-primary d-none hifz-label">الحفظ:</label>
+                                        <div class="input-group input-group-sm mb-1">
+                                            <select class="form-select" name="surah_{{ student.id }}">
+                                                <option value="">السورة</option>
+                                                {% for surah in surah_names %}
+                                                <option value="{{ surah }}" {% if surah == student_expectations[student.id].surah %}selected{% endif %}>{{ surah }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">من</span>
+                                            <input type="number" class="form-control" name="from_verse_{{ student.id }}" value="{{ student_expectations[student.id].from_verse }}" placeholder="آية">
+                                            <span class="input-group-text">إلى</span>
+                                            <input type="number" class="form-control" name="to_verse_{{ student.id }}" placeholder="آية">
+                                        </div>
+                                    </div>
+
+                                    <!-- Review Fields (Hidden by default) -->
+                                    <div class="review-section d-none" id="review_section_{{ student.id }}">
+                                        <label class="small text-info">المراجعة:</label>
+                                        <div class="input-group input-group-sm mb-1">
+                                            <select class="form-select" name="review_surah_{{ student.id }}">
+                                                <option value="">السورة</option>
+                                                {% for surah in surah_names %}
+                                                <option value="{{ surah }}">{{ surah }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">من</span>
+                                            <input type="number" class="form-control" name="review_from_verse_{{ student.id }}" placeholder="آية">
+                                            <span class="input-group-text">إلى</span>
+                                            <input type="number" class="form-control" name="review_to_verse_{{ student.id }}" placeholder="آية">
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="recitation-fields" id="grade_container_{{ student.id }}">
+                                    <select class="form-select form-select-sm" name="grade_{{ student.id }}">
+                                        <option value="ممتاز" selected>ممتاز</option>
+                                        <option value="جيد جدا">جيد جداً</option>
+                                        <option value="جيد">جيد</option>
+                                        <option value="مقبول">مقبول</option>
+                                        <option value="ضعيف">ضعيف</option>
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save"></i> حفظ التقرير
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selects = document.querySelectorAll('.attendance-select');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                const studentId = this.getAttribute('data-student-id');
+                const status = this.value;
+                const containers = [
+                    document.getElementById('recitation_type_container_' + studentId),
+                    document.getElementById('recitation_details_container_' + studentId),
+                    document.getElementById('grade_container_' + studentId)
+                ];
+
+                if (status !== 'حاضر') {
+                    containers.forEach(el => el.style.display = 'none');
+                } else {
+                    containers.forEach(el => el.style.display = 'block');
+                }
+            });
+        });
+
+        // Handle Recitation Type Change (Show/Hide Both Fields)
+        const typeSelects = document.querySelectorAll('select[name^="type_"]');
+        typeSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                const studentId = this.name.split('_')[1];
+                const type = this.value;
+                const reviewSection = document.getElementById('review_section_' + studentId);
+                const hifzLabel = document.querySelector(`#recitation_details_container_${studentId} .hifz-label`);
+
+                if (type === 'كلاهما') {
+                    reviewSection.classList.remove('d-none');
+                    if (hifzLabel) hifzLabel.classList.remove('d-none');
+                } else if (type === 'مراجعة') {
+                    // Hide Hifz input? No, usually we swap fields, but simplistic approach:
+                    // If just Review, maybe use the main fields for review data?
+                    // The current backend logic expects 'surah', 'from_verse' for the main report.
+                    // So if type is 'Review', the user enters review data in the main fields.
+                    // "Both" is the special case where we need EXTRA fields.
+                    reviewSection.classList.add('d-none');
+                    if (hifzLabel) hifzLabel.classList.add('d-none');
+                } else {
+                    reviewSection.classList.add('d-none');
+                    if (hifzLabel) hifzLabel.classList.add('d-none');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

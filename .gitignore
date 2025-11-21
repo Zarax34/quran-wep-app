@@ -1,21 +1,6 @@
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak
-venv.bak
-
-# Database
-instance/quran_center.db
-
-# Logs
-app.log
-*.log
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+target/
+.mvn/wrapper/maven-wrapper.properties
+mvnw
+mvnw.cmd
+*.class
+*.jar

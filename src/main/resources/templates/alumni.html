@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">خريجو المركز</h1>
+</div>
+
+<div class="row">
+    {% for alumnus in alumni_list %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 text-center">
+            {% if alumnus.photo %}
+            <img src="@{/uploads/alumnus.photo}" class="card-img-top" alt="{{ alumnus.name }}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin: 20px auto 0;">
+            {% else %}
+            <div style="width: 150px; height: 150px; background-color: #e9ecef; border-radius: 50%; margin: 20px auto 0; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-user-graduate fa-4x text-muted"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ alumnus.name }}</h5>
+                <p class="card-text">
+                    {% if alumnus.testimonial %}
+                    <i class="fas fa-quote-left fa-xs"></i> {{ alumnus.testimonial }} <i class="fas fa-quote-right fa-xs"></i>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">دفعة عام {{ alumnus.graduation_year }}</small>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col">
+        <div class="alert alert-info">لا يوجد خريجون لعرضهم حالياً.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

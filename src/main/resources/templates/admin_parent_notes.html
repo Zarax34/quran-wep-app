@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}ملاحظات أولياء الأمور - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">ملاحظات أولياء الأمور</h1>
+    </div>
+
+    <div class="card main-card fade-in">
+        <div class="card-body">
+            {% if notes %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ولي الأمر</th>
+                            <th>التاريخ</th>
+                            <th>الملاحظة</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in notes %}
+                        <tr class="{{ 'table-active' if not note.is_read else '' }}">
+                            <td>{{ note.parent.name }}</td>
+                            <td>{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ note.content }}</td>
+                            <td>
+                                {% if note.is_read %}
+                                <span class="badge bg-success">مقروءة</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">جديدة</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not note.is_read %}
+                                <a href="{{ url_for('mark_note_read', note_id=note.id) }}" class="btn btn-sm btn-outline-primary" title="تحديد كمقروء">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center p-5 text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>لا توجد ملاحظات من أولياء الأمور.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

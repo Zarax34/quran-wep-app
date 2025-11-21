@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إدارة الطلاب</h1>
+    <div>
+        <a href="@{/add_student}" class="btn btn-success">
+            <i class="fas fa-plus-circle"></i> إضافة طالب جديد
+        </a>
+        <a href="@{/upload_students_excel}" class="btn btn-primary">
+            <i class="fas fa-file-excel"></i> إضافة عبر Excel
+        </a>
+    </div>
+</div>
+
+<!-- Filter and Search -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <form method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="circle_id" class="form-label">تصفية حسب الحلقة</label>
+                    <select class="form-select" id="circle_id" name="circle_id">
+                        <option value="">جميع الحلقات</option>
+                        {% for circle in circles %}
+                        <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
+                            {{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="search" class="form-label">بحث عن طالب</label>
+                    <div class="searchBox">
+                        <input class="searchInput" type="text" id="search" name="search" placeholder="بحث..." value="{{ request.args.get('search', '') }}">
+                        <button class="searchButton" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Students Card View -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for student in students %}
+    <div class="col">
+        <div class="card">
+            <div class="top-section">
+                 {% if student.photo %}
+                    <img src="@{/uploads/student.photo}" alt="{{ student.name }}" style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #1b233d;">
+                {% else %}
+                    <div style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background-color: #e9ecef; border: 4px solid #1b233d;">
+                        <i class="fas fa-user fa-3x text-muted"></i>
+                    </div>
+                {% endif %}
+                <div class="border"></div>
+                <div class="icons">
+                    <div class="logo">
+
+                    </div>
+                    <div class="social-media">
+
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-section">
+                <span class="title">{{ student.name }}</span>
+                 {% if student.pending_approval %}
+                    <span class="badge bg-warning text-dark mb-3">في انتظار الموافقة</span>
+                {% endif %}
+                <div class="row">
+                    <div class="item">
+                        <span class="big-text">{{ student.age or '-' }}</span>
+                        <span class="regular-text">العمر</span>
+                    </div>
+                    <div class="item">
+                        <span class="big-text">{{ student.circle.name }}</span>
+                        <span class="regular-text">الحلقة</span>
+                    </div>
+                    <div class="item">
+                        <span class="big-text">{{ student.parent.name if student.parent else '-' }}</span>
+                        <span class="regular-text">ولي الأمر</span>
+                    </div>
+                </div>
+                 <div class="row" style="margin-top: 10px;">
+                    <div class="col-12">
+                        <div class="btn-group" style="width: 100%;">
+                            <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-chart-line"></i> التقارير
+                            </a>
+                            <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-edit"></i> تعديل
+                            </a>
+                            <button type="button" class="btn btn-outline-info w-100" onclick="showStudentDetails({{ student.id }})">
+                                <i class="fas fa-info-circle"></i> التفاصيل
+                            </button>
+                        </div>
+                        {% if session.role == 'admin' and student.pending_approval %}
+                            <div class="d-grid gap-2 mt-2">
+                                <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success"><i class="fas fa-check-circle"></i> موافقة</a>
+                                <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times-circle"></i> رفض</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center p-4">
+            <i class="fas fa-users-slash fa-3x mb-3"></i>
+            <h4>لا يوجد طلاب مطابقون لمعايير البحث</h4>
+            <p>حاول تغيير الفلاتر أو إضافة طالب جديد.</p>
+            <a href="@{/add_student}" class="btn btn-primary mt-2">
+                <i class="fas fa-plus"></i> إضافة طالب جديد
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+/* From Uiverse.io by Smit-Prajapati */
+.card {
+    width: 230px;
+    border-radius: 20px;
+    background: #1b233d;
+    padding: 5px;
+    overflow: hidden;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 20px 0px;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin: auto;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.card .top-section {
+    height: 150px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(45deg, rgb(4, 159, 187) 0%, rgb(80, 246, 255) 100%);
+    position: relative;
+}
+
+.card .top-section .border {
+    border-bottom-right-radius: 10px;
+    height: 30px;
+    width: 130px;
+    background: white;
+    background: #1b233d;
+    position: relative;
+    transform: skew(-40deg);
+    box-shadow: -10px -10px 0 0 #1b233d;
+}
+
+.card .top-section .border::before {
+    content: "";
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    top: 0;
+    right: -15px;
+    background: rgba(255, 255, 255, 0);
+    border-top-left-radius: 10px;
+    box-shadow: -5px -5px 0 2px #1b233d;
+}
+
+.card .top-section::before {
+    content: "";
+    position: absolute;
+    top: 30px;
+    left: 0;
+    background: rgba(255, 255, 255, 0);
+    height: 15px;
+    width: 15px;
+    border-top-left-radius: 15px;
+    box-shadow: -5px -5px 0 2px #1b233d;
+}
+
+.card .top-section .icons {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.card .top-section .icons .logo {
+    height: 100%;
+    aspect-ratio: 1;
+    padding: 7px 0 7px 15px;
+}
+
+.card .top-section .icons .logo .top-section {
+    height: 100%;
+}
+
+.card .top-section .icons .social-media {
+    height: 100%;
+    padding: 8px 15px;
+    display: flex;
+    gap: 7px;
+}
+
+.card .top-section .icons .social-media .svg {
+    height: 100%;
+    fill: #1b233d;
+}
+
+.card .top-section .icons .social-media .svg:hover {
+    fill: white;
+}
+
+.card .bottom-section {
+    margin-top: 15px;
+    padding: 10px 5px;
+}
+
+.card .bottom-section .title {
+    display: block;
+    font-size: 17px;
+    font-weight: bolder;
+    color: white;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.card .bottom-section .row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.card .bottom-section .row .item {
+    flex: 30%;
+    text-align: center;
+    padding: 5px;
+    color: rgba(170, 222, 243, 0.721);
+}
+
+.card .bottom-section .row .item .big-text {
+    font-size: 12px;
+    display: block;
+}
+
+.card .bottom-section .row .item .regular-text {
+    font-size: 9px;
+}
+
+.card .bottom-section .row .item:nth-child(2) {
+    border-left: 1px solid rgba(255, 255, 255, 0.126);
+    border-right: 1px solid rgba(255, 255, 255, 0.126);
+}
+
+/* From Uiverse.io by OnlyCodeChannel */
+.searchBox {
+    display: flex;
+    max-width: 230px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #2f3640;
+    border-radius: 50px;
+    position: relative;
+}
+
+.searchButton {
+    color: white;
+    position: absolute;
+    right: 8px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--gradient-2, linear-gradient(90deg, #2AF598 0%, #009EFD 100%));
+    border: 0;
+    display: inline-block;
+    transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
+}
+/*hover effect*/
+.searchButton:hover {
+    color: #fff;
+    background-color: #1A1A1A;
+    box-shadow: rgba(0, 0, 0, 0.5) 0 10px 20px;
+    transform: translateY(-3px);
+}
+/*button pressing effect*/
+.searchButton:active {
+    box-shadow: none;
+    transform: translateY(0);
+}
+
+.searchInput {
+    border: none;
+    background: none;
+    outline: none;
+    color: var(--text-color);
+    font-size: 15px;
+    padding: 24px 46px 24px 26px;
+}
+
+.searchBox.focused {
+    max-width: 100%;
+    z-index: 1100;
+}
+
+.page-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1099;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.page-overlay.visible {
+    display: block;
+    opacity: 1;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const searchBox = searchInput.closest('.searchBox');
+    const overlay = document.createElement('div');
+    overlay.className = 'page-overlay';
+    document.body.appendChild(overlay);
+
+    searchInput.addEventListener('focus', () => {
+        searchBox.classList.add('focused');
+        overlay.classList.add('visible');
+    });
+
+    searchInput.addEventListener('blur', () => {
+        searchBox.classList.remove('focused');
+        overlay.classList.remove('visible');
+    });
+});
+
+function showStudentDetails(studentId) {
+    fetch(`/api/student_details/${studentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const modalBody = document.getElementById('studentDetailsModalBody');
+            modalBody.innerHTML = `
+                <div class="text-center mb-3">
+                    ${data.photo ? `<img src="/uploads/${data.photo}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">` : '<i class="fas fa-user-circle fa-4x text-secondary"></i>'}
+                    <h4>${data.name}</h4>
+                    <p class="text-muted">${data.circle}</p>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>العمر:</strong> ${data.age || '-'}</li>
+                    <li class="list-group-item"><strong>رقم الهاتف:</strong> ${data.student_phone || '-'}</li>
+                    <li class="list-group-item"><strong>ولي الأمر:</strong> ${data.parent_name || '-'} (${data.parent_phone || '-'})</li>
+                    <li class="list-group-item"><strong>المعلم:</strong> ${data.teacher || '-'}</li>
+                    <li class="list-group-item"><strong>السكن:</strong> ${data.current_address || '-'}</li>
+                    <li class="list-group-item"><strong>تاريخ الميلاد:</strong> ${data.date_of_birth || '-'}</li>
+                    <li class="list-group-item"><strong>تاريخ الالتحاق:</strong> ${data.enrollment_date || '-'}</li>
+                </ul>
+            `;
+            var modal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
+            modal.show();
+        });
+}
+</script>
+
+<!-- Student Details Modal -->
+<div class="modal fade" id="studentDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تفاصيل الطالب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="studentDetailsModalBody">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center pt-3 pb-2 mb-4 border-bottom">
+    <h1 class="h2">أعمالنا ومشاريعنا</h1>
+    <p class="lead text-muted">استعراض لأبرز المشاريع والأنشطة التي ينفذها المركز.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        {% for work in work_list %}
+        <div class="card shadow-sm mb-4 work-card">
+            <div class="row g-0">
+                <div class="col-md-4">
+                    {% if work.image %}
+                    <img src="@{/uploads/work.image}" class="img-fluid rounded-start work-image" alt="{{ work.title }}">
+                    {% endif %}
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ work.title }}</h5>
+                        <p class="card-text">{{ work.description }}</p>
+                        {% if work.link %}
+                            <a href="{{ work.link }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-external-link-alt"></i> مشاهدة التفاصيل
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col">
+            <div class="alert alert-info text-center p-4">
+                <i class="fas fa-briefcase fa-3x mb-3"></i>
+                <h4>لا توجد أعمال لعرضها حالياً.</h4>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.work-card {
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.work-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+.work-image {
+    height: 100%;
+    object-fit: cover;
+}
+</style>
+{% endblock %}

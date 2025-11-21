@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">تعديل الإعلان</h1>
+    <a href="@{/announcements}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> العودة للإعلانات
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">العنوان</label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ announcement.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="content" class="form-label">المحتوى</label>
+                        <textarea class="form-control" id="content" name="content" rows="5" required>{{ announcement.content }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">تغيير الصورة (اختياري)</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                        {% if announcement.image %}
+                        <small class="d-block mt-2">الصورة الحالية: {{ announcement.image }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if announcement.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">
+                            إعلان نشط
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">حفظ التغييرات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

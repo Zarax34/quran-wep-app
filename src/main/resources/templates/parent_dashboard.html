@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم ولي الأمر - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">مرحباً {{ parent.name }} 👋</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <span class="badge bg-primary fs-6">ولي أمر</span>
+        </div>
+    </div>
+
+    <!-- أبناء ولي الأمر -->
+    <div class="row fade-in">
+        {% for stats in student_stats %}
+        <div class="col-md-12 mb-4">
+            <div class="card h-100 main-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ stats.student.name }}</h5>
+                    <span class="badge bg-info">{{ stats.student.circle.name }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>العمر:</strong> {{ stats.student.age }}</li>
+                                <li class="list-group-item"><strong>رقم هاتف الطالب:</strong> {{ stats.student.student_phone }}</li>
+                                <li class="list-group-item"><strong>رقم ولي الأمر:</strong> {{ stats.student.parent_phone }}</li>
+                                <li class="list-group-item"><strong>السكن الحالي:</strong> {{ stats.student.current_address }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>السكن السابق:</strong> {{ stats.student.previous_address }}</li>
+                                <li class="list-group-item"><strong>المحافظة:</strong> {{ stats.student.governorate }}</li>
+                                <li class="list-group-item"><strong>تاريخ الميلاد:</strong> {{ stats.student.date_of_birth.strftime('%Y-%m-%d') if stats.student.date_of_birth else 'غير محدد' }}</li>
+                                <li class="list-group-item"><strong>مقدار الحفظ السابق:</strong> {{ stats.student.previous_memorization }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>تاريخ الالتحاق:</strong> {{ stats.student.enrollment_date.strftime('%Y-%m-%d') if stats.student.enrollment_date else 'غير محدد' }}</li>
+                                <li class="list-group-item"><strong>آخر سورة تم حفظها:</strong> {{ stats.student.last_memorized_sura }}</li>
+                                <li class="list-group-item"><strong>آخر آية تم حفظها:</strong> {{ stats.student.last_memorized_ayah }}</li>
+                                <li class="list-group-item"><strong>اتجاه الحفظ:</strong> {{ 'من البقرة إلى الناس' if stats.student.memorization_direction == 'BaqarahToNas' else 'من الناس إلى البقرة' }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{{ url_for('student_details', student_id=stats.student.id) }}" class="btn btn-primary btn-sm w-100 btn-hover">
+                        <i class="fas fa-chart-bar"></i> عرض التفاصيل الكاملة
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-user-slash fa-3x mb-3"></i>
+                <h4>لا يوجد أبناء مسجلين</h4>
+                <p>لم يتم ربط أي طلاب بحسابك بعد</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Honor Board -->
+    <div class="row mt-4 fade-in">
+        <div class="col-12">
+            <div class="card main-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-trophy"></i> لوحة الشرف الشهرية</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for entry in honor_students %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-warning me-2">{{ entry.rank }}</span>
+                                {{ entry.student.name }}
+                            </div>
+                            <small>{{ entry.student.circle.name }}</small>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item">لم يتم تحديث لوحة الشرف بعد.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}دورات أبنائي{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-book-open me-2"></i>دورات أبنائي</h2>
+    </div>
+
+    {% if courses_data %}
+        {% for data in courses_data %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h4 class="mb-0">{{ data.course.name }}</h4>
+                <p class="mb-0 text-muted">المعلم: {{ data.course.teacher.name }}</p>
+            </div>
+            <div class="card-body">
+                <p>{{ data.course.description or 'لا يوجد وصف لهذه الدورة.' }}</p>
+
+                <h5 class="mt-4">الأبناء المسجلون في هذه الدورة:</h5>
+                <ul class="list-group">
+                    {% for student_data in data.students %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-user-graduate me-2"></i>
+                            <strong>{{ student_data.student.name }}</strong>
+                        </div>
+                        <div>
+                            {% if student_data.certificate %}
+                                <a href="@{/uploads/student_data.certificate.certificate_file}" class="btn btn-outline-success btn-sm" download>
+                                    <i class="fas fa-certificate me-2"></i>تحميل الشهادة
+                                </a>
+                            {% else %}
+                                <span class="badge bg-secondary">لم تصدر الشهادة بعد</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="text-center p-5">
+        <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+        <h4>لا يوجد أي من أبنائك مسجل في دورات حالياً.</h4>
+        <p>يمكنك استعراض الدورات المتاحة وتسجيلهم.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

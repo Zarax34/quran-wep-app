@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات الحساب - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-cog me-2"></i>إعدادات الحساب</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Form for updating user settings -->
+                    <form method="POST" action="@{/parent_settings}">
+
+                        <!-- Personal Information -->
+                        <h5 class="mb-3">المعلومات الشخصية</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label"><strong>الاسم الكامل</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user-circle"></i></span>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label"><strong>اسم المستخدم</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label"><strong>رقم الهاتف</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ parent.phone }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label"><strong>البريد الإلكتروني (اختياري)</strong></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <hr class="my-4">
+
+                        <!-- Change Password -->
+                        <h5 class="mb-3">تغيير كلمة المرور</h5>
+                        <div class="mb-3">
+                            <label for="password" class="form-label"><strong>كلمة المرور الجديدة</strong></label>
+                             <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="اترك الحقل فارغاً لعدم التغيير">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="confirm_password" class="form-label"><strong>تأكيد كلمة المرور الجديدة</strong></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="إعادة إدخال كلمة المرور">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Theme Selection -->
+                        <h5 class="mb-3">السمة (المظهر)</h5>
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="button" class="btn btn-outline-secondary w-50" onclick="setTheme('light')">
+                                <i class="fas fa-sun fa-2x mb-2"></i><br>
+                                نهاري
+                            </button>
+                            <button type="button" class="btn btn-outline-dark w-50" onclick="setTheme('dark')">
+                                <i class="fas fa-moon fa-2x mb-2"></i><br>
+                                ليلي
+                            </button>
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setTheme(theme) {
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'true');
+    } else {
+        document.documentElement.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'false');
+    }
+    // Update the icon in the main toggle button if it exists
+    const icon = document.querySelector('.dark-mode-toggle i');
+    if (icon) {
+        if (theme === 'dark') {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-transition">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">إدارة الحضور والغياب</h1>
+    </div>
+
+    <div class="card mb-4 fade-in">
+        <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-filter"></i> تصفية البيانات</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="date" class="form-label">التاريخ</label>
+                    <input type="date" class="form-control" id="date" name="date" value="{{ selected_date }}">
+                </div>
+                <div class="col-md-4" {% if session.role == 'teacher' %}style="display:none;"{% endif %}>
+                    <label for="circle_id" class="form-label">الحلقة</label>
+                    <select class="form-control" id="circle_id" name="circle_id">
+                        {% if session.role == 'admin' or session.role == 'communication_officer' %}
+                        <option value="">جميع الحلقات</option>
+                        {% endif %}
+                        {% for circle in circles %}
+                        <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
+                            {{ circle.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100 btn-hover">عرض</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if students %}
+    <form method="POST" action="@{/update_attendance}">
+        <input type="hidden" name="date" value="{{ selected_date }}">
+        <input type="hidden" name="circle_id" value="{{ selected_circle or '' }}">
+
+        <div class="card slide-in-left">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">طلاب الحلقة</h5>
+                <button type="submit" class="btn btn-success btn-hover">
+                    <i class="fas fa-save"></i> حفظ الحضور
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>الحلقة</th>
+                                <th>حالة الحضور</th>
+                                <th>ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.circle.name }}</td>
+                                <td>
+                                    <select class="form-select" name="status_{{ student.id }}">
+                                        <option value="حاضر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'حاضر' %}selected{% endif %}>حاضر</option>
+                                        <option value="غائب بعذر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'غائب بعذر' %}selected{% endif %}>✖️ غائب بعذر</option>
+                                        <option value="غائب بلا عذر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'غائب بلا عذر' %}selected{% endif %}>❌ غائب بلا عذر</option>
+                                        <option value="متأخر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'متأخر' %}selected{% endif %}>🕒 متأخر</option>
+                                        <option value="هروب" {% if attendance_data[student.id] and attendance_data[student.id].status == 'هروب' %}selected{% endif %}>🏃 هروب</option>
+                                        <option value="لم يسمع" {% if attendance_data[student.id] and attendance_data[student.id].status == 'لم يسمع' %}selected{% endif %}>لم يسمع</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    {% if attendance_data[student.id] %}
+                                    <span class="badge bg-secondary">{{ attendance_data[student.id].notes or 'لا توجد ملاحظات' }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-info fade-in">
+        <i class="fas fa-info-circle"></i>
+        لا توجد طلاب في الحلقة المحددة.
+    </div>
+    {% endif %}
+
+    <!-- إحصائيات سريعة -->
+    <div class="row mt-4 fade-in">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> معلومات الحضور</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <div class="text-success">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                                <p>حاضر</p>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-warning">
+                                <i class="fas fa-exclamation-circle fa-2x"></i>
+                                <p>✖️ غائب بعذر</p>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-danger">
+                                <i class="fas fa-times-circle fa-2x"></i>
+                                <p>❌ غائب بلا عذر</p>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-dark">
+                                <i class="fas fa-running fa-2x"></i>
+                                <p>🏃 هروب</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-tips"></i> نصائح</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>يمكنك تحديث الحضور لأي يوم سابق</li>
+                        <li>سيتم حفظ التغييرات تلقائياً عند الضغط على "حفظ الحضور"</li>
+                        <li>يمكنك تصفية البيانات حسب التاريخ والحلقة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
