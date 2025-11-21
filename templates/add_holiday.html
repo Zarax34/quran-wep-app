@@ -17,10 +17,15 @@
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="date" class="form-label">تاريخ العطلة</label>
+                        <label for="date" class="form-label">من تاريخ</label>
                         <input type="date" class="form-control" id="date" name="date" 
                                min="{{ now().strftime('%Y-%m-%d') }}" required>
-                        <div class="form-text">اختر تاريخ العطلة</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">إلى تاريخ (اختياري)</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date"
+                               min="{{ now().strftime('%Y-%m-%d') }}">
+                        <div class="form-text">إذا كان يوم واحد، اترك هذا الحقل فارغاً</div>
                     </div>
                     
                     <div class="mb-3">
@@ -52,6 +57,16 @@
                         <div class="form-text">
                             سيتم تطبيق هذه العطلة تلقائياً في نفس التاريخ كل سنة
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="circle_ids" class="form-label">الحلقات المستهدفة (قائمة منسدلة متعددة)</label>
+                        <select class="form-select" id="circle_ids" name="circle_ids" multiple style="height: 150px;">
+                            {% for circle in circles %}
+                            <option value="{{ circle.id }}">{{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">يمكنك اختيار أكثر من حلقة بالضغط على Ctrl (أو Command في Mac) والنقر. إذا لم تختر أي حلقة، ستطبق العطلة على جميع الحلقات.</small>
                     </div>
                     
                     <div class="alert alert-info">

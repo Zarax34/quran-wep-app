@@ -56,6 +56,50 @@
         </div>
     </div>
 
+    <!-- الخطة الشهرية -->
+    {% if plan_progress.has_plan %}
+    {% set current_plan = student.monthly_plans[-1] %}
+    <div class="row mb-4 fade-in">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-calendar-alt"></i> الخطة الشهرية الحالية</h5>
+                    <span class="badge bg-light text-primary">{{ current_plan.plan_type }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>الفترة:</strong> من {{ current_plan.start_date.strftime('%Y-%m-%d') }} إلى {{ current_plan.end_date.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>المطلوب يومياً:</strong> {{ current_plan.daily_pages }} صفحة</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>النطاق:</strong>
+                            {% if current_plan.start_surah %}
+                            من {{ current_plan.start_surah }} ({{ current_plan.start_verse }}) إلى {{ current_plan.end_surah }} ({{ current_plan.end_verse }})
+                            {% else %}
+                            حسب التوجيه اليومي
+                            {% endif %}
+                            </p>
+                            <p><strong>ملاحظات:</strong> {{ current_plan.notes or 'لا يوجد' }}</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <p class="mb-1 fw-bold">الالتزام بالخطة</p>
+                            {% if plan_progress.status == 'Ahead' %}
+                                <h3 class="text-success"><i class="fas fa-check-circle"></i> متقدم (+{{ plan_progress.diff }})</h3>
+                            {% elif plan_progress.status == 'On Track' %}
+                                <h3 class="text-info"><i class="fas fa-check-circle"></i> في المسار الصحيح</h3>
+                            {% else %}
+                                <h3 class="text-danger"><i class="fas fa-exclamation-circle"></i> متأخر ({{ plan_progress.diff }})</h3>
+                            {% endif %}
+                            <small>المتوقع: {{ plan_progress.expected_pages }} | المنجز: {{ plan_progress.actual_pages }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row">
         <!-- إحصائيات الطالب -->
         <div class="col-md-6">

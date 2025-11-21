@@ -19,32 +19,36 @@
     </div>
     <div class="card-body">
         {% if course.tests.all() %}
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>اسم الاختبار</th>
-                    <th>تاريخ الاختبار</th>
-                    <th>الدرجة القصوى</th>
-                    <th>عدد الطلاب المختبرين</th>
-                    <th>إجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for test in course.tests %}
-                <tr>
-                    <td>{{ test.name }}</td>
-                    <td>{{ test.test_date.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ test.max_score }}</td>
-                    <td>{{ test.scores.count() }}</td>
-                    <td>
-                        <a href="{{ url_for('record_scores', test_id=test.id) }}" class="btn btn-sm btn-info" title="إدخال الدرجات"><i class="fas fa-marker"></i></a>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editTestModal-{{ test.id }}" title="تعديل"><i class="fas fa-edit"></i></button>
-                        <a href="{{ url_for('delete_test', test_id=test.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من حذف هذا الاختبار؟ سيتم حذف جميع الدرجات المرتبطة به.');" title="حذف"><i class="fas fa-trash-alt"></i></a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>اسم الاختبار</th>
+                        <th>تاريخ الاختبار</th>
+                        <th>الدرجة القصوى</th>
+                        <th>أقل درجة للنجاح</th>
+                        <th>عدد الطلاب المختبرين</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test in course.tests %}
+                    <tr>
+                        <td>{{ test.name }}</td>
+                        <td>{{ test.test_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ test.max_score }}</td>
+                        <td>{{ test.min_passing_score or '-' }}</td>
+                        <td>{{ test.scores.count() }}</td>
+                        <td>
+                            <a href="{{ url_for('record_scores', test_id=test.id) }}" class="btn btn-sm btn-info" title="إدخال الدرجات"><i class="fas fa-marker"></i></a>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editTestModal-{{ test.id }}" title="تعديل"><i class="fas fa-edit"></i></button>
+                            <a href="{{ url_for('delete_test', test_id=test.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من حذف هذا الاختبار؟ سيتم حذف جميع الدرجات المرتبطة به.');" title="حذف"><i class="fas fa-trash-alt"></i></a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="alert alert-info text-center">
             <p>لم يتم إضافة أي اختبارات لهذه الدورة بعد.</p>
@@ -69,11 +73,15 @@
                     </div>
                     <div class="mb-3">
                         <label for="test_date" class="form-label">تاريخ الاختبار</label>
-                        <input type="date" class="form-control" name="test_date" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                        <input type="date" class="form-control" name="test_date" value="{{ now().strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="max_score" class="form-label">الدرجة القصوى</label>
                         <input type="number" class="form-control" name="max_score" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="min_passing_score" class="form-label">أقل درجة للنجاح</label>
+                        <input type="number" class="form-control" name="min_passing_score">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -107,6 +115,10 @@
                     <div class="mb-3">
                         <label for="max_score" class="form-label">الدرجة القصوى</label>
                         <input type="number" class="form-control" name="max_score" value="{{ test.max_score }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="min_passing_score" class="form-label">أقل درجة للنجاح</label>
+                        <input type="number" class="form-control" name="min_passing_score" value="{{ test.min_passing_score or '' }}">
                     </div>
                 </div>
                 <div class="modal-footer">

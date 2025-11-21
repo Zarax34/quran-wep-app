@@ -28,6 +28,16 @@
                         <label for="date" class="form-label">تاريخ النشاط</label>
                         <input type="date" class="form-control" id="date" name="date" required>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_time" class="form-label">وقت البدء</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_time" class="form-label">وقت الانتهاء</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time">
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="fee" class="form-label">رسوم النشاط (اختياري)</label>
                         <input type="number" step="0.01" class="form-control" id="fee" name="fee">
@@ -37,13 +47,23 @@
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                     </div>
                     <div class="mb-3">
-                        <label for="student_ids" class="form-label">الطلاب المشاركون</label>
+                        <label for="circle_ids" class="form-label">الحلقات المستهدفة (قائمة منسدلة متعددة)</label>
+                        <select class="form-select" id="circle_ids" name="circle_ids" multiple style="height: 150px;">
+                            {% for circle in circles %}
+                            <option value="{{ circle.id }}">{{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">يمكنك اختيار أكثر من حلقة بالضغط على Ctrl (أو Command في Mac) والنقر.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="student_ids" class="form-label">الطلاب المشاركون (دعوة خاصة)</label>
                         <select multiple class="form-control" id="student_ids" name="student_ids">
                             {% for student in students %}
                             <option value="{{ student.id }}">{{ student.name }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">يمكنك تحديد أكثر من طالب بالضغط على Ctrl/Cmd.</small>
+                        <small class="form-text text-muted">اختياري. يمكنك تحديد طلاب محددين بالإضافة للحلقات.</small>
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="fas fa-save"></i> حفظ النشاط

@@ -157,12 +157,14 @@
                                 ادعم المركز
                             </a>
                         </div>
+                        {% if session.role == 'admin' %}
                         <div class="col-6">
                             <a href="{{ url_for('circles') }}" class="btn btn-outline-primary w-100 h-100 py-3 btn-hover">
                                 <i class="fas fa-users fa-2x mb-2"></i><br>
                                 الحلقات
                             </a>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

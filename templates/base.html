@@ -1082,6 +1082,7 @@
                     </a>
                 </li>
                 {% if session.role in ['admin', 'teacher', 'support'] %}
+                {% if session.role == 'admin' %}
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'circles' }}" href="{{ url_for('circles') }}">
                         <i class="fas fa-users me-2"></i>
@@ -1094,6 +1095,7 @@
                         الدورات التدريبية
                     </a>
                 </li>
+                {% endif %}
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'students' }}" href="{{ url_for('students') }}">
                         <i class="fas fa-user-graduate me-2"></i>

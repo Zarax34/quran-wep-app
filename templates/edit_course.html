@@ -26,6 +26,18 @@
                         <textarea class="form-control" id="description" name="description" rows="3">{{ course.description or '' }}</textarea>
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">تاريخ البدء</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ course.start_date.strftime('%Y-%m-%d') if course.start_date else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">تاريخ الانتهاء</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ course.end_date.strftime('%Y-%m-%d') if course.end_date else '' }}">
+                            <div class="form-text">يمكنك تمديد تاريخ الانتهاء في أي وقت.</div>
+                        </div>
+                    </div>
+
                     {% if session.role == 'admin' %}
                     <div class="mb-3">
                         <label for="teacher_id" class="form-label">المعلم المسؤول</label>

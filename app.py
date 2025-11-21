@@ -84,7 +84,66 @@ def send_weekly_progress_reports():
 # Schedule the job to run every Sunday at 6 PM
 scheduler.add_job(send_weekly_progress_reports, 'cron', day_of_week='sun', hour=18)
 
+def check_upcoming_events():
+    with app.app_context():
+        today = datetime.now().date()
+
+        # 1. Announcements (Ad Timer)
+        announcements = Announcement.query.filter(Announcement.is_active==True, Announcement.event_date >= today).all()
+        for ann in announcements:
+            days_left = (ann.event_date - today).days
+
+            # Send daily reminders for upcoming events (up to 7 days before) or if it's today
+            if days_left >= 0 and days_left <= 7:
+                users = User.query.filter_by(is_active=True).all()
+                for user in users:
+                    # Construct message based on days left
+                    if days_left == 0:
+                        title = 'بدأ الحدث اليوم!'
+                        message = f'تذكير: حدث "{ann.title}" يبدأ اليوم! لا تفوت الفرصة.'
+                    else:
+                        title = 'تذكير بحدث قادم'
+                        message = f'باقي {days_left} {"يوم" if days_left == 1 else "أيام"} على حدث "{ann.title}".'
+
+                    # Check if we already sent this specific notification today to avoid spam (assuming job runs once a day, but checking is safer)
+                    # Ideally we'd track "notification_sent_for_announcement_X_on_date_Y" but a simple check is good for now if job runs > once
+                    # Or relying on scheduler running once daily.
+
+                    notif = Notification(
+                        user_id=user.id,
+                        title=title,
+                        message=message
+                    )
+                    db.session.add(notif)
+
+        # 2. Activities (Similar logic)
+        activities = CenterActivity.query.filter(CenterActivity.date >= today).all()
+        for act in activities:
+            days_left = (act.date - today).days
+            if days_left == 0:
+                 # Notify participants
+                 # Getting participants is complex due to M2M and Approval, simpler to notify all or target circles
+                 # For simplicity, notifying all parents/students or just interested ones
+                 pass # Implementing only for Announcements as requested explicitly for "Ad timer"
+
+        db.session.commit()
+
+# Schedule daily event check at 8 AM
+scheduler.add_job(check_upcoming_events, 'cron', hour=8)
+
 # ---------- 3.  MODELS  ----------
+
+# Association tables for many-to-many relationships
+activity_circles = db.Table('activity_circles',
+    db.Column('activity_id', db.Integer, db.ForeignKey('center_activity.id'), primary_key=True),
+    db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
+)
+
+holiday_circles = db.Table('holiday_circles',
+    db.Column('holiday_id', db.Integer, db.ForeignKey('holiday.id'), primary_key=True),
+    db.Column('circle_id', db.Integer, db.ForeignKey('circle.id'), primary_key=True)
+)
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -136,8 +195,25 @@ class Student(db.Model):
     last_memorized_sura = db.Column(db.String(100), default='الفاتحة')
     last_memorized_ayah = db.Column(db.Integer, default=0)
     memorization_direction = db.Column(db.String(50), default='BaqarahToNas') # or 'NasToBaqarah'
+    parent_relationship = db.Column(db.String(50), default='أب')
     circle = db.relationship('Circle', backref='students')
     parent = db.relationship('Parent', backref='students')
+
+class MonthlyPlan(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    plan_type = db.Column(db.String(20), default='حفظ') # حفظ or مراجعة
+    start_surah = db.Column(db.String(100))
+    start_verse = db.Column(db.Integer)
+    end_surah = db.Column(db.String(100))
+    end_verse = db.Column(db.Integer)
+    daily_pages = db.Column(db.Float) # Number of pages to recite per day
+    total_pages = db.Column(db.Float)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    student = db.relationship('Student', backref='monthly_plans')
 
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -174,6 +250,7 @@ class Holiday(db.Model):
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     academic_year = db.Column(db.String(10), default='2025')
     teacher = db.relationship('User', backref='holidays')
+    target_circles = db.relationship('Circle', secondary=holiday_circles, backref='holidays')
 
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -260,6 +337,7 @@ class Announcement(db.Model):
     content = db.Column(db.Text, nullable=False)
     image = db.Column(db.String(200))
     date_posted = db.Column(db.DateTime, default=datetime.now)
+    event_date = db.Column(db.Date)
     is_active = db.Column(db.Boolean, default=True)
 
 class Conversation(db.Model):
@@ -280,10 +358,13 @@ class CenterActivity(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=True)
+    end_time = db.Column(db.Time, nullable=True)
     image = db.Column(db.String(200))
     fee = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     participants = db.relationship('Student', secondary='activity_approval', backref='activities', overlaps="approvals,activity")
+    target_circles = db.relationship('Circle', secondary=activity_circles, backref='activities')
 
 class ActivityApproval(db.Model):
     __tablename__ = 'activity_approval'
@@ -305,7 +386,9 @@ class Fee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    date_paid = db.Column(db.Date, nullable=False, default=datetime.now().date)
+    date_paid = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(20), default='Paid') # Paid, Pending
+    title = db.Column(db.String(100)) # e.g. "رسوم شهر أكتوبر"
     notes = db.Column(db.Text)
     student = db.relationship('Student', backref='fees')
 
@@ -326,6 +409,8 @@ class Course(db.Model):
     description = db.Column(db.Text, nullable=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
 
     teacher = db.relationship('User', backref='courses_taught')
@@ -346,6 +431,7 @@ class Test(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
     test_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     max_score = db.Column(db.Float, nullable=False)
+    min_passing_score = db.Column(db.Float, nullable=True)
 
     scores = db.relationship('TestScore', backref='test', lazy='dynamic', cascade="all, delete-orphan")
 
@@ -365,7 +451,8 @@ class Certificate(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
     issue_date = db.Column(db.DateTime, default=datetime.utcnow)
-    certificate_file = db.Column(db.String(255), nullable=False) # Stores the path to the PDF file
+    certificate_file = db.Column(db.String(255), nullable=True) # Stores the path to the PDF file
+    certificate_url = db.Column(db.String(500), nullable=True) # External link
 
     student = db.relationship('Student', backref='certificates')
     course_info = db.relationship('Course', backref='certificates')
@@ -413,8 +500,8 @@ def require_role(role):
     return decorator
 
 def create_parent_username(full_name):
-    # استخدام مسافات بدلاً من الشرطة السفلية
-    username = full_name.strip().replace(' ', '_')
+    # استخدام الاسم كما هو مع معالجة التكرار
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
@@ -431,19 +518,14 @@ def create_student_username(full_name):
         counter += 1
     return username
 
-def get_or_create_parent(student_name, parent_phone):
+def get_or_create_parent(parent_name_input, parent_phone):
     if not parent_phone:
         return None
     phone = re.sub(r'[^\d]', '', parent_phone)
     if not phone.startswith('7') or len(phone) != 9:
         return None
     
-    # استخراج اسم ولي الأمر من اسم الطالب (الجزء الثاني والثالث)
-    name_parts = student_name.strip().split()
-    if len(name_parts) >= 2:
-        parent_name = f"{name_parts[1]} {name_parts[2] if len(name_parts) > 2 else ''}".strip()
-    else:
-        parent_name = student_name
+    parent_name = parent_name_input.strip()
     
     # البحث عن ولي الأمر بالاسم أو رقم الهاتف
     parent = Parent.query.filter_by(name=parent_name).first()
@@ -459,7 +541,13 @@ def get_or_create_parent(student_name, parent_phone):
     db.session.add(parent)
     
     # إنشاء حساب مستخدم لولي الأمر
-    username = create_parent_username(parent_name)
+    # استخدام اسم ولي الأمر كاسم مستخدم كما هو
+    username = parent_name.strip()
+    # التحقق من عدم تكرار اسم المستخدم
+    if User.query.filter_by(username=username).first():
+        flash('اسم ولي الأمر (اسم المستخدم) موجود بالفعل. يرجى اختيار اسم آخر أو إضافة رقم لتمييزه.', 'error')
+        return None
+
     user = User(username=username, password=generate_password_hash(phone), name=parent_name, role='parent')
     db.session.add(user)
     
@@ -745,6 +833,27 @@ def compare_student_performance(student_id):
 
     return verses_this_week, verses_last_week
 
+def get_page_from_verse_key(verse_key):
+    item = quran_data_map.get(verse_key)
+    return item['page_number'] if item else 0
+
+def calculate_pages(start_surah, start_verse, end_surah, end_verse):
+    try:
+        start_surah_index = surah_names.index(start_surah) + 1
+        end_surah_index = surah_names.index(end_surah) + 1
+
+        start_key = f"{start_surah_index}:{start_verse}"
+        end_key = f"{end_surah_index}:{end_verse}"
+
+        start_page = get_page_from_verse_key(start_key)
+        end_page = get_page_from_verse_key(end_key)
+
+        if start_page == 0 or end_page == 0:
+            return 0
+
+        return abs(end_page - start_page) + 1 # Simple subtraction for now, assuming standard order
+    except ValueError:
+        return 0
 
 def requires_approval():
     settings = Settings.query.first() or Settings()
@@ -969,6 +1078,9 @@ def add_student():
             filename = secure_filename(photo.filename)
             photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
+        parent_name = request.form['parent_name']
+        parent_relationship = request.form['parent_relationship']
+
         student = Student(
             name=name,
             age=age,
@@ -985,12 +1097,13 @@ def add_student():
             last_memorized_sura=request.form.get('last_memorized_sura'),
             last_memorized_ayah=request.form.get('last_memorized_ayah', type=int),
             memorization_direction=request.form.get('memorization_direction'),
+            parent_relationship=parent_relationship,
             pending_approval=requires_approval()
         )
         db.session.add(student)
         
         # إنشاء وربط ولي الأمر
-        parent = get_or_create_parent(name, parent_phone)
+        parent = get_or_create_parent(parent_name, parent_phone)
         if parent:
             student.parent_id = parent.id
         
@@ -1141,13 +1254,13 @@ def reject_student(student_id):
 
 # ---------- 9.  CIRCLES ----------
 @app.route('/circles')
-@require_login
+@require_role('admin')
 def circles():
     circles = Circle.query.filter_by(is_active=True).all()
     return render_template('circles.html', circles=circles)
 
 @app.route('/add_circle', methods=['GET', 'POST'])
-@require_login
+@require_role('admin')
 def add_circle():
     if request.method == 'POST':
         name = request.form['name']
@@ -1178,7 +1291,7 @@ def add_circle():
     return render_template('add_circle.html', teachers=teachers)
 
 @app.route('/edit_circle/<int:circle_id>', methods=['GET', 'POST'])
-@require_login
+@require_role('admin')
 def edit_circle(circle_id):
     circle = Circle.query.get_or_404(circle_id)
     if request.method == 'POST':
@@ -1330,6 +1443,7 @@ def add_report():
         type_ = request.form.get('type')
         grade = request.form.get('grade')
         notes = request.form.get('notes')
+        attendance_status = request.form.get('attendance_status', 'حاضر')
 
         if not all([student_id, date_str, surah, from_verse_str, to_verse_str, type_, grade]):
             flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
@@ -1354,6 +1468,36 @@ def add_report():
                 flash('ليس لديك الصلاحية لإضافة تقرير لهذا الطالب', 'error')
                 return redirect(url_for('add_report'))
 
+        # Handle Attendance
+        existing_attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
+        if existing_attendance:
+             # Check if status changed to absent/escape
+            if existing_attendance.status != attendance_status and (attendance_status in ['غائب بلا عذر', 'غائب بعذر', 'هروب']):
+                if student.parent and student.parent.user_id:
+                    title = 'غياب طالب' if 'غائب' in attendance_status else 'تنبيه هروب'
+                    message = f'تم تسجيل ابنك "{student.name}" كـ "{attendance_status}" بتاريخ {date.strftime("%Y-%m-%d")}.'
+                    notification = Notification(
+                        user_id=student.parent.user_id,
+                        title=title,
+                        message=message
+                    )
+                    db.session.add(notification)
+            existing_attendance.status = attendance_status
+        else:
+            new_attendance = Attendance(student_id=student.id, date=date, status=attendance_status, notes=notes if notes else 'تم التسجيل مع التقرير')
+            db.session.add(new_attendance)
+             # Notify if absent/escape on first record
+            if attendance_status in ['غائب بلا عذر', 'غائب بعذر', 'هروب']:
+                if student.parent and student.parent.user_id:
+                    title = 'غياب طالب' if 'غائب' in attendance_status else 'تنبيه هروب'
+                    message = f'تم تسجيل ابنك "{student.name}" كـ "{attendance_status}" بتاريخ {date.strftime("%Y-%m-%d")}.'
+                    notification = Notification(
+                        user_id=student.parent.user_id,
+                        title=title,
+                        message=message
+                    )
+                    db.session.add(notification)
+
         report = Report(
             student_id=student_id,
             teacher_id=session['user_id'],
@@ -1368,11 +1512,6 @@ def add_report():
         )
         db.session.add(report)
 
-        # Automatically mark attendance if not already recorded
-        existing_attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
-        if not existing_attendance:
-            new_attendance = Attendance(student_id=student.id, date=date, status='حاضر', notes='تم التحضير تلقائياً لوجود تسميع')
-            db.session.add(new_attendance)
 
         # Update last recitation date
         student.last_recitation_date = date
@@ -1416,6 +1555,17 @@ def add_report():
     else:
         students = Student.query.filter_by(is_active=True).all()
 
+    # Default Circle Selection Logic
+    default_student_id = None
+    if session['role'] == 'teacher':
+        # If teacher has only one circle, we might want to pre-select students from that circle?
+        # The current add_report logic selects student from a dropdown.
+        # The request was "remove circle selection option and make it default...".
+        # But wait, 'add_report' (individual) doesn't have a circle selection dropdown in the GET request processing visible here.
+        # It seems the form relies on `students` list.
+        # Let's check `add_report.html` to see if there is a circle filter.
+        pass
+
     return render_template('add_report.html', students=students, surah_names=surah_names)
 
 @app.route('/collective_report', methods=['GET', 'POST'])
@@ -1423,75 +1573,149 @@ def add_report():
 def collective_report():
     if request.method == 'POST':
         circle_id = request.form['circle_id']
-        date = request.form['date']
-        report_text = request.form['report_text']
-        confirm = request.form.get('confirm')
+        return redirect(url_for('collective_report_form', circle_id=circle_id))
 
-        reports_data, attendances_data = improved_parse_collective_report(report_text, circle_id, date)
+    if session['role'] == 'teacher':
+        circles = Circle.query.filter_by(teacher_id=session['user_id'], is_active=True).all()
+    else:
+        circles = Circle.query.filter_by(is_active=True).all()
+    return render_template('collective_report.html', circles=circles)
 
-        if not confirm:
-            # First step: Show preview
-            reports_for_preview = []
-            for rep in reports_data:
-                student = db.session.get(Student, rep['student_id'])
-                if student:
-                    # Create temporary Report objects for rendering in the template
-                    temp_report = {
-                        'student': student,
-                        'surah': rep['surah'],
-                        'from_verse': rep['from_verse'],
-                        'to_verse': rep['to_verse'],
-                        'type': rep['type'],
-                        'grade': rep['grade']
-                    }
-                    reports_for_preview.append(temp_report)
+@app.route('/collective_report/<int:circle_id>', methods=['GET'])
+@require_login
+def collective_report_form(circle_id):
+    circle = Circle.query.get_or_404(circle_id)
+    # Sort students by total verses memorized (descending) to show accomplishment order
+    students = Student.query.filter_by(circle_id=circle_id, is_active=True).order_by(Student.total_verses_since_year_start.desc()).all()
 
-            return render_template('collective_report_preview.html',
-                                   reports=reports_for_preview,
-                                   circle_id=circle_id,
-                                   date=date,
-                                   report_text=report_text)
+    # Calculate expected next recitation for each student
+    student_expectations = {}
+    for student in students:
+        next_surah = student.last_memorized_sura
+        next_from_verse = student.last_memorized_ayah + 1
 
-        # Second step: Confirmed, save the data
-        for rep in reports_data:
-            student = db.session.get(Student, rep['student_id'])
-            if student:
+        # Logic to handle end of surah (basic implementation)
+        # In a real scenario, we would check if next_from_verse > surah_length
+        # For now, we rely on the teacher to change surah if needed, or we can try to use quran_data
+
+        if next_surah:
+            try:
+                surah_index = surah_names.index(next_surah) + 1
+                # Find max verse for this surah
+                max_verse = 0
+                for item in quran_data:
+                    if item['verse_key'].startswith(f"{surah_index}:"):
+                        v = int(item['verse_key'].split(':')[1])
+                        if v > max_verse:
+                            max_verse = v
+
+                if next_from_verse > max_verse:
+                    # Move to next surah
+                    if surah_index < len(surah_names):
+                        next_surah = surah_names[surah_index] # Index is 0-based in list, so surah_index (which is +1) is the next one
+                        next_from_verse = 1
+            except (ValueError, IndexError):
+                pass
+
+        student_expectations[student.id] = {
+            'surah': next_surah,
+            'from_verse': next_from_verse
+        }
+
+    return render_template('collective_report_form.html', circle=circle, students=students, surah_names=surah_names, student_expectations=student_expectations)
+
+@app.route('/collective_report_submit/<int:circle_id>', methods=['POST'])
+@require_login
+def collective_report_submit(circle_id):
+    circle = Circle.query.get_or_404(circle_id)
+    date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+    students = Student.query.filter_by(circle_id=circle_id, is_active=True).all()
+
+    reports_count = 0
+
+    for student in students:
+        status = request.form.get(f'status_{student.id}')
+
+        # 1. Handle Attendance
+        existing_attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
+        if existing_attendance:
+            existing_attendance.status = status
+        else:
+            attendance = Attendance(student_id=student.id, date=date, status=status)
+            db.session.add(attendance)
+
+        # Handle 'Escaped' notification
+        if status == 'هروب' and student.parent and student.parent.user_id:
+             notification = Notification(
+                user_id=student.parent.user_id,
+                title='تنبيه هروب',
+                message=f'نود إشعاركم بأن الطالب "{student.name}" قد سجل حالة هروب من الحلقة بتاريخ {date}.',
+                created_at=datetime.now()
+            )
+             db.session.add(notification)
+
+        # 2. Handle Report (Only if present)
+        if status == 'حاضر':
+            recitation_type = request.form.get(f'type_{student.id}')
+            surah = request.form.get(f'surah_{student.id}')
+            from_verse = request.form.get(f'from_verse_{student.id}')
+            to_verse = request.form.get(f'to_verse_{student.id}')
+            grade = request.form.get(f'grade_{student.id}')
+
+            # Main Report (Hifz or just one part)
+            if surah and from_verse and to_verse:
+                main_type = 'حفظ' if recitation_type in ['حفظ', 'كلاهما'] else recitation_type
+
                 report = Report(
-                    student_id=rep['student_id'],
+                    student_id=student.id,
                     teacher_id=session['user_id'],
-                    circle_id=circle_id,
-                    date=datetime.strptime(date, '%Y-%m-%d').date(),
-                    surah=rep['surah'],
-                    from_verse=rep['from_verse'],
-                    to_verse=rep['to_verse'],
-                    type=rep['type'],
-                    grade=rep['grade']
+                    circle_id=circle.id,
+                    date=date,
+                    surah=surah,
+                    from_verse=int(from_verse),
+                    to_verse=int(to_verse),
+                    type=main_type,
+                    grade=grade
                 )
                 db.session.add(report)
+                reports_count += 1
 
-                if report.type == 'حفظ':
-                    student.last_memorized_sura = report.surah
-                    student.last_memorized_ayah = report.to_verse
+                # Update progress stats if Hifz
+                if main_type == 'حفظ':
+                     student.total_verses_since_year_start += (int(to_verse) - int(from_verse) + 1)
+                     student.last_memorized_sura = surah
+                     student.last_memorized_ayah = int(to_verse)
+                     student.last_recitation_date = date
 
-        for att_data in attendances_data:
-            attendance = Attendance(
-                student_id=att_data.student_id,
-                date=att_data.date,
-                status=att_data.status,
-                notes=att_data.notes
-            )
-            db.session.add(attendance)
+            # Secondary Report (Review if 'Both' is selected)
+            if recitation_type == 'كلاهما':
+                review_surah = request.form.get(f'review_surah_{student.id}')
+                review_from_verse = request.form.get(f'review_from_verse_{student.id}')
+                review_to_verse = request.form.get(f'review_to_verse_{student.id}')
+
+                if review_surah and review_from_verse and review_to_verse:
+                    review_report = Report(
+                        student_id=student.id,
+                        teacher_id=session['user_id'],
+                        circle_id=circle.id,
+                        date=date,
+                        surah=review_surah,
+                        from_verse=int(review_from_verse),
+                        to_verse=int(review_to_verse),
+                        type='مراجعة',
+                        grade=grade # Assuming same grade for both for simplicity in collective report
+                    )
+                    db.session.add(review_report)
+                    reports_count += 1
+
+    try:
+        db.session.commit()
+        flash(f'تم حفظ التقرير الجماعي بنجاح. تم تسجيل {reports_count} تسميع.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ: {e}', 'error')
         
-        try:
-            db.session.commit()
-            flash(f'تم رفع {len(reports_data)} تقرير وتحديث {len(attendances_data)} حضور', 'success')
-            return redirect(url_for('reports'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'حدث خطأ أثناء رفع التقرير الجماعي: {str(e)}', 'error')
-
-    circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('collective_report.html', circles=circles)
+    return redirect(url_for('collective_report_form', circle_id=circle_id))
 
 @app.route('/edit_report/<int:report_id>', methods=['GET', 'POST'])
 @require_login
@@ -1589,36 +1813,71 @@ def update_attendance():
 @app.route('/holidays')
 @require_login
 def holidays():
-    holidays = Holiday.query.order_by(Holiday.date).all()
+    query = Holiday.query
+    if session.get('role') == 'teacher':
+        # Show holidays created by teacher OR holidays targeting their circles OR general holidays
+        teacher_circles_ids = [c.id for c in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        query = query.outerjoin(holiday_circles).filter(
+            or_(
+                Holiday.teacher_id == session['user_id'],
+                Holiday.target_circles.any(Circle.id.in_(teacher_circles_ids)),
+                ~Holiday.target_circles.any() # No circles targeted = all circles
+            )
+        )
+    elif session.get('role') == 'parent':
+         # Parent logic similar to activities (not explicitly requested but good practice)
+         pass
+
+    holidays = query.order_by(Holiday.date).all()
     return render_template('holidays.html', holidays=holidays)
 
 @app.route('/add_holiday', methods=['GET', 'POST'])
 @require_login
 def add_holiday():
     if request.method == 'POST':
-        date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        start_date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        end_date_str = request.form.get('end_date')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else start_date
+
         reason = request.form['reason']
         has_attendance = bool(request.form.get('has_attendance'))
         is_recurring = bool(request.form.get('is_recurring'))
+        circle_ids = request.form.getlist('circle_ids')
         
-        holiday = Holiday(
-            date=date, 
-            reason=reason, 
-            has_attendance=has_attendance, 
-            is_recurring=is_recurring, 
-            teacher_id=session['user_id']
-        )
-        db.session.add(holiday)
+        current_date = start_date
+        added_count = 0
         
         try:
+            while current_date <= end_date:
+                # Check if holiday already exists for this date
+                existing = Holiday.query.filter_by(date=current_date).first()
+                if not existing:
+                    holiday = Holiday(
+                        date=current_date,
+                        reason=reason,
+                        has_attendance=has_attendance,
+                        is_recurring=is_recurring,
+                        teacher_id=session['user_id']
+                    )
+                    db.session.add(holiday)
+
+                    for circle_id in circle_ids:
+                        circle = Circle.query.get(circle_id)
+                        if circle:
+                            holiday.target_circles.append(circle)
+                    added_count += 1
+
+                current_date += timedelta(days=1)
+
             db.session.commit()
-            flash('تم إضافة العطلة بنجاح', 'success')
+            flash(f'تم إضافة العطلة بنجاح ({added_count} أيام)', 'success')
             return redirect(url_for('holidays'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة العطلة: {str(e)}', 'error')
     
-    return render_template('add_holiday.html')
+    circles = Circle.query.filter_by(is_active=True).all()
+    return render_template('add_holiday.html', circles=circles)
 
 @app.route('/delete_holiday/<int:holiday_id>')
 @require_login
@@ -1735,6 +1994,17 @@ def add_user():
         
         try:
             db.session.commit()
+
+            # Assign to circle if provided and role is teacher
+            if role == 'teacher':
+                circle_id = request.form.get('circle_id')
+                if circle_id:
+                    circle = Circle.query.get(circle_id)
+                    if circle:
+                        circle.teacher_id = user.id
+                        circle.teacher_name = user.name
+                        db.session.commit()
+
             flash('تم إضافة المستخدم بنجاح', 'success')
             return redirect(url_for('users'))
         except Exception as e:
@@ -1756,13 +2026,22 @@ def add_announcement():
         title = request.form['title']
         content = request.form['content']
         image = request.files.get('image')
+        event_date_str = request.form.get('event_date')
+
+        event_date = None
+        if event_date_str:
+            try:
+                event_date = datetime.strptime(event_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('تنسيق التاريخ غير صحيح', 'error')
+                return redirect(url_for('add_announcement'))
 
         filename = None
         if image and allowed_file(image.filename):
             filename = secure_filename(image.filename)
             image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-        announcement = Announcement(title=title, content=content, image=filename)
+        announcement = Announcement(title=title, content=content, image=filename, event_date=event_date)
         db.session.add(announcement)
         db.session.commit()
         flash('تم نشر الإعلان بنجاح!', 'success')
@@ -1802,10 +2081,38 @@ def delete_announcement(announcement_id):
 @app.route('/activities')
 @require_login
 def activities():
-    activities = CenterActivity.query.order_by(CenterActivity.date.desc()).all()
+    query = CenterActivity.query
     parent = None
+
     if session.get('role') == 'parent':
         parent = Parent.query.filter_by(user_id=session['user_id']).first()
+        if parent:
+            student_ids = [s.id for s in parent.students]
+            student_circle_ids = [s.circle_id for s in parent.students if s.circle_id]
+
+            # Activities where:
+            # 1. Any of parent's students are explicitly invited
+            # 2. Any of parent's students belong to a target circle
+            # 3. No target circles are defined (public activity)
+            query = query.outerjoin(ActivityApproval).outerjoin(activity_circles).filter(
+                or_(
+                    ActivityApproval.student_id.in_(student_ids),
+                    CenterActivity.target_circles.any(Circle.id.in_(student_circle_ids)),
+                    ~CenterActivity.target_circles.any()
+                )
+            )
+    elif session.get('role') == 'teacher':
+        teacher_circles_ids = [c.id for c in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        query = query.outerjoin(activity_circles).filter(
+            or_(
+                 CenterActivity.target_circles.any(Circle.id.in_(teacher_circles_ids)),
+                 ~CenterActivity.target_circles.any()
+            )
+        )
+
+    activities = query.order_by(CenterActivity.date.desc()).all()
+    # Remove duplicates if any due to joins
+    activities = list(dict.fromkeys(activities))
 
     return render_template('activities.html',
                          activities=activities,
@@ -1818,28 +2125,47 @@ def add_activity():
         title = request.form['title']
         description = request.form['description']
         date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        start_time = datetime.strptime(request.form['start_time'], '%H:%M').time() if request.form.get('start_time') else None
+        end_time = datetime.strptime(request.form['end_time'], '%H:%M').time() if request.form.get('end_time') else None
         image = request.files.get('image')
         fee = request.form.get('fee', type=float)
         student_ids = request.form.getlist('student_ids')
+        circle_ids = request.form.getlist('circle_ids')
 
         filename = None
         if image and allowed_file(image.filename):
             filename = secure_filename(image.filename)
             image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-        activity = CenterActivity(title=title, description=description, date=date, image=filename, fee=fee)
+        activity = CenterActivity(title=title, description=description, date=date, start_time=start_time, end_time=end_time, image=filename, fee=fee)
         db.session.add(activity)
+
+        for circle_id in circle_ids:
+            circle = Circle.query.get(circle_id)
+            if circle:
+                activity.target_circles.append(circle)
+
         db.session.commit() # Commit to get activity.id
 
-        for student_id in student_ids:
-            student = Student.query.get(student_id)
-            if student:
-                approval = ActivityApproval(student_id=student.id, activity_id=activity.id, status='Pending')
-                db.session.add(approval)
+        # Process specific student invitations
+        invited_students = set()
 
+        # Explicitly selected students
         for student_id in student_ids:
             student = Student.query.get(student_id)
             if student:
+                invited_students.add(student)
+
+        # Students in selected circles
+        for circle_id in circle_ids:
+             circle_students = Student.query.filter_by(circle_id=circle_id, is_active=True).all()
+             for student in circle_students:
+                 invited_students.add(student)
+
+        for student in invited_students:
+            # Check if approval record already exists (to avoid duplicates if student selected + in circle)
+            exists = ActivityApproval.query.filter_by(student_id=student.id, activity_id=activity.id).first()
+            if not exists:
                 approval = ActivityApproval(student_id=student.id, activity_id=activity.id, status='Pending')
                 db.session.add(approval)
 
@@ -1857,7 +2183,8 @@ def add_activity():
         return redirect(url_for('activities'))
 
     students = Student.query.filter_by(is_active=True).all()
-    return render_template('add_activity.html', students=students)
+    circles = Circle.query.filter_by(is_active=True).all()
+    return render_template('add_activity.html', students=students, circles=circles)
 
 @app.route('/edit_activity/<int:activity_id>', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1867,6 +2194,8 @@ def edit_activity(activity_id):
         activity.title = request.form['title']
         activity.description = request.form['description']
         activity.date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        activity.start_time = datetime.strptime(request.form['start_time'], '%H:%M').time() if request.form.get('start_time') else None
+        activity.end_time = datetime.strptime(request.form['end_time'], '%H:%M').time() if request.form.get('end_time') else None
         activity.fee = request.form.get('fee', type=float)
 
         image = request.files.get('image')
@@ -1885,8 +2214,66 @@ def edit_activity(activity_id):
 @app.route('/fees')
 @require_login
 def fees():
-    fees = Fee.query.order_by(Fee.date_paid.desc()).all()
+    query = Fee.query
+    if session['role'] == 'teacher':
+        # Show fees for students in teacher's circles
+        teacher_circles = [c.id for c in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        query = query.join(Student).filter(Student.circle_id.in_(teacher_circles))
+
+    fees = query.order_by(Fee.date_paid.desc().nullslast()).all()
     return render_template('fees.html', fees=fees)
+
+@app.route('/generate_monthly_fees', methods=['GET', 'POST'])
+@require_role('admin')
+def generate_monthly_fees():
+    if request.method == 'POST':
+        title = request.form['title']
+        amount = request.form.get('amount', type=float)
+        circle_ids = request.form.getlist('circle_ids')
+        notes = request.form.get('notes')
+
+        count = 0
+        for circle_id in circle_ids:
+            students = Student.query.filter_by(circle_id=circle_id, is_active=True).all()
+            for student in students:
+                # Check if fee already exists for this month/title? For now, just create new
+                fee = Fee(
+                    student_id=student.id,
+                    amount=amount,
+                    title=title,
+                    status='Pending',
+                    notes=notes
+                )
+                db.session.add(fee)
+                count += 1
+
+        db.session.commit()
+        flash(f'تم إنشاء {count} سجل رسوم بنجاح.', 'success')
+        return redirect(url_for('fees'))
+
+    circles = Circle.query.filter_by(is_active=True).all()
+    return render_template('generate_fees.html', circles=circles)
+
+@app.route('/confirm_fee_payment/<int:fee_id>', methods=['POST'])
+@require_login
+def confirm_fee_payment(fee_id):
+    fee = Fee.query.get_or_404(fee_id)
+
+    # Check permission
+    if session['role'] == 'teacher':
+        teacher_circles = [c.id for c in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        if fee.student.circle_id not in teacher_circles:
+             flash('ليس لديك صلاحية لتعديل هذا السجل.', 'error')
+             return redirect(url_for('fees'))
+    elif session['role'] != 'admin':
+         flash('ليس لديك صلاحية.', 'error')
+         return redirect(url_for('fees'))
+
+    fee.status = 'Paid'
+    fee.date_paid = datetime.now().date()
+    db.session.commit()
+    flash('تم تأكيد الدفع بنجاح.', 'success')
+    return redirect(url_for('fees'))
 
 @app.route('/add_fee', methods=['GET', 'POST'])
 @require_login
@@ -2175,6 +2562,9 @@ def api_student_details(student_id):
     student_data = {
         'name': student.name,
         'age': student.age,
+        'student_phone': student.student_phone,
+        'parent_name': student.parent.name if student.parent else None,
+        'parent_phone': student.parent_phone,
         'circle': student.circle.name,
         'teacher': student.circle.teacher.name if student.circle.teacher else student.circle.teacher_name,
         'current_address': student.current_address,
@@ -2183,6 +2573,7 @@ def api_student_details(student_id):
         'date_of_birth': student.date_of_birth.strftime('%Y-%m-%d') if student.date_of_birth else None,
         'previous_memorization': student.previous_memorization,
         'enrollment_date': student.enrollment_date.strftime('%Y-%m-%d') if student.enrollment_date else None,
+        'photo': student.photo,
         'reports': [{
             'date': report.date.strftime('%Y-%m-%d'),
             'surah': report.surah,
@@ -2506,6 +2897,83 @@ def add_educational_note(student_id):
 
     return redirect(url_for('student_reports', student_id=student_id))
 
+@app.route('/add_plan/<int:student_id>', methods=['GET', 'POST'])
+@require_login
+def add_plan(student_id):
+    student = Student.query.get_or_404(student_id)
+    if session['role'] == 'teacher':
+        teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
+        if student.circle_id not in teacher_circles:
+            flash('ليس لديك الصلاحية لإضافة خطة لهذا الطالب', 'error')
+            return redirect(url_for('students'))
+
+    if request.method == 'POST':
+        start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+        end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
+        plan_type = request.form['plan_type']
+        start_surah = request.form.get('start_surah')
+        start_verse = request.form.get('start_verse', type=int)
+        end_surah = request.form.get('end_surah')
+        end_verse = request.form.get('end_verse', type=int)
+        daily_pages = request.form.get('daily_pages', type=float)
+        notes = request.form.get('notes')
+
+        total_days = (end_date - start_date).days + 1
+        # Exclude Fridays (4 is Friday in Python's weekday())
+        days_count = 0
+        current = start_date
+
+        # Get holidays in range
+        holidays_in_range = Holiday.query.filter(
+            Holiday.date >= start_date,
+            Holiday.date <= end_date
+        ).all()
+        holiday_dates = {h.date for h in holidays_in_range}
+
+        while current <= end_date:
+            if current.weekday() != 4 and current not in holiday_dates:
+                days_count += 1
+            current += timedelta(days=1)
+
+        if days_count == 0:
+             flash('المدة المحددة لا تحتوي على أيام عمل (أيام الجمعة والعطل مستثناة).', 'error')
+             return redirect(url_for('add_plan', student_id=student.id))
+
+        total_pages_calc = 0
+        if start_surah and end_surah:
+             total_pages_calc = calculate_pages(start_surah, start_verse or 1, end_surah, end_verse or 1)
+             # If teacher didn't specify daily pages, calculate it
+             if not daily_pages:
+                 daily_pages = round(total_pages_calc / days_count, 2)
+             total_pages = total_pages_calc
+        else:
+             # If no surah range, rely on daily_pages if provided
+             total_pages = daily_pages * days_count if daily_pages else 0
+
+        plan = MonthlyPlan(
+            student_id=student.id,
+            start_date=start_date,
+            end_date=end_date,
+            plan_type=plan_type,
+            start_surah=start_surah,
+            start_verse=start_verse,
+            end_surah=end_surah,
+            end_verse=end_verse,
+            daily_pages=daily_pages,
+            total_pages=total_pages,
+            notes=notes
+        )
+        db.session.add(plan)
+        try:
+            db.session.commit()
+            flash(f'تم إضافة الخطة بنجاح. المعدل اليومي: {daily_pages} صفحة. (أيام العمل: {days_count})', 'success')
+            return redirect(url_for('student_details', student_id=student.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ: {e}', 'error')
+
+    return render_template('add_plan.html', student=student, surah_names=surah_names)
+
 @app.route('/student_reports/<int:student_id>')
 @require_login
 def student_reports(student_id):
@@ -2571,31 +3039,28 @@ def export_student_report(student_id):
 
 # ---------- 22.  COURSES AND TESTS ----------
 @app.route('/courses')
-@require_login
+@require_role('admin')
 def courses():
-    # Admin sees all courses, teacher sees only their own
-    if session['role'] == 'admin':
-        courses_list = Course.query.order_by(Course.created_at.desc()).all()
-    else: # teacher
-        courses_list = Course.query.filter_by(teacher_id=session['user_id']).order_by(Course.created_at.desc()).all()
+    # Admin sees all courses
+    courses_list = Course.query.order_by(Course.created_at.desc()).all()
     return render_template('courses.html', courses=courses_list)
 
 @app.route('/add_course', methods=['GET', 'POST'])
-@require_login
+@require_role('admin')
 def add_course():
-    if session.get('role') not in ['admin', 'teacher']:
-        flash('ليس لديك الصلاحية لإضافة دورات', 'error')
-        return redirect(url_for('courses'))
-
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
-        teacher_id = request.form.get('teacher_id') if session['role'] == 'admin' else session['user_id']
+        teacher_id = request.form.get('teacher_id')
+        start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date() if request.form.get('start_date') else None
+        end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
 
         new_course = Course(
             name=name,
             description=description,
-            teacher_id=teacher_id
+            teacher_id=teacher_id,
+            start_date=start_date,
+            end_date=end_date
         )
         db.session.add(new_course)
         try:
@@ -2623,6 +3088,8 @@ def edit_course(course_id):
         course.description = request.form.get('description')
         if session['role'] == 'admin':
             course.teacher_id = request.form.get('teacher_id')
+        course.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date() if request.form.get('start_date') else course.start_date
+        course.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else course.end_date
         course.is_active = 'is_active' in request.form
 
         try:
@@ -2756,8 +3223,9 @@ def add_test(course_id):
     name = request.form.get('name')
     test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
     max_score = float(request.form.get('max_score'))
+    min_passing_score = float(request.form.get('min_passing_score')) if request.form.get('min_passing_score') else None
 
-    new_test = Test(name=name, course_id=course.id, test_date=test_date, max_score=max_score)
+    new_test = Test(name=name, course_id=course.id, test_date=test_date, max_score=max_score, min_passing_score=min_passing_score)
     db.session.add(new_test)
     try:
         db.session.commit()
@@ -2780,6 +3248,7 @@ def edit_test(test_id):
     test.name = request.form.get('name')
     test.test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
     test.max_score = float(request.form.get('max_score'))
+    test.min_passing_score = float(request.form.get('min_passing_score')) if request.form.get('min_passing_score') else None
 
     try:
         db.session.commit()
@@ -2992,6 +3461,64 @@ def student_details(student_id):
 
     educational_notes = EducationalNote.query.filter_by(student_id=student_id).order_by(EducationalNote.date.desc()).all()
 
+    # Monthly Plan Progress
+    current_plan = MonthlyPlan.query.filter_by(student_id=student.id).order_by(MonthlyPlan.created_at.desc()).first()
+    plan_progress = {}
+    if current_plan:
+        today = datetime.now().date()
+        # Days passed (excluding Fridays and Holidays/Activity Days)
+        days_passed = 0
+        current = current_plan.start_date
+
+        # Get holidays in range
+        holidays_in_range = Holiday.query.filter(
+            Holiday.date >= current_plan.start_date,
+            Holiday.date <= today
+        ).all()
+        holiday_dates = {h.date for h in holidays_in_range}
+
+        while current <= today and current <= current_plan.end_date:
+            # Exclude Friday (4) AND Holidays
+            if current.weekday() != 4 and current not in holiday_dates:
+                days_passed += 1
+            current += timedelta(days=1)
+
+        expected_pages = days_passed * current_plan.daily_pages
+
+        # Calculate actual pages from reports in this period
+        actual_pages = 0
+        plan_reports = Report.query.filter(
+            Report.student_id == student.id,
+            Report.date >= current_plan.start_date,
+            Report.date <= today, # Up to today
+            Report.type == current_plan.plan_type
+        ).all()
+
+        for r in plan_reports:
+             # Rough estimate: 1 page ~ 15 lines, or derive from verse count?
+             # Better: use calculate_pages for the report range
+             pages = calculate_pages(r.surah, r.from_verse, r.surah, r.to_verse)
+             actual_pages += pages
+
+        status = "On Track"
+        diff = actual_pages - expected_pages
+        if diff > 2:
+            status = "Ahead"
+        elif diff < -2:
+            status = "Behind"
+
+        plan_progress = {
+            'has_plan': True,
+            'plan_type': current_plan.plan_type,
+            'expected_pages': round(expected_pages, 1),
+            'actual_pages': round(actual_pages, 1),
+            'status': status,
+            'diff': round(diff, 1),
+            'daily_target': current_plan.daily_pages
+        }
+    else:
+        plan_progress = {'has_plan': False}
+
     # Student of the Month
     today = datetime.now().date()
     start_of_month = today.replace(day=1)
@@ -3016,7 +3543,8 @@ def student_details(student_id):
                          recent_attendance=recent_attendance,
                          circle_stats=circle_stats,
                          progress_percentage=progress_percentage,
-                         educational_notes=educational_notes)
+                         educational_notes=educational_notes,
+                         plan_progress=plan_progress)
 
 @app.route('/grades', methods=['GET', 'POST'])
 @require_login
@@ -3089,14 +3617,19 @@ def certificates():
         pdf.cell(0, 10, 'توقيع المدير: ..............................', 0, 1, 'R')
 
 
-        certificate_filename = f"certificate_{student.id}_{course.id}.pdf"
-        certificate_path = os.path.join(app.config['UPLOAD_FOLDER'], certificate_filename)
-        pdf.output(certificate_path)
+        certificate_url = request.form.get('certificate_url')
+        certificate_filename = None
+
+        if not certificate_url:
+            certificate_filename = f"certificate_{student.id}_{course.id}.pdf"
+            certificate_path = os.path.join(app.config['UPLOAD_FOLDER'], certificate_filename)
+            pdf.output(certificate_path)
 
         certificate = Certificate(
             student_id=student_id,
             course_id=course_id,
-            certificate_file=certificate_filename
+            certificate_file=certificate_filename,
+            certificate_url=certificate_url
         )
         db.session.add(certificate)
         db.session.commit()
@@ -3146,6 +3679,32 @@ def setup_database():
             else:
                 print(f"ERROR: Could not add 'user_id' column to 'parent' table: {e}")
 
+        # 3. Add 'parent_relationship' to 'student' table
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text("ALTER TABLE student ADD COLUMN parent_relationship VARCHAR(50) DEFAULT 'أب'"))
+                trans.commit()
+            print("INFO: Added 'parent_relationship' column to 'student' table.")
+        except Exception as e:
+            if 'duplicate column' in str(e).lower():
+                pass
+            else:
+                print(f"ERROR: Could not add 'parent_relationship' column to 'student' table: {e}")
+
+        # 4. Add 'event_date' to 'announcement' table
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text("ALTER TABLE announcement ADD COLUMN event_date DATE"))
+                trans.commit()
+            print("INFO: Added 'event_date' column to 'announcement' table.")
+        except Exception as e:
+            if 'duplicate column' in str(e).lower():
+                pass
+            else:
+                print(f"ERROR: Could not add 'event_date' column to 'announcement' table: {e}")
+
         # Add social media columns to 'settings' table if they don't exist
         social_columns = ['social_instagram', 'social_facebook', 'social_whatsapp', 'social_telegram']
         for column in social_columns:
@@ -3160,6 +3719,23 @@ def setup_database():
                     pass  # Column already exists, which is fine.
                 else:
                     print(f"ERROR: Could not add '{column}' column to 'settings' table: {e}")
+
+        # Add new columns for requested features
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text("ALTER TABLE course ADD COLUMN start_date DATE"))
+                connection.execute(text("ALTER TABLE course ADD COLUMN end_date DATE"))
+                connection.execute(text("ALTER TABLE test ADD COLUMN min_passing_score FLOAT"))
+                connection.execute(text("ALTER TABLE center_activity ADD COLUMN start_time TIME"))
+                connection.execute(text("ALTER TABLE center_activity ADD COLUMN end_time TIME"))
+                connection.execute(text("ALTER TABLE certificate ADD COLUMN certificate_url VARCHAR(500)"))
+                connection.execute(text("ALTER TABLE fee ADD COLUMN status VARCHAR(20) DEFAULT 'Paid'"))
+                connection.execute(text("ALTER TABLE fee ADD COLUMN title VARCHAR(100)"))
+                trans.commit()
+            print("INFO: Added new columns for requested features.")
+        except Exception as e:
+            pass # Ignore if columns already exist
 
         # Seed initial data if it doesn't exist
         # 1. Default settings

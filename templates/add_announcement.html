@@ -22,6 +22,11 @@
                         <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
                     </div>
                     <div class="mb-3">
+                        <label for="event_date" class="form-label">تاريخ الحدث (اختياري)</label>
+                        <input type="date" class="form-control" id="event_date" name="event_date" min="{{ now().strftime('%Y-%m-%d') }}">
+                        <div class="form-text">إذا تم تحديده، سيتم إرسال تذكيرات يومية حتى موعد الحدث.</div>
+                    </div>
+                    <div class="mb-3">
                         <label for="image" class="form-label">صورة الإعلان (اختياري)</label>
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                     </div>
