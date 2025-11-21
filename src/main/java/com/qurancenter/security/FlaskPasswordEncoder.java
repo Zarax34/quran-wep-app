@@ -5,10 +5,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlaskPasswordEncoder implements PasswordEncoder {
 
-    // Flask default: pbkdf2:sha256:260000$salt$hash
+    private static final Logger logger = LoggerFactory.getLogger(FlaskPasswordEncoder.class);
     private static final Pattern FLASK_HASH_PATTERN = Pattern.compile("^pbkdf2:sha256:(\\d+)\\$(.+)\\$(.+)$");
 
     @Override
@@ -22,11 +24,11 @@ public class FlaskPasswordEncoder implements PasswordEncoder {
 
         Matcher matcher = FLASK_HASH_PATTERN.matcher(encodedPassword);
         if (matcher.matches()) {
-            int iterations = Integer.parseInt(matcher.group(1));
-            String salt = matcher.group(2);
-            String hash = matcher.group(3);
-
             try {
+                int iterations = Integer.parseInt(matcher.group(1));
+                String salt = matcher.group(2);
+                String hash = matcher.group(3);
+
                 SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
                 PBEKeySpec spec = new PBEKeySpec(
                     rawPassword.toString().toCharArray(),
@@ -40,13 +42,16 @@ public class FlaskPasswordEncoder implements PasswordEncoder {
                 for (byte b : key) {
                     sb.append(String.format("%02x", b));
                 }
-                return sb.toString().equals(hash);
+                boolean match = sb.toString().equals(hash);
+                logger.info("Verifying password for hash: {}. Match: {}", encodedPassword.substring(0, 20) + "...", match);
+                return match;
 
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error verifying password", e);
                 return false;
             }
         }
+        logger.warn("Password hash format not matched: {}", encodedPassword);
         return false;
     }
 }
