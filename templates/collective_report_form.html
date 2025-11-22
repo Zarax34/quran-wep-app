@@ -25,8 +25,7 @@
                         <tr class="text-center">
                             <th style="width: 20%;">الطالب</th>
                             <th style="width: 15%;">الحالة</th>
-                            <th style="width: 15%;">النوع</th>
-                            <th style="width: 35%;">التفاصيل (من - إلى)</th>
+                            <th style="width: 50%;">التفاصيل</th>
                             <th style="width: 15%;">التقدير</th>
                         </tr>
                     </thead>
@@ -37,60 +36,38 @@
                             <td>
                                 <select class="form-select form-select-sm attendance-select" name="status_{{ student.id }}" data-student-id="{{ student.id }}">
                                     <option value="حاضر" selected>حاضر</option>
+                                    <option value="لم يسمع">لم يسمع</option>
                                     <option value="غائب بعذر">غائب بعذر</option>
                                     <option value="غائب بلا عذر">غائب بلا عذر</option>
                                     <option value="هروب">هروب</option>
                                 </select>
                             </td>
                             <td>
-                                <div class="recitation-fields" id="recitation_type_container_{{ student.id }}">
-                                    <select class="form-select form-select-sm" name="type_{{ student.id }}" data-student-id="{{ student.id }}">
-                                        <option value="حفظ" selected>حفظ</option>
-                                        <option value="مراجعة">مراجعة</option>
-                                        <option value="كلاهما">كلاهما</option>
-                                        <option value="تلقين">تلقين</option>
-                                        <option value="تلاوة">تلاوة</option>
-                                    </select>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="recitation-fields" id="recitation_details_container_{{ student.id }}">
-                                    <!-- Hifz Fields -->
-                                    <div class="hifz-section mb-2">
-                                        <label class="small text-primary d-none hifz-label">الحفظ:</label>
-                                        <div class="input-group input-group-sm mb-1">
-                                            <select class="form-select" name="surah_{{ student.id }}">
-                                                <option value="">السورة</option>
-                                                {% for surah in surah_names %}
-                                                <option value="{{ surah }}" {% if surah == student_expectations[student.id].surah %}selected{% endif %}>{{ surah }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text">من</span>
-                                            <input type="number" class="form-control" name="from_verse_{{ student.id }}" value="{{ student_expectations[student.id].from_verse }}" placeholder="آية">
-                                            <span class="input-group-text">إلى</span>
-                                            <input type="number" class="form-control" name="to_verse_{{ student.id }}" placeholder="آية">
-                                        </div>
-                                    </div>
+                                <div id="recitation_container_{{ student.id }}" class="recitation-wrapper">
+                                    <!-- Recitation Row 1 -->
+                                    <div class="recitation-row mb-2 d-flex align-items-center gap-2">
+                                        <select class="form-select form-select-sm" name="type_{{ student.id }}[]" style="width: 80px;">
+                                            <option value="حفظ" selected>حفظ</option>
+                                            <option value="مراجعة">مراجعة</option>
+                                            <option value="تلقين">تلقين</option>
+                                            <option value="تلاوة">تلاوة</option>
+                                        </select>
 
-                                    <!-- Review Fields (Hidden by default) -->
-                                    <div class="review-section d-none" id="review_section_{{ student.id }}">
-                                        <label class="small text-info">المراجعة:</label>
-                                        <div class="input-group input-group-sm mb-1">
-                                            <select class="form-select" name="review_surah_{{ student.id }}">
-                                                <option value="">السورة</option>
-                                                {% for surah in surah_names %}
-                                                <option value="{{ surah }}">{{ surah }}</option>
-                                                {% endfor %}
-                                            </select>
+                                        <select class="form-select form-select-sm" name="surah_{{ student.id }}[]" style="width: 120px;">
+                                            <option value="">السورة</option>
+                                            {% for surah in surah_names %}
+                                            <option value="{{ surah }}" {% if surah == student_expectations[student.id].surah %}selected{% endif %}>{{ surah }}</option>
+                                            {% endfor %}
+                                        </select>
+
+                                        <div class="input-group input-group-sm" style="width: 140px;">
+                                            <input type="number" class="form-control" name="from_verse_{{ student.id }}[]" value="{{ student_expectations[student.id].from_verse }}" placeholder="من">
+                                            <input type="number" class="form-control" name="to_verse_{{ student.id }}[]" placeholder="إلى">
                                         </div>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text">من</span>
-                                            <input type="number" class="form-control" name="review_from_verse_{{ student.id }}" placeholder="آية">
-                                            <span class="input-group-text">إلى</span>
-                                            <input type="number" class="form-control" name="review_to_verse_{{ student.id }}" placeholder="آية">
-                                        </div>
+
+                                        <button type="button" class="btn btn-outline-success btn-sm rounded-circle" onclick="addRecitationRow('{{ student.id }}')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </td>
@@ -124,6 +101,7 @@
                         <div style="width: 40%;" onclick="event.stopPropagation();">
                             <select class="form-select form-select-sm attendance-select mobile-attendance" name="status_{{ student.id }}" data-student-id="{{ student.id }}_mobile">
                                 <option value="حاضر" selected>حاضر</option>
+                                <option value="لم يسمع">لم يسمع</option>
                                 <option value="غائب بعذر">غائب بعذر</option>
                                 <option value="غائب بلا عذر">غائب بلا عذر</option>
                                 <option value="هروب">هروب</option>
@@ -136,62 +114,54 @@
                         <div class="card-body p-3">
                             <!-- Content Container controlled by Attendance -->
                             <div id="content_container_{{ student.id }}_mobile">
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <label class="small text-muted mb-1">النوع</label>
-                                        <select class="form-select form-select-sm mobile-type-select" name="type_{{ student.id }}" data-student-id="{{ student.id }}_mobile">
-                                            <option value="حفظ" selected>حفظ</option>
-                                            <option value="مراجعة">مراجعة</option>
-                                            <option value="كلاهما">كلاهما</option>
-                                            <option value="تلقين">تلقين</option>
-                                            <option value="تلاوة">تلاوة</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="small text-muted mb-1">التقدير</label>
-                                        <select class="form-select form-select-sm" name="grade_{{ student.id }}">
-                                            <option value="ممتاز" selected>ممتاز</option>
-                                            <option value="جيد جدا">جيد جداً</option>
-                                            <option value="جيد">جيد</option>
-                                            <option value="مقبول">مقبول</option>
-                                            <option value="ضعيف">ضعيف</option>
-                                        </select>
+
+                                <div class="mb-2 d-flex justify-content-between align-items-center">
+                                    <label class="small fw-bold text-muted">التقدير العام:</label>
+                                    <select class="form-select form-select-sm w-50" name="grade_{{ student.id }}">
+                                        <option value="ممتاز" selected>ممتاز</option>
+                                        <option value="جيد جدا">جيد جداً</option>
+                                        <option value="جيد">جيد</option>
+                                        <option value="مقبول">مقبول</option>
+                                        <option value="ضعيف">ضعيف</option>
+                                    </select>
+                                </div>
+
+                                <div id="mobile_recitation_container_{{ student.id }}">
+                                    <!-- Mobile Recitation Row 1 -->
+                                    <div class="mobile-recitation-row p-2 bg-light rounded mb-2 position-relative">
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" name="type_{{ student.id }}[]">
+                                                    <option value="حفظ" selected>حفظ</option>
+                                                    <option value="مراجعة">مراجعة</option>
+                                                    <option value="تلقين">تلقين</option>
+                                                    <option value="تلاوة">تلاوة</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" name="surah_{{ student.id }}[]">
+                                                    <option value="">السورة</option>
+                                                    {% for surah in surah_names %}
+                                                    <option value="{{ surah }}" {% if surah == student_expectations[student.id].surah %}selected{% endif %}>{{ surah }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">من</span>
+                                            <input type="number" class="form-control" name="from_verse_{{ student.id }}[]" value="{{ student_expectations[student.id].from_verse }}" placeholder="آية">
+                                            <span class="input-group-text">إلى</span>
+                                            <input type="number" class="form-control" name="to_verse_{{ student.id }}[]" placeholder="آية">
+                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- Mobile Hifz Fields -->
-                                <div class="p-2 bg-light rounded mb-2 mobile-hifz-section">
-                                    <label class="small fw-bold text-primary mb-1 mobile-hifz-label d-none">الحفظ:</label>
-                                    <select class="form-select form-select-sm mb-2" name="surah_{{ student.id }}">
-                                        <option value="">السورة</option>
-                                        {% for surah in surah_names %}
-                                        <option value="{{ surah }}" {% if surah == student_expectations[student.id].surah %}selected{% endif %}>{{ surah }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">من</span>
-                                        <input type="number" class="form-control" name="from_verse_{{ student.id }}" value="{{ student_expectations[student.id].from_verse }}" placeholder="آية">
-                                        <span class="input-group-text">إلى</span>
-                                        <input type="number" class="form-control" name="to_verse_{{ student.id }}" placeholder="آية">
-                                    </div>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="addMobileRecitationRow('{{ student.id }}')">
+                                        <i class="fas fa-plus"></i> إضافة تسميع آخر
+                                    </button>
                                 </div>
 
-                                <!-- Mobile Review Fields (Hidden by default) -->
-                                <div class="p-2 bg-light rounded border border-info d-none mobile-review-section" id="review_section_{{ student.id }}_mobile">
-                                    <label class="small fw-bold text-info mb-1">المراجعة:</label>
-                                    <select class="form-select form-select-sm mb-2" name="review_surah_{{ student.id }}">
-                                        <option value="">السورة</option>
-                                        {% for surah in surah_names %}
-                                        <option value="{{ surah }}">{{ surah }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">من</span>
-                                        <input type="number" class="form-control" name="review_from_verse_{{ student.id }}" placeholder="آية">
-                                        <span class="input-group-text">إلى</span>
-                                        <input type="number" class="form-control" name="review_to_verse_{{ student.id }}" placeholder="آية">
-                                    </div>
-                                </div>
                             </div>
                             <!-- End Content Container -->
 
@@ -218,8 +188,92 @@
     </div>
 </div>
 
+<!-- Hidden Templates for JS -->
+<template id="recitation-row-template">
+    <div class="recitation-row mb-2 d-flex align-items-center gap-2 fade-in">
+        <select class="form-select form-select-sm" name="type_STUDENT_ID[]" style="width: 80px;">
+            <option value="حفظ">حفظ</option>
+            <option value="مراجعة" selected>مراجعة</option>
+            <option value="تلقين">تلقين</option>
+            <option value="تلاوة">تلاوة</option>
+        </select>
+
+        <select class="form-select form-select-sm" name="surah_STUDENT_ID[]" style="width: 120px;">
+            <option value="">السورة</option>
+            {% for surah in surah_names %}
+            <option value="{{ surah }}">{{ surah }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="input-group input-group-sm" style="width: 140px;">
+            <input type="number" class="form-control" name="from_verse_STUDENT_ID[]" placeholder="من">
+            <input type="number" class="form-control" name="to_verse_STUDENT_ID[]" placeholder="إلى">
+        </div>
+
+        <button type="button" class="btn btn-outline-danger btn-sm rounded-circle" onclick="removeRow(this)">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</template>
+
+<template id="mobile-recitation-row-template">
+    <div class="mobile-recitation-row p-2 bg-light rounded mb-2 position-relative fade-in border-top">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-1 small" onclick="removeRow(this.parentElement)" aria-label="Close"></button>
+        <div class="row g-2 mb-2">
+            <div class="col-6">
+                <select class="form-select form-select-sm" name="type_STUDENT_ID[]">
+                    <option value="حفظ">حفظ</option>
+                    <option value="مراجعة" selected>مراجعة</option>
+                    <option value="تلقين">تلقين</option>
+                    <option value="تلاوة">تلاوة</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <select class="form-select form-select-sm" name="surah_STUDENT_ID[]">
+                    <option value="">السورة</option>
+                    {% for surah in surah_names %}
+                    <option value="{{ surah }}">{{ surah }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="input-group input-group-sm">
+            <span class="input-group-text">من</span>
+            <input type="number" class="form-control" name="from_verse_STUDENT_ID[]" placeholder="آية">
+            <span class="input-group-text">إلى</span>
+            <input type="number" class="form-control" name="to_verse_STUDENT_ID[]" placeholder="آية">
+        </div>
+    </div>
+</template>
+
 <script>
-    // Define global functions for inline onclick handlers
+    function addRecitationRow(studentId) {
+        const template = document.getElementById('recitation-row-template').innerHTML;
+        const container = document.getElementById('recitation_container_' + studentId);
+        const newRowHtml = template.replace(/STUDENT_ID/g, studentId);
+        container.insertAdjacentHTML('beforeend', newRowHtml);
+    }
+
+    function addMobileRecitationRow(studentId) {
+        const template = document.getElementById('mobile-recitation-row-template').innerHTML;
+        const container = document.getElementById('mobile_recitation_container_' + studentId);
+        const newRowHtml = template.replace(/STUDENT_ID/g, studentId);
+        container.insertAdjacentHTML('beforeend', newRowHtml);
+    }
+
+    function removeRow(element) {
+        // element is either the button (desktop) or the row div (mobile, if passed directly)
+        // But for desktop, button is inside the row div.
+        // Actually, for desktop `removeRow(this)` passes button. Parent is row.
+        // For mobile `removeRow(this.parentElement)` passes the row div.
+        if (element.tagName === 'BUTTON') {
+            element.parentElement.remove();
+        } else {
+            element.remove();
+        }
+    }
+
+    // Existing toggle logic ...
     function toggleStudentCard(studentId) {
         var collapseElement = document.getElementById('collapse_' + studentId);
         if (collapseElement) {
@@ -227,34 +281,26 @@
             if (!bsCollapse) {
                 bsCollapse = new bootstrap.Collapse(collapseElement, { toggle: false });
             }
-
-            // Toggle
             if (collapseElement.classList.contains('show')) {
                 bsCollapse.hide();
                 updateIcon(studentId, false);
             } else {
                 bsCollapse.show();
                 updateIcon(studentId, true);
-                // The data-bs-parent attribute handles closing others automatically
             }
         }
     }
 
     function expandNextStudent(currentStudentId) {
-        // Find the current card in the DOM list
         var currentCard = document.getElementById('card_mobile_' + currentStudentId);
         if (currentCard) {
             var nextCard = currentCard.nextElementSibling;
             if (nextCard) {
-                // Extract ID from e.g., 'card_mobile_123'
                 var nextIdFull = nextCard.id;
                 var nextId = nextIdFull.replace('card_mobile_', '');
-
-                // Expand next
                 var nextCollapse = document.getElementById('collapse_' + nextId);
                 if (nextCollapse) {
                     var bsCollapse = new bootstrap.Collapse(nextCollapse, { toggle: true });
-                    // Scroll to it
                     setTimeout(() => {
                         nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 300);
@@ -274,33 +320,12 @@
                 icon.classList.add('fa-chevron-right');
             }
         }
-
-        // Also update all other icons because of the accordion behavior
-        // Wait a bit for the accordion to animate closing others
-        setTimeout(() => {
-            document.querySelectorAll('.collapse').forEach(function(el) {
-                var otherId = el.id.replace('collapse_', '');
-                var otherIcon = document.getElementById('icon_' + otherId);
-                if (el.classList.contains('show')) {
-                    if (otherIcon) {
-                        otherIcon.classList.remove('fa-chevron-right');
-                        otherIcon.classList.add('fa-chevron-down');
-                    }
-                } else {
-                    if (otherIcon) {
-                        otherIcon.classList.remove('fa-chevron-down');
-                        otherIcon.classList.add('fa-chevron-right');
-                    }
-                }
-            });
-        }, 400);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize bootstrap collapses for accordion effect
+        // Initialize bootstrap collapses
         var collapseElementList = [].slice.call(document.querySelectorAll('.collapse'));
         var collapseList = collapseElementList.map(function (collapseEl) {
-            // Add event listener to update icons on show/hide
             collapseEl.addEventListener('show.bs.collapse', function () {
                 var id = this.id.replace('collapse_', '');
                 updateIcon(id, true);
@@ -312,83 +337,41 @@
             return new bootstrap.Collapse(collapseEl, { toggle: false });
         });
 
-        // --- Desktop Attendance Logic ---
-        const desktopAttendanceSelects = document.querySelectorAll('.attendance-select:not(.mobile-attendance)');
-        desktopAttendanceSelects.forEach(select => {
-            select.addEventListener('change', function() {
-                const studentId = this.getAttribute('data-student-id');
-                const status = this.value;
-                const containers = [
-                    document.getElementById('recitation_type_container_' + studentId),
-                    document.getElementById('recitation_details_container_' + studentId),
-                    document.getElementById('grade_container_' + studentId)
-                ];
+        // Shared Attendance Logic
+        function handleAttendanceChange(select) {
+            const isMobile = select.classList.contains('mobile-attendance');
+            const studentId = select.getAttribute('data-student-id').replace('_mobile', '');
+            const status = select.value;
 
+            // Target containers
+            let container;
+            if (isMobile) {
+                container = document.getElementById('content_container_' + studentId + '_mobile');
+            } else {
+                container = document.getElementById('recitation_container_' + studentId);
+                const gradeContainer = document.getElementById('grade_container_' + studentId);
+                // For desktop, we might want to hide grade as well
+                if (gradeContainer) {
+                    if (status !== 'حاضر') gradeContainer.style.display = 'none';
+                    else gradeContainer.style.display = 'block';
+                }
+            }
+
+            if (container) {
                 if (status !== 'حاضر') {
-                    containers.forEach(el => { if(el) el.style.display = 'none'; });
+                    if (isMobile) container.classList.add('d-none');
+                    else container.style.display = 'none';
                 } else {
-                    containers.forEach(el => { if(el) el.style.display = 'block'; });
+                    if (isMobile) container.classList.remove('d-none');
+                    else container.style.display = 'block';
                 }
-            });
-        });
+            }
+        }
 
-        // --- Mobile Attendance Logic ---
-        const mobileAttendanceSelects = document.querySelectorAll('.mobile-attendance');
-        mobileAttendanceSelects.forEach(select => {
-            select.addEventListener('change', function() {
-                const targetId = this.getAttribute('data-student-id'); // e.g., "123_mobile"
-                const status = this.value;
-                const contentContainer = document.getElementById('content_container_' + targetId);
-
-                if (contentContainer) {
-                    if (status !== 'حاضر') {
-                        contentContainer.classList.add('d-none');
-                    } else {
-                        contentContainer.classList.remove('d-none');
-                    }
-                }
-            });
-        });
-
-        // --- Recitation Type Change (Shared Logic) ---
-        const typeSelects = document.querySelectorAll('select[name^="type_"]');
-        typeSelects.forEach(select => {
-            select.addEventListener('change', function() {
-                const studentIdRaw = this.getAttribute('data-student-id'); // Can be "123" or "123_mobile"
-
-                // Determine if it's mobile or desktop based on ID suffix
-                const isMobile = studentIdRaw && studentIdRaw.endsWith('_mobile');
-                const studentId = isMobile ? studentIdRaw : this.name.split('_')[1];
-
-                const type = this.value;
-
-                if (isMobile) {
-                    // Mobile Logic
-                    const reviewSection = document.getElementById('review_section_' + studentIdRaw);
-                    // Find hifz label inside the container
-                    const hifzLabel = document.querySelector(`#content_container_${studentIdRaw} .mobile-hifz-label`);
-
-                    if (type === 'كلاهما') {
-                        if(reviewSection) reviewSection.classList.remove('d-none');
-                        if(hifzLabel) hifzLabel.classList.remove('d-none');
-                    } else {
-                        if(reviewSection) reviewSection.classList.add('d-none');
-                        if(hifzLabel) hifzLabel.classList.add('d-none');
-                    }
-                } else {
-                    // Desktop Logic
-                    const reviewSection = document.getElementById('review_section_' + studentId);
-                    const hifzLabel = document.querySelector(`#recitation_details_container_${studentId} .hifz-label`);
-
-                    if (type === 'كلاهما') {
-                        if(reviewSection) reviewSection.classList.remove('d-none');
-                        if(hifzLabel) hifzLabel.classList.remove('d-none');
-                    } else {
-                        if(reviewSection) reviewSection.classList.add('d-none');
-                        if(hifzLabel) hifzLabel.classList.add('d-none');
-                    }
-                }
-            });
+        document.querySelectorAll('.attendance-select').forEach(select => {
+            select.addEventListener('change', function() { handleAttendanceChange(this); });
+            // Initialize state
+            handleAttendanceChange(select);
         });
     });
 </script>

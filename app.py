@@ -713,7 +713,9 @@ def get_attendance_stats(student_id, start_date, end_date):
         if attendance.status in stats:
             stats[attendance.status] += 1
     if stats['إجمالي الأيام'] > 0:
-        stats['نسبة الحضور'] = round((stats['حاضر'] / stats['إجمالي الأيام']) * 100, 2)
+        # 'لم يسمع' counts as present for attendance purposes
+        present_count = stats['حاضر'] + stats['لم يسمع']
+        stats['نسبة الحضور'] = round((present_count / stats['إجمالي الأيام']) * 100, 2)
     return stats
 
 def get_center_attendance_stats():
@@ -721,8 +723,9 @@ def get_center_attendance_stats():
 
     # Query to get total attendance and total possible days per student
     # This is more efficient than looping in Python
+    # 'لم يسمع' is considered present
     results = db.session.query(
-        func.sum(case((Attendance.status == 'حاضر', 1), else_=0)).label('total_present'),
+        func.sum(case((or_(Attendance.status == 'حاضر', Attendance.status == 'لم يسمع'), 1), else_=0)).label('total_present'),
         func.count(Attendance.id).label('total_days')
     ).filter(
         Attendance.date >= thirty_days_ago,
@@ -1745,66 +1748,51 @@ def collective_report_submit(circle_id):
             )
              db.session.add(notification)
 
-        # 2. Handle Report (Only if present)
+        # 2. Handle Report (Only if present and NOT 'Did not recite')
         if status == 'حاضر':
-            recitation_type = request.form.get(f'type_{student.id}')
-            surah = request.form.get(f'surah_{student.id}')
-            from_verse = request.form.get(f'from_verse_{student.id}')
-            to_verse = request.form.get(f'to_verse_{student.id}')
+            # Retrieve lists of inputs
+            types = request.form.getlist(f'type_{student.id}[]')
+            surahs = request.form.getlist(f'surah_{student.id}[]')
+            from_verses = request.form.getlist(f'from_verse_{student.id}[]')
+            to_verses = request.form.getlist(f'to_verse_{student.id}[]')
+
             grade = request.form.get(f'grade_{student.id}')
 
-            # Main Report (Hifz or just one part)
             # Default status: Approved for admin, Pending for teacher
             report_status = 'Pending'
             if session.get('role') in ['admin', 'communication_officer']:
                 report_status = 'Approved'
 
-            if surah and from_verse and to_verse:
-                main_type = 'حفظ' if recitation_type in ['حفظ', 'كلاهما'] else recitation_type
+            # Iterate over all added recitation rows
+            for r_type, r_surah, r_from, r_to in zip(types, surahs, from_verses, to_verses):
+                if r_surah and r_from and r_to:
+                    try:
+                        from_v = int(r_from)
+                        to_v = int(r_to)
+                    except ValueError:
+                        continue
 
-                report = Report(
-                    student_id=student.id,
-                    teacher_id=session['user_id'],
-                    circle_id=circle.id,
-                    date=date,
-                    surah=surah,
-                    from_verse=int(from_verse),
-                    to_verse=int(to_verse),
-                    type=main_type,
-                    grade=grade,
-                    status=report_status
-                )
-                db.session.add(report)
-                reports_count += 1
-
-                # Update progress stats if Hifz
-                if main_type == 'حفظ':
-                     student.total_verses_since_year_start += (int(to_verse) - int(from_verse) + 1)
-                     student.last_memorized_sura = surah
-                     student.last_memorized_ayah = int(to_verse)
-                     student.last_recitation_date = date
-
-            # Secondary Report (Review if 'Both' is selected)
-            if recitation_type == 'كلاهما':
-                review_surah = request.form.get(f'review_surah_{student.id}')
-                review_from_verse = request.form.get(f'review_from_verse_{student.id}')
-                review_to_verse = request.form.get(f'review_to_verse_{student.id}')
-
-                if review_surah and review_from_verse and review_to_verse:
-                    review_report = Report(
+                    report = Report(
                         student_id=student.id,
                         teacher_id=session['user_id'],
                         circle_id=circle.id,
                         date=date,
-                        surah=review_surah,
-                        from_verse=int(review_from_verse),
-                        to_verse=int(review_to_verse),
-                        type='مراجعة',
-                        grade=grade, # Assuming same grade for both for simplicity in collective report
+                        surah=r_surah,
+                        from_verse=from_v,
+                        to_verse=to_v,
+                        type=r_type,
+                        grade=grade,
                         status=report_status
                     )
-                    db.session.add(review_report)
+                    db.session.add(report)
                     reports_count += 1
+
+                    # Update progress stats if Hifz
+                    if r_type == 'حفظ':
+                         student.total_verses_since_year_start += (to_v - from_v + 1)
+                         student.last_memorized_sura = r_surah
+                         student.last_memorized_ayah = to_v
+                         student.last_recitation_date = date
 
     try:
         db.session.commit()
