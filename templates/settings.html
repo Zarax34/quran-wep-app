@@ -172,6 +172,38 @@
                             </div>
                         </div>
 
+                        <!-- حقوق الملكية والمطور -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0"><i class="fas fa-code"></i> حقوق الملكية والمطور</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="developer_name" class="form-label">اسم المطور</label>
+                                            <input type="text" class="form-control" id="developer_name" name="developer_name"
+                                                   value="{{ settings.developer_name or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="developer_link" class="form-label">رابط المطور</label>
+                                            <input type="url" class="form-control" id="developer_link" name="developer_link"
+                                                   value="{{ settings.developer_link or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="copyright_text" class="form-label">نص حقوق الملكية</label>
+                                            <input type="text" class="form-control" id="copyright_text" name="copyright_text"
+                                                   value="{{ settings.copyright_text or '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- حسابات البنوك للدعم -->
                         <div class="mb-3">
                             <label for="support_bank_accounts" class="form-label">حسابات البنوك للدعم</label>
@@ -241,6 +273,57 @@
                                     <div class="mb-3">
                                         <label for="social_telegram" class="form-label"><i class="fab fa-telegram"></i> Telegram</label>
                                         <input type="url" class="form-control" id="social_telegram" name="social_telegram" value="{{ settings.social_telegram or '' }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- إدارة الصلاحيات -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0"><i class="fas fa-user-shield"></i> إدارة الصلاحيات</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">يمكنك هنا تفعيل أو إيقاف ميزات محددة لجميع الحسابات.</p>
+
+                                {% set perms = {} %}
+                                {% if settings.permissions %}
+                                    {# Since we cannot easily json_load in Jinja without custom filter, we might need a workaround or assume perms passed from context #}
+                                    {# But wait, we didn't pass 'perms' separately. We can create a filter or do string checks #}
+                                    {# Better: Let's assume the context processor 'check_permission' reads from settings, but here we need to set them. #}
+                                    {# We will pass 'permissions_dict' from the route. #}
+                                {% endif %}
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="perm_teacher_view_phone" name="perm_teacher_view_phone" {% if check_permission('teacher_view_phone') %}checked{% endif %}>
+                                                <label class="form-check-label" for="perm_teacher_view_phone">
+                                                    السماح للمعلمين برؤية أرقام هواتف أولياء الأمور
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="perm_teacher_send_report" name="perm_teacher_send_report" {% if check_permission('teacher_send_report') %}checked{% endif %}>
+                                                <label class="form-check-label" for="perm_teacher_send_report">
+                                                    السماح للمعلمين بإرسال التقارير (أسبوعي/شهري)
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="perm_teacher_add_holiday" name="perm_teacher_add_holiday" {% if check_permission('teacher_add_holiday') %}checked{% endif %}>
+                                                <label class="form-check-label" for="perm_teacher_add_holiday">
+                                                    السماح للمعلمين بطلب/إضافة أيام عطلة
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

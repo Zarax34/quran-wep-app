@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-file-excel"></i> رفع شهادات (Excel) - {{ course.name }}</h1>
+    <a href="{{ url_for('course_details', course_id=course.id) }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p>يرجى رفع ملف Excel (.xlsx, .xls) يحتوي على عمودين:</p>
+        <ul>
+            <li><strong>العمود الأول:</strong> اسم الطالب (يجب أن يطابق الاسم المسجل)</li>
+            <li><strong>العمود الثاني:</strong> رابط الشهادة</li>
+        </ul>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="file" class="form-label">ملف Excel</label>
+                <input type="file" class="form-control" id="file" name="file" accept=".xlsx, .xls" required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-upload"></i> رفع ومعالجة
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

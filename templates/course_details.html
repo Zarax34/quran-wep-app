@@ -40,19 +40,36 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-users"></i> الطلاب المسجلون ({{ enrolled_students|length }})</h5>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
-                    <i class="fas fa-user-plus"></i> تسجيل طالب جديد
-                </button>
+                <div>
+                    <a href="{{ url_for('upload_certificates_excel', course_id=course.id) }}" class="btn btn-info me-2 text-white">
+                        <i class="fas fa-file-excel"></i> رفع شهادات
+                    </a>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                        <i class="fas fa-user-plus"></i> تسجيل طالب جديد
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% if enrolled_students %}
                 <ul class="list-group">
                     {% for student in enrolled_students %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ student.name }}
-                        <a href="{{ url_for('unenroll_student', course_id=course.id, student_id=student.id) }}" class="btn btn-sm btn-outline-danger" title="إلغاء التسجيل">
-                            <i class="fas fa-user-minus"></i>
-                        </a>
+                        <div>
+                            {{ student.name }}
+                            {% for cert in student.certificates %}
+                                {% if cert.course_id == course.id and cert.certificate_url %}
+                                    <span class="badge bg-success ms-2"><i class="fas fa-check"></i> شهادة</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary ms-1" onclick="openCertificateModal('{{ student.id }}', '{{ student.name }}')" title="رابط الشهادة">
+                                <i class="fas fa-link"></i>
+                            </button>
+                            <a href="{{ url_for('unenroll_student', course_id=course.id, student_id=student.id) }}" class="btn btn-sm btn-outline-danger" title="إلغاء التسجيل">
+                                <i class="fas fa-user-minus"></i>
+                            </a>
+                        </div>
                     </li>
                     {% endfor %}
                 </ul>
@@ -116,5 +133,41 @@ document.getElementById('studentSearch').addEventListener('keyup', function() {
         }
     }
 });
+
+function openCertificateModal(studentId, studentName) {
+    document.getElementById('certStudentId').value = studentId;
+    document.getElementById('certStudentName').innerText = studentName;
+
+    // Clear previous value
+    document.getElementById('certificateUrl').value = '';
+
+    var modal = new bootstrap.Modal(document.getElementById('certificateLinkModal'));
+    modal.show();
+}
 </script>
+
+<!-- Certificate Link Modal -->
+<div class="modal fade" id="certificateLinkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة رابط شهادة للطالب: <span id="certStudentName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_certificate_link_route', course_id=course.id) }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" id="certStudentId" name="student_id">
+                    <div class="mb-3">
+                        <label for="certificateUrl" class="form-label">رابط الشهادة (Google Drive, etc.)</label>
+                        <input type="url" class="form-control" id="certificateUrl" name="certificate_url" placeholder="https://..." required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="submit" class="btn btn-primary">حفظ الرابط</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -4,3 +4,6 @@ Werkzeug==2.3.7
 fpdf2
 Flask-Mail
 APScheduler
+openpyxl
+pandas
+xlrd

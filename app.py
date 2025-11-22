@@ -278,6 +278,15 @@ class Settings(db.Model):
     social_whatsapp = db.Column(db.String(200))
     social_telegram = db.Column(db.String(200))
 
+    # Developer & Copyright Info
+    developer_name = db.Column(db.String(100), default='Your Name')
+    developer_link = db.Column(db.String(200), default='https://www.linkedin.com/in/your-linkedin-profile')
+    copyright_text = db.Column(db.String(200), default='جميع الحقوق محفوظة')
+
+    # Permissions (stored as JSON string)
+    # Example: {"teacher_view_phone": false, "teacher_send_report": false}
+    permissions = db.Column(db.Text, default='{}')
+
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -477,11 +486,33 @@ def inject_globals():
         parent = Parent.query.filter_by(user_id=session['user_id']).first()
         if parent and parent.user_id:
             unread_notifications = Notification.query.filter_by(user_id=parent.user_id, is_read=False).count()
+
+    # Helper to check permissions in templates
+    def check_permission(feature):
+        # Admin always has access
+        if session.get('role') == 'admin':
+            return True
+
+        # Get permissions from settings
+        try:
+            perms = json.loads(settings.permissions or '{}')
+        except:
+            perms = {}
+
+        # Default behavior if permission is not set
+        # For security, default to False for sensitive features if not explicitly allowed
+        # However, for backward compatibility during migration, we might want to consider defaults.
+        # But the requirement is to "stop features", so defaults should probably be True until turned off?
+        # The user said "Can stop these features", implying they are currently active.
+        # So default is True.
+        return perms.get(feature, True)
+
     return dict(
         datetime=datetime, now=datetime.now, timedelta=timedelta,
         settings=settings, Report=Report, Attendance=Attendance,
         Holiday=Holiday, Parent=Parent, current_year=current_year,
-        unread_notifications=unread_notifications
+        unread_notifications=unread_notifications,
+        check_permission=check_permission
     )
 
 # ---------- 5.  HELPERS  ----------
@@ -2393,6 +2424,106 @@ def confirm_fee_payment(fee_id):
     flash('تم تأكيد الدفع بنجاح.', 'success')
     return redirect(url_for('fees'))
 
+@app.route('/add_certificate_link/<int:course_id>', methods=['POST'])
+@require_login
+def add_certificate_link_route(course_id):
+    student_id = request.form.get('student_id')
+    certificate_url = request.form.get('certificate_url')
+
+    if not student_id or not certificate_url:
+        flash('بيانات غير مكتملة', 'error')
+        return redirect(url_for('course_details', course_id=course_id))
+
+    # Check if certificate exists
+    cert = Certificate.query.filter_by(course_id=course_id, student_id=student_id).first()
+    if cert:
+        cert.certificate_url = certificate_url
+    else:
+        cert = Certificate(
+            course_id=course_id,
+            student_id=student_id,
+            certificate_url=certificate_url,
+            certificate_file=None
+        )
+        db.session.add(cert)
+
+    try:
+        db.session.commit()
+        flash('تم حفظ رابط الشهادة بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ: {str(e)}', 'error')
+
+    return redirect(url_for('course_details', course_id=course_id))
+
+@app.route('/upload_certificates_excel/<int:course_id>', methods=['GET', 'POST'])
+@require_role('admin')
+def upload_certificates_excel(course_id):
+    course = Course.query.get_or_404(course_id)
+
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('لم يتم اختيار ملف', 'error')
+            return redirect(request.url)
+
+        file = request.files['file']
+        if file.filename == '':
+            flash('لم يتم اختيار ملف', 'error')
+            return redirect(request.url)
+
+        if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+            try:
+                import pandas as pd
+                df = pd.read_excel(file)
+
+                success_count = 0
+                errors = []
+
+                # Iterate through rows
+                # Assuming column 0 is Name, column 1 is Link
+                for index, row in df.iterrows():
+                    student_name = str(row.iloc[0]).strip()
+                    cert_link = str(row.iloc[1]).strip()
+
+                    if not student_name or not cert_link:
+                        continue
+
+                    # Find student in this course
+                    # We need to join Student and CourseEnrollment
+                    student = Student.query.join(CourseEnrollment).filter(
+                        CourseEnrollment.course_id == course.id,
+                        Student.name == student_name
+                    ).first()
+
+                    if not student:
+                        # Try approximate match or report error
+                        errors.append({'name': student_name, 'reason': 'الطالب غير مسجل في هذه الدورة أو الاسم غير مطابق'})
+                        continue
+
+                    # Create/Update Certificate
+                    cert = Certificate.query.filter_by(course_id=course.id, student_id=student.id).first()
+                    if cert:
+                        cert.certificate_url = cert_link
+                    else:
+                        cert = Certificate(
+                            course_id=course.id,
+                            student_id=student.id,
+                            certificate_url=cert_link
+                        )
+                        db.session.add(cert)
+                    success_count += 1
+
+                db.session.commit()
+                return render_template('upload_certificates_result.html', course=course, success_count=success_count, errors=errors)
+
+            except Exception as e:
+                flash(f'حدث خطأ أثناء معالجة الملف: {str(e)}', 'error')
+                return redirect(request.url)
+        else:
+            flash('صيغة الملف غير مدعومة. يرجى استخدام Excel (.xlsx, .xls)', 'error')
+
+    return render_template('upload_certificates.html', course=course)
+
 @app.route('/add_fee', methods=['GET', 'POST'])
 @require_login
 def add_fee():
@@ -2767,6 +2898,19 @@ def settings():
         settings_obj.social_facebook = request.form.get('social_facebook')
         settings_obj.social_whatsapp = request.form.get('social_whatsapp')
         settings_obj.social_telegram = request.form.get('social_telegram')
+
+        # Developer & Copyright
+        settings_obj.developer_name = request.form.get('developer_name')
+        settings_obj.developer_link = request.form.get('developer_link')
+        settings_obj.copyright_text = request.form.get('copyright_text')
+
+        # Permissions Logic
+        permissions = {}
+        permissions['teacher_view_phone'] = 'perm_teacher_view_phone' in request.form
+        permissions['teacher_send_report'] = 'perm_teacher_send_report' in request.form
+        permissions['teacher_add_holiday'] = 'perm_teacher_add_holiday' in request.form
+
+        settings_obj.permissions = json.dumps(permissions)
 
         logo = request.files.get('logo')
         if logo and allowed_file(logo.filename):
@@ -3923,6 +4067,27 @@ def setup_database():
                     pass  # Column already exists, which is fine.
                 else:
                     print(f"ERROR: Could not add '{column}' column to 'settings' table: {e}")
+
+        # Add developer info and permissions to 'settings' table
+        new_settings_columns = [
+            ('developer_name', "VARCHAR(100) DEFAULT 'Your Name'"),
+            ('developer_link', "VARCHAR(200) DEFAULT 'https://www.linkedin.com/in/your-linkedin-profile'"),
+            ('copyright_text', "VARCHAR(200) DEFAULT 'جميع الحقوق محفوظة'"),
+            ('permissions', "TEXT DEFAULT '{}'")
+        ]
+
+        for col_name, col_def in new_settings_columns:
+            try:
+                with db.engine.connect() as connection:
+                    trans = connection.begin()
+                    connection.execute(text(f'ALTER TABLE settings ADD COLUMN {col_name} {col_def}'))
+                    trans.commit()
+                print(f"INFO: Added '{col_name}' column to 'settings' table.")
+            except Exception as e:
+                if 'duplicate column' in str(e).lower():
+                    pass
+                else:
+                    print(f"ERROR: Could not add '{col_name}' column to 'settings' table: {e}")
 
         # Add new columns for requested features
         # We execute these one by one to ensure that if one exists, others are still attempted.

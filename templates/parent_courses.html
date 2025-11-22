@@ -27,7 +27,11 @@
                             <strong>{{ student_data.student.name }}</strong>
                         </div>
                         <div>
-                            {% if student_data.certificate %}
+                            {% if student_data.certificate and student_data.certificate.certificate_url %}
+                                <a href="{{ student_data.certificate.certificate_url }}" class="btn btn-success btn-sm" target="_blank">
+                                    <i class="fas fa-download me-2"></i>تحميل الشهادة
+                                </a>
+                            {% elif student_data.certificate %}
                                 <a href="{{ url_for('uploaded_file', filename=student_data.certificate.certificate_file) }}" class="btn btn-outline-success btn-sm" download>
                                     <i class="fas fa-certificate me-2"></i>تحميل الشهادة
                                 </a>

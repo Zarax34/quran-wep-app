@@ -81,8 +81,13 @@
                         <span class="regular-text">الحلقة</span>
                     </div>
                     <div class="item">
+                        {% if session.role != 'teacher' or check_permission('teacher_view_phone') %}
                         <span class="big-text">{{ student.parent.name if student.parent else '-' }}</span>
                         <span class="regular-text">ولي الأمر</span>
+                        {% else %}
+                        <span class="big-text"><i class="fas fa-lock"></i></span>
+                        <span class="regular-text">ولي الأمر</span>
+                        {% endif %}
                     </div>
                 </div>
                  <div class="row" style="margin-top: 10px;">
