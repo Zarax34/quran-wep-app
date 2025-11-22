@@ -330,12 +330,12 @@
 
         /* الأنيميشن */
         .page-transition {
-            animation: pageFadeIn 0.6s ease-in;
+            animation: zoomIn 0.5s ease-out;
         }
 
-        @keyframes pageFadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .btn-hover {
@@ -348,21 +348,16 @@
         }
 
         .fade-in {
-            animation: fadeIn 0.8s ease-in;
+            animation: fadeInUp 0.8s ease-out;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(25px); }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
         .slide-in-left {
-            animation: slideInLeft 0.8s ease-out;
-        }
-        
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-60px); }
-            to { opacity: 1; transform: translateX(0); }
+            animation: fadeInUp 0.8s ease-out; /* Changed to Fade In Up per request */
         }
 
         .pulse {
@@ -664,12 +659,43 @@
             background: rgba(255,255,255,0.5);
         }
 
-        /* تحسين التنبيهات */
+        /* تحسين التنبيهات - نمط إشعارات الهاتف */
         .alert {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             font-weight: 500;
+            animation: slideDown 0.5s ease-out forwards;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+        }
+
+        .dark-mode .alert {
+            background: rgba(45, 55, 72, 0.95);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .alert-success {
+            border-left: 5px solid #28a745;
+        }
+
+        .alert-danger {
+            border-left: 5px solid #dc3545;
+        }
+
+        @keyframes slideDown {
+            from { top: -100px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
         }
 
         /* تحسين الجداول */
@@ -1437,7 +1463,7 @@
         </div>
 
         <footer class="text-center mt-4">
-            <p>&copy; {{ current_year }} {{ settings.site_name }}. جميع الحقوق محفوظة. تم تطويره بواسطة <a href="https://www.linkedin.com/in/your-linkedin-profile" target="_blank">Your Name</a>.</p>
+            <p>&copy; {{ current_year }} {{ settings.site_name }}. {{ settings.copyright_text or 'جميع الحقوق محفوظة' }}. تم تطويره بواسطة <a href="{{ settings.developer_link or '#' }}" target="_blank">{{ settings.developer_name or 'المطور' }}</a>.</p>
         </footer>
 
         {% if session.user_id %}
@@ -1469,6 +1495,9 @@
                     </a>
                     <a href="{{ url_for('activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
                        <i class="fas fa-cubes"></i><span>الأنشطة</span>
+                    </a>
+                    <a href="{{ url_for('announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
+                        <i class="fas fa-bullhorn"></i><span>الإعلانات</span>
                     </a>
                     <a href="{{ url_for('messaging') }}" class="{{ 'active' if request.endpoint == 'messaging' }}">
                         <i class="fas fa-comments"></i><span>المراسلة</span>
@@ -1520,6 +1549,9 @@
                 {% elif session.role == 'student' %}
                     <a href="{{ url_for('student_dashboard') }}" class="{{ 'active' if request.endpoint == 'student_dashboard' }}">
                         <i class="fas fa-user"></i><span>الرئيسية</span>
+                    </a>
+                    <a href="{{ url_for('announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
+                        <i class="fas fa-bullhorn"></i><span>الإعلانات</span>
                     </a>
                     <a href="{{ url_for('logout') }}">
                         <i class="fas fa-sign-out-alt"></i><span>الخروج</span>
