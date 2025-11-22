@@ -285,15 +285,6 @@
                             </div>
                             <div class="card-body">
                                 <p class="text-muted mb-3">يمكنك هنا تفعيل أو إيقاف ميزات محددة لجميع الحسابات.</p>
-
-                                {% set perms = {} %}
-                                {% if settings.permissions %}
-                                    {# Since we cannot easily json_load in Jinja without custom filter, we might need a workaround or assume perms passed from context #}
-                                    {# But wait, we didn't pass 'perms' separately. We can create a filter or do string checks #}
-                                    {# Better: Let's assume the context processor 'check_permission' reads from settings, but here we need to set them. #}
-                                    {# We will pass 'permissions_dict' from the route. #}
-                                {% endif %}
-
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
@@ -325,6 +316,46 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- تخصيص شريط التنقل (الهاتف) -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0"><i class="fas fa-mobile-alt"></i> تخصيص شريط التنقل (للمسؤول)</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">اختر 4 أيقونات لتظهر في الشريط السفلي (بالإضافة إلى زر "المزيد").</p>
+                                <div class="row">
+                                    {% set nav_opts = [
+                                        ('dashboard', 'الرئيسية'),
+                                        ('students', 'الطلاب'),
+                                        ('attendance', 'الحضور'),
+                                        ('reports', 'التقارير'),
+                                        ('circles', 'الحلقات'),
+                                        ('courses', 'الدورات'),
+                                        ('activities', 'الأنشطة'),
+                                        ('fees', 'الرسوم'),
+                                        ('holidays', 'العطل'),
+                                        ('users', 'المستخدمين')
+                                    ] %}
+                                    {% for key, label in nav_opts %}
+                                    <div class="col-md-3 col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input mobile-nav-check" type="checkbox"
+                                                   name="nav_{{ key }}" id="nav_{{ key }}"
+                                                   value="{{ key }}"
+                                                   {% if check_permission('nav_' + key) %}checked{% endif %}>
+                                            <label class="form-check-label" for="nav_{{ key }}">
+                                                {{ label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text text-danger mt-2" id="nav-limit-warning" style="display: none;">
+                                    يمكنك اختيار 4 عناصر فقط كحد أقصى.
                                 </div>
                             </div>
                         </div>
@@ -852,5 +883,27 @@ function resetForm() {
 function confirmDelete(message) {
     return confirm(message);
 }
+
+// Limit mobile nav selection to 4
+document.addEventListener('DOMContentLoaded', function() {
+    const checks = document.querySelectorAll('.mobile-nav-check');
+    const warning = document.getElementById('nav-limit-warning');
+
+    function updateChecks() {
+        const checked = document.querySelectorAll('.mobile-nav-check:checked');
+        if (checked.length >= 4) {
+            checks.forEach(c => {
+                if (!c.checked) c.disabled = true;
+            });
+            if (checked.length > 4) warning.style.display = 'block';
+        } else {
+            checks.forEach(c => c.disabled = false);
+            warning.style.display = 'none';
+        }
+    }
+
+    checks.forEach(c => c.addEventListener('change', updateChecks));
+    updateChecks(); // Initial check
+});
 </script>
 {% endblock %}

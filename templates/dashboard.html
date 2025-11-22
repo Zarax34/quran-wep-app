@@ -397,8 +397,8 @@
   padding: 0px 5px 0px 8px;
   color: #bd9f67;
   background: #243137;
-  opacity: 0;
-  letter-spacing: 7px;
+  opacity: 1; /* Changed from 0 to 1 to ensure visibility */
+  letter-spacing: 3px; /* Adjusted spacing */
   transition: all 0.5s ease-in-out;
 }
 
@@ -443,8 +443,8 @@
   color: #bd9f67;
   padding-left: 8px;
   font-size: 1rem;
-  opacity: 0;
-  letter-spacing: none;
+  opacity: 1; /* Changed from 0 to 1 */
+  letter-spacing: normal;
   transition: all 0.5s ease-in-out 0.5s;
 }
 
@@ -611,4 +611,28 @@
     border: 1px solid var(--border-color);
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize CountUp for stats
+    const counters = document.querySelectorAll('.counter');
+    counters.forEach(counter => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        const options = {
+            duration: 2.5,
+            useEasing: true,
+            useGrouping: true,
+        };
+        const countUp = new CountUp(counter, target, options);
+        if (!countUp.error) {
+            countUp.start();
+        } else {
+            console.error(countUp.error);
+            counter.innerText = target; // Fallback
+        }
+        // Force visibility immediately if animation fails or CSS hides it
+        counter.style.opacity = 1;
+    });
+});
+</script>
 {% endblock %}

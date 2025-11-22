@@ -2910,6 +2910,16 @@ def settings():
         permissions['teacher_send_report'] = 'perm_teacher_send_report' in request.form
         permissions['teacher_add_holiday'] = 'perm_teacher_add_holiday' in request.form
 
+        # Mobile Nav Permissions
+        nav_options = ['dashboard', 'students', 'attendance', 'reports', 'circles', 'courses', 'activities', 'fees', 'holidays', 'users']
+        for opt in nav_options:
+            if f'nav_{opt}' in request.form:
+                permissions[f'nav_{opt}'] = True
+            else:
+                # Only set false if we are saving settings (to avoid clearing on first run if defaults exist)
+                # Actually, cleaner to just store what is checked.
+                permissions[f'nav_{opt}'] = False
+
         settings_obj.permissions = json.dumps(permissions)
 
         logo = request.files.get('logo')
