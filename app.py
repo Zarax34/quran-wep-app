@@ -1220,6 +1220,9 @@ def edit_student(student_id):
             return redirect(url_for('students'))
 
     if request.method == 'POST':
+        # Find associated user account before name change
+        student_user = User.query.filter_by(name=student.name, role='student').first()
+
         student.name = request.form['name']
         student.age = request.form.get('age', type=int)
         student.student_phone = request.form.get('student_phone')
@@ -1241,6 +1244,24 @@ def edit_student(student_id):
             photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             student.photo = filename
         
+        # Update User account if exists and user is admin
+        if session.get('role') == 'admin':
+            if student_user:
+                student_user.name = student.name # Keep name in sync
+
+                new_username = request.form.get('student_username')
+                new_password = request.form.get('student_password')
+
+                if new_username and new_username != student_user.username:
+                    # Check uniqueness
+                    if User.query.filter(User.username == new_username, User.id != student_user.id).first():
+                        flash('اسم المستخدم مسجل لطالب آخر', 'warning')
+                    else:
+                        student_user.username = new_username
+
+                if new_password:
+                    student_user.password = generate_password_hash(new_password)
+
         try:
             db.session.commit()
             flash('تم تعديل بيانات الطالب بنجاح', 'success')
@@ -2808,12 +2829,27 @@ def api_student_details(student_id):
     student = Student.query.get_or_404(student_id)
     reports = Report.query.filter_by(student_id=student_id).order_by(Report.date.desc()).all()
 
+    # Check permissions for phone number
+    settings = Settings.query.first() or Settings()
+    try:
+        perms = json.loads(settings.permissions or '{}')
+    except:
+        perms = {}
+
+    show_phone = True
+    if session.get('role') == 'teacher':
+        show_phone = perms.get('teacher_view_phone', True)
+
+    parent_phone = student.parent_phone
+    if not show_phone:
+        parent_phone = "غير مصرح بالعرض"
+
     student_data = {
         'name': student.name,
         'age': student.age,
         'student_phone': student.student_phone,
         'parent_name': student.parent.name if student.parent else None,
-        'parent_phone': student.parent_phone,
+        'parent_phone': parent_phone,
         'circle': student.circle.name,
         'teacher': student.circle.teacher.name if student.circle.teacher else student.circle.teacher_name,
         'current_address': student.current_address,

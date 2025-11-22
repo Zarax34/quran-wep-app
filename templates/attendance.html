@@ -49,8 +49,9 @@
                     <i class="fas fa-save"></i> حفظ الحضور
                 </button>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
+            <div class="card-body p-0 p-md-3">
+                <!-- Desktop View -->
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-striped">
                         <thead>
                             <tr>
@@ -76,14 +77,39 @@
                                     </select>
                                 </td>
                                 <td>
-                                    {% if attendance_data[student.id] %}
-                                    <span class="badge bg-secondary">{{ attendance_data[student.id].notes or 'لا توجد ملاحظات' }}</span>
-                                    {% endif %}
+                                    <input type="text" class="form-control form-control-sm" name="notes_{{ student.id }}" placeholder="ملاحظات" value="{{ attendance_data[student.id].notes if attendance_data[student.id] else '' }}">
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Mobile View (Card List) -->
+                <div class="d-md-none">
+                    {% for student in students %}
+                    <div class="p-3 border-bottom {% if loop.last %}border-0{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 fw-bold">{{ student.name }}</h6>
+                            <small class="text-muted">{{ student.circle.name }}</small>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-7">
+                                <select class="form-select form-select-sm" name="status_{{ student.id }}">
+                                    <option value="حاضر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'حاضر' %}selected{% endif %}>✅ حاضر</option>
+                                    <option value="غائب بعذر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'غائب بعذر' %}selected{% endif %}>✖️ غائب بعذر</option>
+                                    <option value="غائب بلا عذر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'غائب بلا عذر' %}selected{% endif %}>❌ غائب بلا عذر</option>
+                                    <option value="متأخر" {% if attendance_data[student.id] and attendance_data[student.id].status == 'متأخر' %}selected{% endif %}>🕒 متأخر</option>
+                                    <option value="هروب" {% if attendance_data[student.id] and attendance_data[student.id].status == 'هروب' %}selected{% endif %}>🏃 هروب</option>
+                                    <option value="لم يسمع" {% if attendance_data[student.id] and attendance_data[student.id].status == 'لم يسمع' %}selected{% endif %}>🔇 لم يسمع</option>
+                                </select>
+                            </div>
+                            <div class="col-5">
+                                <input type="text" class="form-control form-control-sm" name="notes_{{ student.id }}" placeholder="ملاحظات" value="{{ attendance_data[student.id].notes if attendance_data[student.id] else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>

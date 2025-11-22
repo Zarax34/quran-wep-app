@@ -1253,7 +1253,7 @@
                 {% if session.role == 'admin' %}
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'circles' }}" href="{{ url_for('circles') }}">
-                        <i class="fas fa-users me-2"></i>
+                        <i class="fas fa-layer-group me-2"></i>
                         إدارة الحلقات
                     </a>
                 </li>
@@ -1531,7 +1531,7 @@
                         'students': ('students', 'users', 'الطلاب'),
                         'attendance': ('attendance', 'clipboard-check', 'الحضور'),
                         'reports': ('reports', 'file-alt', 'التقارير'),
-                        'circles': ('circles', 'users', 'الحلقات'),
+                        'circles': ('circles', 'layer-group', 'الحلقات'),
                         'courses': ('courses', 'chalkboard-teacher', 'الدورات'),
                         'activities': ('activities', 'cubes', 'الأنشطة'),
                         'fees': ('fees', 'money-bill-wave', 'الرسوم'),
@@ -1583,7 +1583,7 @@
                 'attendance': {'endpoint': 'attendance', 'icon': 'clipboard-check', 'label': 'الحضور', 'bg': 'bg-success'},
                 'reports': {'endpoint': 'reports', 'icon': 'file-alt', 'label': 'التقارير', 'bg': 'bg-info'},
                 'add_report': {'endpoint': 'add_report', 'icon': 'plus-circle', 'label': 'إضافة تقرير', 'bg': 'bg-primary'},
-                'circles': {'endpoint': 'circles', 'icon': 'users', 'label': 'الحلقات', 'bg': 'bg-success'},
+                'circles': {'endpoint': 'circles', 'icon': 'layer-group', 'label': 'الحلقات', 'bg': 'bg-success'},
                 'courses': {'endpoint': 'courses', 'icon': 'chalkboard-teacher', 'label': 'الدورات', 'bg': 'bg-info'},
                 'activities': {'endpoint': 'activities', 'icon': 'cubes', 'label': 'الأنشطة', 'bg': 'bg-warning'},
                 'fees': {'endpoint': 'fees', 'icon': 'money-bill-wave', 'label': 'الرسوم', 'bg': 'bg-success'},
