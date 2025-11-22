@@ -68,36 +68,81 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
 
-        /* شعار المركز في الأعلى - حجم أكبر بدون خلفية */
+        /* شعار المركز في الأعلى - تصميم عصري */
         .header-logo {
             text-align: center;
-            padding: 35px 0; /* زيادة المساحة */
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 50px 0;
+            background: linear-gradient(120deg, var(--primary-color), #20c997, var(--secondary-color));
+            background-size: 200% 200%;
+            animation: gradientBG 15s ease infinite;
             color: white;
             margin-bottom: 0;
             position: relative;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        /* تأثير زجاجي فوق الخلفية */
+        .header-logo::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(2px);
+            z-index: 1;
+        }
+
+        /* أشكال زخرفية في الخلفية */
+        .header-bg-shape {
+            position: absolute;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .shape-1 { top: -20px; right: -20px; font-size: 10rem; transform: rotate(15deg); }
+        .shape-2 { bottom: -30px; left: -30px; font-size: 8rem; transform: rotate(-10deg); }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
         }
 
         .header-logo img {
-            max-height: 130px; /* حجم أكبر للشعار */
+            max-height: 140px;
             max-width: 100%;
-            border-radius: 0; /* إزالة الزوايا المستديرة */
-            margin-bottom: 15px;
-            box-shadow: none; /* إزالة الظل */
-            background: transparent; /* خلفية شفافة */
-            border: none; /* إزالة الحدود */
+            margin-bottom: 20px;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+            transition: transform 0.5s ease;
+        }
+
+        .header-logo:hover img {
+            transform: scale(1.05) rotate(2deg);
         }
 
         .header-logo h4 {
-            margin: 15px 0 8px 0;
-            font-weight: bold;
-            font-size: 2.8rem; /* حجم أكبر للنص */
+            margin: 10px 0 5px 0;
+            font-weight: 800;
+            font-size: 3rem;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            letter-spacing: -1px;
         }
 
         .header-logo small {
-            opacity: 0.9;
-            font-size: 1.4rem; /* حجم أكبر للوصف */
+            display: inline-block;
+            opacity: 0.95;
+            font-size: 1.3rem;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 20px;
+            border-radius: 50px;
+            margin-top: 10px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         /* إصلاح القائمة الجانبية */
@@ -353,7 +398,7 @@
             .sidebar-toggle {
                 display: none !important;
             }
-            
+
             .main-content {
                 margin-right: 0 !important;
                 padding-bottom: 100px !important; /* Space for bottom nav */
@@ -1105,7 +1150,10 @@
     <!-- شعار المركز في الأعلى -->
     {% if settings.logo or settings.site_name %}
     <div class="header-logo">
-        <div class="container">
+        <i class="fas fa-quran header-bg-shape shape-1 text-white"></i>
+        <i class="fas fa-mosque header-bg-shape shape-2 text-white"></i>
+
+        <div class="container header-content">
             {% if settings.logo %}
             <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="mb-2" alt="{{ settings.site_name }}" style="background: transparent; border: none;">
             {% endif %}

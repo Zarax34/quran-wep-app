@@ -2,62 +2,60 @@
 from playwright.sync_api import sync_playwright
 import time
 
-def verify_updates():
+def verify_new_features():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(viewport={"width": 375, "height": 812})
-        page = context.new_page()
 
+        # 1. Verify Users Mobile View (Mobile Viewport)
+        print("Verifying Users Mobile View...")
+        mobile_context = browser.new_context(viewport={"width": 375, "height": 812})
+        mobile_page = mobile_context.new_page()
+
+        # Login
+        mobile_page.goto("http://127.0.0.1:5000/login")
+        mobile_page.fill('input[placeholder="اسم المستخدم"]', "admin")
+        mobile_page.fill('input[placeholder="كلمة المرور"]', "admin123")
+        mobile_page.click("button:has-text('تسجيل الدخول')")
+        mobile_page.wait_for_url("**/dashboard")
+
+        # Go to Users page
+        mobile_page.goto("http://127.0.0.1:5000/users")
+        mobile_page.screenshot(path="verification/1_users_mobile.png")
+
+        # 2. Verify Parent Dashboard (Parent Role)
+        # Note: We need a parent user. Assuming 'parent1' exists or we can mock/setup.
+        # Since I can't easily switch users without knowing credentials, I'll skip this if I don't have creds.
+        # But wait, I can modify the session or just check the template visually if I were logged in as parent.
+        # Let's try to verify the Header which is visible to Admin too.
+
+        # 3. Verify Header Revamp
+        print("Verifying Header Revamp...")
+        mobile_page.goto("http://127.0.0.1:5000/dashboard")
+        # Scroll to top to see header
+        mobile_page.evaluate("window.scrollTo(0, 0)")
+        time.sleep(1)
+        mobile_page.screenshot(path="verification/3_header_revamp.png")
+
+        # 4. Verify Accordion in Collective Report (Admin/Teacher)
+        # Assuming we can access a report.
+        # We need a circle.
+        print("Verifying Collective Report Accordion...")
+        # Try to find a circle link
         try:
-            # 1. Login
-            page.goto("http://localhost:5000/login")
-            page.get_by_placeholder("اسم المستخدم").fill("admin")
-            page.get_by_placeholder("كلمة المرور").fill("admin123")
-            page.get_by_role("button", name="تسجيل الدخول").click()
-
-            # 2. Verify Dashboard Stats
-            page.wait_for_url("**/dashboard")
-            # Check if a stat card has opacity 1
-            stat_opacity = page.evaluate("document.querySelector('.stat-card .bottom-text').style.opacity")
-            # Wait, the style attribute might be empty if set by CSS class.
-            # Let's check computed style.
-            opacity = page.evaluate("window.getComputedStyle(document.querySelector('.stat-card .bottom-text')).opacity")
-            if opacity == '1':
-                print("Success: Dashboard stat cards are visible.")
-            else:
-                print(f"Failure: Dashboard stat cards opacity is {opacity}")
-
-            # 3. Verify Courses Responsive View
-            page.goto("http://localhost:5000/courses")
-            # Check for a card element (mobile view)
-            if page.locator(".card.mb-3").count() > 0:
-                 print("Success: Courses mobile view (cards) is active.")
-            else:
-                 # Might be empty, let's assuming seed data exists or just check if table is hidden
-                 if page.locator(".table-responsive.d-none.d-md-block").is_visible() == False:
-                     print("Success: Desktop table is hidden on mobile.")
-
-            # 4. Verify Collective Report UI
-            page.goto("http://localhost:5000/collective_report")
-            # Check that textarea is GONE and "Start Recording" button is present
-            if page.locator("textarea#report_text").count() == 0:
-                print("Success: Text paste area removed from Collective Report.")
-            else:
-                print("Failure: Text paste area still present.")
-
-            if page.get_by_text("بدء التسجيل").is_visible():
-                print("Success: 'Start Recording' button found.")
-
-            # 5. Verify Mobile Nav Customization
-            page.goto("http://localhost:5000/settings")
-            # Check if checkbox exists
-            if page.locator("#nav_dashboard").is_visible():
-                print("Success: Mobile nav settings present.")
-
+             # Just go to a likely URL
+             mobile_page.goto("http://127.0.0.1:5000/collective_report/1")
+             # Check if accordion elements exist
+             if mobile_page.locator(".student-card-mobile").count() > 0:
+                 # Click the first one to toggle
+                 mobile_page.click(".student-card-mobile >> nth=0 >> .card-header")
+                 time.sleep(0.5)
+                 mobile_page.screenshot(path="verification/4_collective_report_accordion.png")
+             else:
+                 print("No student cards found on collective report page (empty circle?).")
         except Exception as e:
-            print(f"Error: {e}")
-        finally:
-            browser.close()
+            print(f"Error checking collective report: {e}")
+
+        browser.close()
 
 if __name__ == "__main__":
-    verify_updates()
+    verify_new_features()

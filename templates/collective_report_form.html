@@ -44,7 +44,7 @@
                             </td>
                             <td>
                                 <div class="recitation-fields" id="recitation_type_container_{{ student.id }}">
-                                    <select class="form-select form-select-sm" name="type_{{ student.id }}">
+                                    <select class="form-select form-select-sm" name="type_{{ student.id }}" data-student-id="{{ student.id }}">
                                         <option value="حفظ" selected>حفظ</option>
                                         <option value="مراجعة">مراجعة</option>
                                         <option value="كلاهما">كلاهما</option>
@@ -111,15 +111,17 @@
                 </table>
             </div>
 
-            <!-- Mobile View (Cards) -->
-            <div class="d-md-none">
+            <!-- Mobile View (Accordion Cards) -->
+            <div class="d-md-none" id="accordionStudents">
                 {% for student in students %}
-                <div class="card mb-3 border shadow-sm">
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
-                        <h6 class="mb-0 fw-bold text-primary">
+                <div class="card mb-3 border shadow-sm student-card-mobile" id="card_mobile_{{ student.id }}">
+                    <!-- Card Header (Click to toggle) -->
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3" onclick="toggleStudentCard('{{ student.id }}')" style="cursor: pointer;">
+                        <h6 class="mb-0 fw-bold text-primary d-flex align-items-center">
+                            <i class="fas fa-chevron-right me-2 transition-icon" id="icon_{{ student.id }}"></i>
                             <i class="fas fa-user-graduate me-2"></i>{{ student.name }}
                         </h6>
-                        <div style="width: 40%;">
+                        <div style="width: 40%;" onclick="event.stopPropagation();">
                             <select class="form-select form-select-sm attendance-select mobile-attendance" name="status_{{ student.id }}" data-student-id="{{ student.id }}_mobile">
                                 <option value="حاضر" selected>حاضر</option>
                                 <option value="غائب بعذر">غائب بعذر</option>
@@ -128,67 +130,80 @@
                             </select>
                         </div>
                     </div>
-                    <div class="card-body p-3">
-                        <!-- Content Container controlled by Attendance -->
-                        <div id="content_container_{{ student.id }}_mobile">
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="small text-muted mb-1">النوع</label>
-                                    <select class="form-select form-select-sm mobile-type-select" name="type_{{ student.id }}" data-student-id="{{ student.id }}_mobile">
-                                        <option value="حفظ" selected>حفظ</option>
-                                        <option value="مراجعة">مراجعة</option>
-                                        <option value="كلاهما">كلاهما</option>
-                                        <option value="تلقين">تلقين</option>
-                                        <option value="تلاوة">تلاوة</option>
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <label class="small text-muted mb-1">التقدير</label>
-                                    <select class="form-select form-select-sm" name="grade_{{ student.id }}">
-                                        <option value="ممتاز" selected>ممتاز</option>
-                                        <option value="جيد جدا">جيد جداً</option>
-                                        <option value="جيد">جيد</option>
-                                        <option value="مقبول">مقبول</option>
-                                        <option value="ضعيف">ضعيف</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            <!-- Mobile Hifz Fields -->
-                            <div class="p-2 bg-light rounded mb-2 mobile-hifz-section">
-                                <label class="small fw-bold text-primary mb-1 mobile-hifz-label d-none">الحفظ:</label>
-                                <select class="form-select form-select-sm mb-2" name="surah_{{ student.id }}">
-                                    <option value="">السورة</option>
-                                    {% for surah in surah_names %}
-                                    <option value="{{ surah }}" {% if surah == student_expectations[student.id].surah %}selected{% endif %}>{{ surah }}</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">من</span>
-                                    <input type="number" class="form-control" name="from_verse_{{ student.id }}" value="{{ student_expectations[student.id].from_verse }}" placeholder="آية">
-                                    <span class="input-group-text">إلى</span>
-                                    <input type="number" class="form-control" name="to_verse_{{ student.id }}" placeholder="آية">
+                    <!-- Collapsible Content -->
+                    <div class="collapse {% if loop.first %}show{% endif %}" id="collapse_{{ student.id }}" data-bs-parent="#accordionStudents">
+                        <div class="card-body p-3">
+                            <!-- Content Container controlled by Attendance -->
+                            <div id="content_container_{{ student.id }}_mobile">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="small text-muted mb-1">النوع</label>
+                                        <select class="form-select form-select-sm mobile-type-select" name="type_{{ student.id }}" data-student-id="{{ student.id }}_mobile">
+                                            <option value="حفظ" selected>حفظ</option>
+                                            <option value="مراجعة">مراجعة</option>
+                                            <option value="كلاهما">كلاهما</option>
+                                            <option value="تلقين">تلقين</option>
+                                            <option value="تلاوة">تلاوة</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted mb-1">التقدير</label>
+                                        <select class="form-select form-select-sm" name="grade_{{ student.id }}">
+                                            <option value="ممتاز" selected>ممتاز</option>
+                                            <option value="جيد جدا">جيد جداً</option>
+                                            <option value="جيد">جيد</option>
+                                            <option value="مقبول">مقبول</option>
+                                            <option value="ضعيف">ضعيف</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Mobile Review Fields (Hidden by default) -->
-                            <div class="p-2 bg-light rounded border border-info d-none mobile-review-section" id="review_section_{{ student.id }}_mobile">
-                                <label class="small fw-bold text-info mb-1">المراجعة:</label>
-                                <select class="form-select form-select-sm mb-2" name="review_surah_{{ student.id }}">
-                                    <option value="">السورة</option>
-                                    {% for surah in surah_names %}
-                                    <option value="{{ surah }}">{{ surah }}</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">من</span>
-                                    <input type="number" class="form-control" name="review_from_verse_{{ student.id }}" placeholder="آية">
-                                    <span class="input-group-text">إلى</span>
-                                    <input type="number" class="form-control" name="review_to_verse_{{ student.id }}" placeholder="آية">
+                                <!-- Mobile Hifz Fields -->
+                                <div class="p-2 bg-light rounded mb-2 mobile-hifz-section">
+                                    <label class="small fw-bold text-primary mb-1 mobile-hifz-label d-none">الحفظ:</label>
+                                    <select class="form-select form-select-sm mb-2" name="surah_{{ student.id }}">
+                                        <option value="">السورة</option>
+                                        {% for surah in surah_names %}
+                                        <option value="{{ surah }}" {% if surah == student_expectations[student.id].surah %}selected{% endif %}>{{ surah }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">من</span>
+                                        <input type="number" class="form-control" name="from_verse_{{ student.id }}" value="{{ student_expectations[student.id].from_verse }}" placeholder="آية">
+                                        <span class="input-group-text">إلى</span>
+                                        <input type="number" class="form-control" name="to_verse_{{ student.id }}" placeholder="آية">
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Review Fields (Hidden by default) -->
+                                <div class="p-2 bg-light rounded border border-info d-none mobile-review-section" id="review_section_{{ student.id }}_mobile">
+                                    <label class="small fw-bold text-info mb-1">المراجعة:</label>
+                                    <select class="form-select form-select-sm mb-2" name="review_surah_{{ student.id }}">
+                                        <option value="">السورة</option>
+                                        {% for surah in surah_names %}
+                                        <option value="{{ surah }}">{{ surah }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">من</span>
+                                        <input type="number" class="form-control" name="review_from_verse_{{ student.id }}" placeholder="آية">
+                                        <span class="input-group-text">إلى</span>
+                                        <input type="number" class="form-control" name="review_to_verse_{{ student.id }}" placeholder="آية">
+                                    </div>
                                 </div>
                             </div>
+                            <!-- End Content Container -->
+
+                            <!-- Next Button -->
+                            {% if not loop.last %}
+                            <div class="d-grid mt-3">
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="expandNextStudent('{{ student.id }}')">
+                                    التالي <i class="fas fa-chevron-down ms-1"></i>
+                                </button>
+                            </div>
+                            {% endif %}
                         </div>
-                        <!-- End Content Container -->
                     </div>
                 </div>
                 {% endfor %}
@@ -210,24 +225,98 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- Helper functions ---
-        function toggleDisplay(elements, show) {
-            elements.forEach(el => {
-                if (el) {
-                    if (show) el.classList.remove('d-none');
-                    else el.classList.add('d-none');
+    // Define global functions for inline onclick handlers
+    function toggleStudentCard(studentId) {
+        var collapseElement = document.getElementById('collapse_' + studentId);
+        if (collapseElement) {
+            var bsCollapse = bootstrap.Collapse.getInstance(collapseElement);
+            if (!bsCollapse) {
+                bsCollapse = new bootstrap.Collapse(collapseElement, { toggle: false });
+            }
 
-                    // Also handle direct style.display manipulation for desktop IDs which use inline styles
-                    if (show) el.style.display = '';
-                    else {
-                        // Only apply style.display = 'none' if it doesn't have d-none class (or force it)
-                        // The desktop logic used style.display directly.
-                        if(!el.classList.contains('d-none')) el.style.display = 'none';
+            // Toggle
+            if (collapseElement.classList.contains('show')) {
+                bsCollapse.hide();
+                updateIcon(studentId, false);
+            } else {
+                bsCollapse.show();
+                updateIcon(studentId, true);
+                // The data-bs-parent attribute handles closing others automatically
+            }
+        }
+    }
+
+    function expandNextStudent(currentStudentId) {
+        // Find the current card in the DOM list
+        var currentCard = document.getElementById('card_mobile_' + currentStudentId);
+        if (currentCard) {
+            var nextCard = currentCard.nextElementSibling;
+            if (nextCard) {
+                // Extract ID from e.g., 'card_mobile_123'
+                var nextIdFull = nextCard.id;
+                var nextId = nextIdFull.replace('card_mobile_', '');
+
+                // Expand next
+                var nextCollapse = document.getElementById('collapse_' + nextId);
+                if (nextCollapse) {
+                    var bsCollapse = new bootstrap.Collapse(nextCollapse, { toggle: true });
+                    // Scroll to it
+                    setTimeout(() => {
+                        nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 300);
+                }
+            }
+        }
+    }
+
+    function updateIcon(studentId, isOpen) {
+        var icon = document.getElementById('icon_' + studentId);
+        if (icon) {
+            if (isOpen) {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            }
+        }
+
+        // Also update all other icons because of the accordion behavior
+        // Wait a bit for the accordion to animate closing others
+        setTimeout(() => {
+            document.querySelectorAll('.collapse').forEach(function(el) {
+                var otherId = el.id.replace('collapse_', '');
+                var otherIcon = document.getElementById('icon_' + otherId);
+                if (el.classList.contains('show')) {
+                    if (otherIcon) {
+                        otherIcon.classList.remove('fa-chevron-right');
+                        otherIcon.classList.add('fa-chevron-down');
+                    }
+                } else {
+                    if (otherIcon) {
+                        otherIcon.classList.remove('fa-chevron-down');
+                        otherIcon.classList.add('fa-chevron-right');
                     }
                 }
             });
-        }
+        }, 400);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize bootstrap collapses for accordion effect
+        var collapseElementList = [].slice.call(document.querySelectorAll('.collapse'));
+        var collapseList = collapseElementList.map(function (collapseEl) {
+            // Add event listener to update icons on show/hide
+            collapseEl.addEventListener('show.bs.collapse', function () {
+                var id = this.id.replace('collapse_', '');
+                updateIcon(id, true);
+            });
+            collapseEl.addEventListener('hide.bs.collapse', function () {
+                var id = this.id.replace('collapse_', '');
+                updateIcon(id, false);
+            });
+            return new bootstrap.Collapse(collapseEl, { toggle: false });
+        });
 
         // --- Desktop Attendance Logic ---
         const desktopAttendanceSelects = document.querySelectorAll('.attendance-select:not(.mobile-attendance)');

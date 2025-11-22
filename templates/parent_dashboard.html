@@ -14,57 +14,81 @@
     <!-- أبناء ولي الأمر -->
     <div class="row fade-in">
         {% for stats in student_stats %}
-        <div class="col-md-12 mb-4">
-            <div class="card h-100 main-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">{{ stats.student.name }}</h5>
-                    <span class="badge bg-info">{{ stats.student.circle.name }}</span>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative hover-lift">
+                <!-- Header with background -->
+                <div class="p-4 text-white text-center position-relative" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
+                    <div class="avatar-circle bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow" style="width: 80px; height: 80px; font-size: 2rem;">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h4 class="mb-1 fw-bold">{{ stats.student.name }}</h4>
+                    <span class="badge bg-white text-primary rounded-pill px-3 py-2 mt-2 shadow-sm">
+                        <i class="fas fa-users me-1"></i> {{ stats.student.circle.name }}
+                    </span>
+
+                    <!-- Decorative shapes -->
+                    <div class="position-absolute top-0 start-0 p-3 opacity-25">
+                        <i class="fas fa-quran fa-3x text-white"></i>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>العمر:</strong> {{ stats.student.age }}</li>
-                                <li class="list-group-item"><strong>رقم هاتف الطالب:</strong> {{ stats.student.student_phone }}</li>
-                                <li class="list-group-item"><strong>رقم ولي الأمر:</strong> {{ stats.student.parent_phone }}</li>
-                                <li class="list-group-item"><strong>السكن الحالي:</strong> {{ stats.student.current_address }}</li>
-                            </ul>
+
+                <!-- Body Info -->
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="p-3 rounded-3 bg-light h-100 text-center">
+                                <i class="fas fa-book-open text-primary mb-2 fs-4"></i>
+                                <small class="d-block text-muted">آخر سورة</small>
+                                <span class="fw-bold text-dark">{{ stats.student.last_memorized_sura or '-' }}</span>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>السكن السابق:</strong> {{ stats.student.previous_address }}</li>
-                                <li class="list-group-item"><strong>المحافظة:</strong> {{ stats.student.governorate }}</li>
-                                <li class="list-group-item"><strong>تاريخ الميلاد:</strong> {{ stats.student.date_of_birth.strftime('%Y-%m-%d') if stats.student.date_of_birth else 'غير محدد' }}</li>
-                                <li class="list-group-item"><strong>مقدار الحفظ السابق:</strong> {{ stats.student.previous_memorization }}</li>
-                            </ul>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3 bg-light h-100 text-center">
+                                <i class="fas fa-list-ol text-success mb-2 fs-4"></i>
+                                <small class="d-block text-muted">آخر آية</small>
+                                <span class="fw-bold text-dark">{{ stats.student.last_memorized_ayah or '-' }}</span>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>تاريخ الالتحاق:</strong> {{ stats.student.enrollment_date.strftime('%Y-%m-%d') if stats.student.enrollment_date else 'غير محدد' }}</li>
-                                <li class="list-group-item"><strong>آخر سورة تم حفظها:</strong> {{ stats.student.last_memorized_sura }}</li>
-                                <li class="list-group-item"><strong>آخر آية تم حفظها:</strong> {{ stats.student.last_memorized_ayah }}</li>
-                                <li class="list-group-item"><strong>اتجاه الحفظ:</strong> {{ 'من البقرة إلى الناس' if stats.student.memorization_direction == 'BaqarahToNas' else 'من الناس إلى البقرة' }}</li>
-                            </ul>
+                        <div class="col-12">
+                             <div class="d-flex align-items-center p-3 rounded-3 bg-light">
+                                <i class="fas fa-history text-info me-3 fs-4"></i>
+                                <div>
+                                    <small class="d-block text-muted">تاريخ الالتحاق</small>
+                                    <span class="fw-bold text-dark">{{ stats.student.enrollment_date.strftime('%Y-%m-%d') if stats.student.enrollment_date else 'غير محدد' }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-transparent">
-                    <a href="{{ url_for('student_details', student_id=stats.student.id) }}" class="btn btn-primary btn-sm w-100 btn-hover">
-                        <i class="fas fa-chart-bar"></i> عرض التفاصيل الكاملة
+
+                <!-- Footer Action -->
+                <div class="card-footer bg-white border-0 p-4 pt-0">
+                    <a href="{{ url_for('student_details', student_id=stats.student.id) }}" class="btn btn-outline-primary w-100 py-2 rounded-pill fw-bold btn-hover">
+                        <i class="fas fa-chart-line me-2"></i> التقارير والتفاصيل
                     </a>
                 </div>
             </div>
         </div>
         {% else %}
         <div class="col-12">
-            <div class="alert alert-info text-center">
-                <i class="fas fa-user-slash fa-3x mb-3"></i>
+            <div class="alert alert-info text-center py-5 rounded-4 shadow-sm border-0">
+                <i class="fas fa-user-slash fa-4x mb-3 text-info opacity-50"></i>
                 <h4>لا يوجد أبناء مسجلين</h4>
-                <p>لم يتم ربط أي طلاب بحسابك بعد</p>
+                <p class="text-muted">لم يتم ربط أي طلاب بحسابك بعد. يرجى التواصل مع الإدارة.</p>
             </div>
         </div>
         {% endfor %}
     </div>
+
+    <style>
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+        }
+    </style>
 
     <!-- Honor Board -->
     <div class="row mt-4 fade-in">
