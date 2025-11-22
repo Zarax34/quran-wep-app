@@ -660,7 +660,7 @@
         }
 
         /* تحسين التنبيهات - نمط إشعارات الهاتف */
-        .alert {
+        .flash-message {
             position: fixed;
             top: 20px;
             left: 50%;
@@ -679,7 +679,7 @@
             color: #333;
         }
 
-        .dark-mode .alert {
+        .dark-mode .flash-message {
             background: rgba(45, 55, 72, 0.95);
             color: #fff;
             border: 1px solid rgba(255,255,255,0.1);
@@ -1449,7 +1449,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show mt-3">
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} flash-message alert-dismissible fade show mt-3">
                         <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -1824,6 +1824,13 @@
             window.addEventListener('load', function() {
                 hideLoading();
             });
+
+            // إصلاح مشكلة شاشة التحميل عند العودة للخلف
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    hideLoading();
+                }
+            });
         });
 
         // معالجة الأخطاء
@@ -1833,15 +1840,16 @@
 
         // Auto-hide flash messages
         document.addEventListener('DOMContentLoaded', function() {
-            const alerts = document.querySelectorAll('.alert-dismissible');
+            const alerts = document.querySelectorAll('.flash-message');
             alerts.forEach(function(alert) {
                 setTimeout(function() {
-                    // Use Bootstrap's Alert instance to close it gracefully
-                    const bsAlert = new bootstrap.Alert(alert);
-                    if (bsAlert) {
-                        bsAlert.close();
-                    }
-                }, 5000); // 5 seconds
+                    // Fade out effect
+                    alert.style.transition = 'opacity 0.5s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(function() {
+                        alert.remove();
+                    }, 500);
+                }, 3000); // 3 seconds
             });
             const parentNav = document.querySelector('.parent-nav-scroll');
             if (parentNav) {

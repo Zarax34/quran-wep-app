@@ -89,14 +89,12 @@
     {% endfor %}
 </div>
 
+{% if session.role == 'teacher' %}
 <div class="alert alert-warning mt-4">
     <h6><i class="fas fa-info-circle"></i> معلومات:</h6>
     <p class="mb-0">
-        يمكنك إرسال التقارير الأسبوعية أو الشهرية لجميع أولياء أمور الطلاب في الحلقة بضغطة واحدة.
-        سيتم إرسال التقرير تلقائياً عبر الواتساب للأرقام المسجلة.
-        {% if session.role == 'teacher' %}
         <strong>الحلقات التي تضيفها تحتاج موافقة المسؤول قبل أن تصبح نشطة.</strong>
-        {% endif %}
     </p>
 </div>
+{% endif %}
 {% endblock %}

@@ -283,6 +283,9 @@ class Settings(db.Model):
     developer_link = db.Column(db.String(200), default='https://www.linkedin.com/in/your-linkedin-profile')
     copyright_text = db.Column(db.String(200), default='جميع الحقوق محفوظة')
 
+    # Login Background Image
+    login_background = db.Column(db.String(200))
+
     # Permissions (stored as JSON string)
     # Example: {"teacher_view_phone": false, "teacher_send_report": false}
     permissions = db.Column(db.Text, default='{}')
@@ -2964,6 +2967,12 @@ def settings():
             logo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             settings_obj.logo = filename
         
+        login_background = request.files.get('login_background')
+        if login_background and allowed_file(login_background.filename):
+            bg_filename = secure_filename(login_background.filename)
+            login_background.save(os.path.join(app.config['UPLOAD_FOLDER'], bg_filename))
+            settings_obj.login_background = bg_filename
+
         try:
             db.session.commit()
             flash('تم حفظ الإعدادات بنجاح', 'success')
@@ -4119,7 +4128,8 @@ def setup_database():
             ('developer_name', "VARCHAR(100) DEFAULT 'Your Name'"),
             ('developer_link', "VARCHAR(200) DEFAULT 'https://www.linkedin.com/in/your-linkedin-profile'"),
             ('copyright_text', "VARCHAR(200) DEFAULT 'جميع الحقوق محفوظة'"),
-            ('permissions', "TEXT DEFAULT '{}'")
+            ('permissions', "TEXT DEFAULT '{}'"),
+            ('login_background', "VARCHAR(200)")
         ]
 
         for col_name, col_def in new_settings_columns:

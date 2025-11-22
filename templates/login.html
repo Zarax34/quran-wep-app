@@ -17,8 +17,8 @@
 
         body {
             background-color: var(--primary-color);
-            {% if settings.login_background_image %}
-            background-image: url("{{ url_for('uploaded_file', filename=settings.login_background_image) }}");
+            {% if settings.login_background %}
+            background-image: url("{{ url_for('uploaded_file', filename=settings.login_background) }}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;

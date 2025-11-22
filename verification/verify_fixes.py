@@ -1,61 +1,76 @@
-
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 import time
 
-def verify_new_features():
+def verify_fixes():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
+        context = browser.new_context(viewport={'width': 375, 'height': 812}) # Mobile viewport
+        page = context.new_page()
 
-        # 1. Verify Users Mobile View (Mobile Viewport)
-        print("Verifying Users Mobile View...")
-        mobile_context = browser.new_context(viewport={"width": 375, "height": 812})
-        mobile_page = mobile_context.new_page()
+        # 1. Login
+        page.goto('http://localhost:5000/login')
+        page.fill('input[name="username"]', 'admin')
+        page.fill('input[name="password"]', 'admin123')
+        page.click('button[type="submit"]')
 
-        # Login
-        mobile_page.goto("http://127.0.0.1:5000/login")
-        mobile_page.fill('input[placeholder="اسم المستخدم"]', "admin")
-        mobile_page.fill('input[placeholder="كلمة المرور"]', "admin123")
-        mobile_page.click("button:has-text('تسجيل الدخول')")
-        mobile_page.wait_for_url("**/dashboard")
+        # Wait for navigation
+        page.wait_for_url('http://localhost:5000/dashboard')
 
-        # Go to Users page
-        mobile_page.goto("http://127.0.0.1:5000/users")
-        mobile_page.screenshot(path="verification/1_users_mobile.png")
+        # 2. Verify Flash Message (Auto-dismiss)
+        # The login success message should appear
+        flash_message = page.locator('.flash-message')
+        if flash_message.is_visible():
+            print("Flash message visible. Waiting for auto-dismiss...")
+            time.sleep(4) # Wait > 3 seconds
+            if not flash_message.is_visible():
+                print("PASS: Flash message auto-dismissed.")
+            else:
+                print("FAIL: Flash message did not auto-dismiss.")
+        else:
+            print("WARNING: Flash message not found initially.")
 
-        # 2. Verify Parent Dashboard (Parent Role)
-        # Note: We need a parent user. Assuming 'parent1' exists or we can mock/setup.
-        # Since I can't easily switch users without knowing credentials, I'll skip this if I don't have creds.
-        # But wait, I can modify the session or just check the template visually if I were logged in as parent.
-        # Let's try to verify the Header which is visible to Admin too.
+        # 3. Verify Student Details Note Card (The broken one)
+        # Go to student details
+        page.goto('http://localhost:5000/students')
+        # Find the link to the test student details
+        # Assuming the list has links. Let's click the first "Details" or name.
+        # In mobile view, it might be a card.
+        # Let's just go to the URL directly if we can't find it easily, but clicking is better.
+        # page.click('text=Test Student') -> might not work if name is inside a complex structure.
+        # Let's try to find the ID or just list students.
 
-        # 3. Verify Header Revamp
-        print("Verifying Header Revamp...")
-        mobile_page.goto("http://127.0.0.1:5000/dashboard")
-        # Scroll to top to see header
-        mobile_page.evaluate("window.scrollTo(0, 0)")
-        time.sleep(1)
-        mobile_page.screenshot(path="verification/3_header_revamp.png")
+        # Actually, let's check the Dashboard mobile view first as per the screenshot.
+        # The screenshot showed "Student Name", "Surah", etc. It was the "Recent Reports" section or similar.
+        # But my note fix was changing `.alert` to `.flash-message`.
+        # The "Educational Note" is in `student_details.html`.
+        # The user's screenshot was dashboard-like list.
 
-        # 4. Verify Accordion in Collective Report (Admin/Teacher)
-        # Assuming we can access a report.
-        # We need a circle.
-        print("Verifying Collective Report Accordion...")
-        # Try to find a circle link
-        try:
-             # Just go to a likely URL
-             mobile_page.goto("http://127.0.0.1:5000/collective_report/1")
-             # Check if accordion elements exist
-             if mobile_page.locator(".student-card-mobile").count() > 0:
-                 # Click the first one to toggle
-                 mobile_page.click(".student-card-mobile >> nth=0 >> .card-header")
-                 time.sleep(0.5)
-                 mobile_page.screenshot(path="verification/4_collective_report_accordion.png")
-             else:
-                 print("No student cards found on collective report page (empty circle?).")
-        except Exception as e:
-            print(f"Error checking collective report: {e}")
+        # Let's check `student_details.html` as it has notes.
+        # I don't know the student ID, but I can grep it or just assume ID 1 or loop.
+        # Let's assume ID 1 (created in setup).
+        page.goto('http://localhost:5000/student_details/1')
+
+        # Take screenshot of student details to verify layout
+        page.screenshot(path='verification/student_details.png')
+        print("Screenshot taken: verification/student_details.png")
+
+        # 4. Verify Circles Page (Notification Removed)
+        page.goto('http://localhost:5000/circles')
+        content = page.content()
+        if "يمكنك إرسال التقارير الأسبوعية" not in content:
+            print("PASS: Notification text removed from Circles page.")
+        else:
+            print("FAIL: Notification text still present.")
+
+        # 5. Verify Login Background (Requires checking HTML/CSS or upload)
+        # We can't easily verify the visual image without uploading one first.
+        # But we can check if the style attribute is present in login page
+        page.goto('http://localhost:5000/login')
+        # Check if body has background-image style (it should be default or uploaded)
+        # My change added `{% if settings.login_background %}`.
+        # Default is gradient.
 
         browser.close()
 
-if __name__ == "__main__":
-    verify_new_features()
+if __name__ == '__main__':
+    verify_fixes()
