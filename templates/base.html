@@ -983,8 +983,93 @@
                 display: flex !important;
             }
         }
+
+        /* Mobile Menu Overlay Styles */
+        .mobile-menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95); /* High opacity for focus */
+            z-index: 2000; /* Above everything */
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+            transition: opacity 0.3s ease;
+        }
+
+        .dark-mode .mobile-menu-overlay {
+            background: rgba(26, 26, 26, 0.95);
+        }
+
+        .mobile-menu-overlay.show {
+            display: flex;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .mobile-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .mobile-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columns grid */
+            gap: 20px;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-color);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+            color: var(--primary-color);
+        }
+
+        .menu-item .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .menu-item span {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
     </style>
     <script>
+    function toggleMobileMenuOverlay() {
+        const overlay = document.getElementById('mobileMenuOverlay');
+        if (overlay.style.display === 'flex') {
+            overlay.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        } else {
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
     function showModal(modalId) {
         var modal = document.getElementById('customModal-' + modalId);
         if (modal) {
@@ -1404,19 +1489,73 @@
                     <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
                         <i class="fas fa-file-alt"></i><span>التقارير</span>
                     </a>
-                    <a href="{{ url_for('add_report') }}" class="{{ 'active' if request.endpoint in ['add_report', 'collective_report'] }}">
-                        <i class="fas fa-plus-circle"></i><span>إضافة</span>
-                    </a>
-                    <a href="{{ url_for('settings') }}" class="{{ 'active' if request.endpoint == 'settings' }}">
-                        <i class="fas fa-cog"></i><span>الإعدادات</span>
-                    </a>
-                    <a href="{{ url_for('logout') }}">
-                        <i class="fas fa-sign-out-alt"></i><span>الخروج</span>
+                    <a href="#" onclick="toggleMobileMenuOverlay(); return false;">
+                        <i class="fas fa-th"></i><span>المزيد</span>
                     </a>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Mobile Menu Overlay for Admin -->
+    {% if session.role == 'admin' %}
+    <div class="mobile-menu-overlay glass" id="mobileMenuOverlay">
+        <div class="mobile-menu-header">
+            <h5>القائمة الكاملة</h5>
+            <button type="button" class="btn-close btn-close-white" onclick="toggleMobileMenuOverlay()"></button>
+        </div>
+        <div class="mobile-menu-grid">
+            <a href="{{ url_for('add_report') }}" class="menu-item">
+                <div class="icon-box bg-primary"><i class="fas fa-plus"></i></div>
+                <span>إضافة تقرير</span>
+            </a>
+            <a href="{{ url_for('circles') }}" class="menu-item">
+                <div class="icon-box bg-success"><i class="fas fa-users"></i></div>
+                <span>الحلقات</span>
+            </a>
+            <a href="{{ url_for('courses') }}" class="menu-item">
+                <div class="icon-box bg-info"><i class="fas fa-chalkboard-teacher"></i></div>
+                <span>الدورات</span>
+            </a>
+            <a href="{{ url_for('activities') }}" class="menu-item">
+                <div class="icon-box bg-warning"><i class="fas fa-cubes"></i></div>
+                <span>الأنشطة</span>
+            </a>
+            <a href="{{ url_for('holidays') }}" class="menu-item">
+                <div class="icon-box bg-danger"><i class="fas fa-calendar-alt"></i></div>
+                <span>العطل</span>
+            </a>
+            <a href="{{ url_for('fees') }}" class="menu-item">
+                <div class="icon-box bg-success"><i class="fas fa-money-bill-wave"></i></div>
+                <span>الرسوم</span>
+            </a>
+            <a href="{{ url_for('parent_management') }}" class="menu-item">
+                <div class="icon-box bg-primary"><i class="fas fa-user-friends"></i></div>
+                <span>أولياء الأمور</span>
+            </a>
+            <a href="{{ url_for('users') }}" class="menu-item">
+                <div class="icon-box bg-secondary"><i class="fas fa-users-cog"></i></div>
+                <span>المستخدمين</span>
+            </a>
+            <a href="{{ url_for('badges') }}" class="menu-item">
+                <div class="icon-box bg-warning"><i class="fas fa-medal"></i></div>
+                <span>الشارات</span>
+            </a>
+            <a href="{{ url_for('announcements') }}" class="menu-item">
+                <div class="icon-box bg-info"><i class="fas fa-bullhorn"></i></div>
+                <span>الإعلانات</span>
+            </a>
+            <a href="{{ url_for('settings') }}" class="menu-item">
+                <div class="icon-box bg-dark"><i class="fas fa-cog"></i></div>
+                <span>الإعدادات</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="menu-item">
+                <div class="icon-box bg-danger"><i class="fas fa-sign-out-alt"></i></div>
+                <span>الخروج</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
     {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
