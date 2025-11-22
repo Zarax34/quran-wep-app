@@ -4141,13 +4141,6 @@ def setup_database():
                     print("INFO: Migrating Fee table to allow nullable date_paid...")
 
                     try:
-                        # We use a nested transaction or rely on the connection's context
-                        # Since we are inside connection.begin() implicitly or explicitly via Flask-SQLAlchemy context if active
-                        # But here we got the connection via db.engine.connect() which is raw.
-                        # The issue is transaction management conflict.
-                        # Let's try to perform operations directly without explicit begin/commit if auto-commit is enabled,
-                        # or manage it carefully.
-
                         # 1. Rename existing table
                         connection.execute(text("ALTER TABLE fee RENAME TO fee_old"))
 
@@ -4176,19 +4169,63 @@ def setup_database():
                         # 4. Drop old table
                         connection.execute(text("DROP TABLE fee_old"))
 
-                        # Commit if a transaction is active and we started it, but 'connection' here
-                        # might be part of a pool.
                         if not connection.in_transaction():
                              connection.commit()
 
                         print("INFO: Successfully migrated Fee table.")
                     except Exception as inner_e:
                         print(f"ERROR: Migration failed: {inner_e}")
-                        # Attempt rollback if possible
-                        # connection.rollback()
                         raise inner_e
         except Exception as e:
              print(f"ERROR: Could not migrate Fee table: {e}")
+
+        # Migrate Certificate table to allow nullable certificate_file
+        try:
+            with db.engine.connect() as connection:
+                result = connection.execute(text("PRAGMA table_info(certificate)"))
+                columns = result.fetchall()
+                # Check if table exists first (columns would be empty if not, but let's assume it does from migration above)
+                if columns:
+                    cert_file_col = next((c for c in columns if c[1] == 'certificate_file'), None)
+
+                    # If column exists AND is NOT NULL (3rd index is 1), we fix it
+                    if cert_file_col and cert_file_col[3] == 1:
+                        print("INFO: Migrating Certificate table to allow nullable certificate_file...")
+                        try:
+                            connection.execute(text("ALTER TABLE certificate RENAME TO certificate_old"))
+
+                            create_cert_sql = """
+                            CREATE TABLE certificate (
+                                id INTEGER NOT NULL,
+                                student_id INTEGER NOT NULL,
+                                course_id INTEGER NOT NULL,
+                                issue_date DATETIME,
+                                certificate_file VARCHAR(255),
+                                certificate_url VARCHAR(500),
+                                PRIMARY KEY (id),
+                                FOREIGN KEY(student_id) REFERENCES student (id),
+                                FOREIGN KEY(course_id) REFERENCES course (id)
+                            )
+                            """
+                            connection.execute(text(create_cert_sql))
+
+                            connection.execute(text("""
+                                INSERT INTO certificate (id, student_id, course_id, issue_date, certificate_file, certificate_url)
+                                SELECT id, student_id, course_id, issue_date, certificate_file, certificate_url FROM certificate_old
+                            """))
+
+                            connection.execute(text("DROP TABLE certificate_old"))
+
+                            if not connection.in_transaction():
+                                connection.commit()
+
+                            print("INFO: Successfully migrated Certificate table.")
+                        except Exception as inner_e:
+                            print(f"ERROR: Certificate migration failed: {inner_e}")
+                            # If failed, we might need to restore? SQLite makes this hard if transaction didn't rollback.
+                            # But generally renaming back helps if step 2 failed.
+        except Exception as e:
+            print(f"ERROR: Could not check/migrate Certificate table: {e}")
 
         # Seed initial data if it doesn't exist
         # 1. Default settings

@@ -38,43 +38,51 @@
     <!-- Enrolled Students Card -->
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0"><i class="fas fa-users"></i> الطلاب المسجلون ({{ enrolled_students|length }})</h5>
-                <div>
-                    <a href="{{ url_for('upload_certificates_excel', course_id=course.id) }}" class="btn btn-info me-2 text-white">
-                        <i class="fas fa-file-excel"></i> رفع شهادات
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('upload_certificates_excel', course_id=course.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-file-excel me-1"></i> رفع شهادات (Excel)
                     </a>
-                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
-                        <i class="fas fa-user-plus"></i> تسجيل طالب جديد
+                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                        <i class="fas fa-user-plus me-1"></i> تسجيل طالب
                     </button>
                 </div>
             </div>
             <div class="card-body">
                 {% if enrolled_students %}
-                <ul class="list-group">
+                <ul class="list-group list-group-flush">
                     {% for student in enrolled_students %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            {{ student.name }}
-                            {% for cert in student.certificates %}
-                                {% if cert.course_id == course.id and cert.certificate_url %}
-                                    <span class="badge bg-success ms-2"><i class="fas fa-check"></i> شهادة</span>
-                                {% endif %}
-                            {% endfor %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle bg-light text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ student.name }}</h6>
+                                {% for cert in student.certificates %}
+                                    {% if cert.course_id == course.id and cert.certificate_url %}
+                                        <small class="text-success"><i class="fas fa-check-circle"></i> تم رفع الشهادة</small>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary ms-1" onclick="openCertificateModal('{{ student.id }}', '{{ student.name }}')" title="رابط الشهادة">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-info" onclick="openCertificateModal('{{ student.id }}', '{{ student.name }}')" title="إضافة/تعديل رابط الشهادة">
                                 <i class="fas fa-link"></i>
                             </button>
-                            <a href="{{ url_for('unenroll_student', course_id=course.id, student_id=student.id) }}" class="btn btn-sm btn-outline-danger" title="إلغاء التسجيل">
-                                <i class="fas fa-user-minus"></i>
+                            <a href="{{ url_for('unenroll_student', course_id=course.id, student_id=student.id) }}" class="btn btn-sm btn-outline-danger" title="إلغاء التسجيل" onclick="return confirm('هل أنت متأكد من إلغاء تسجيل الطالب؟')">
+                                <i class="fas fa-trash-alt"></i>
                             </a>
                         </div>
                     </li>
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p class="text-center">لم يتم تسجيل أي طالب في هذه الدورة بعد.</p>
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-users-slash fa-3x mb-3"></i>
+                    <p>لم يتم تسجيل أي طالب في هذه الدورة بعد.</p>
+                </div>
                 {% endif %}
             </div>
         </div>

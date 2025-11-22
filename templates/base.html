@@ -1528,54 +1528,39 @@
             <button type="button" class="btn-close btn-close-white" onclick="toggleMobileMenuOverlay()"></button>
         </div>
         <div class="mobile-menu-grid">
-            <a href="{{ url_for('add_report') }}" class="menu-item">
-                <div class="icon-box bg-primary"><i class="fas fa-plus"></i></div>
-                <span>إضافة تقرير</span>
-            </a>
-            <a href="{{ url_for('circles') }}" class="menu-item">
-                <div class="icon-box bg-success"><i class="fas fa-users"></i></div>
-                <span>الحلقات</span>
-            </a>
-            <a href="{{ url_for('courses') }}" class="menu-item">
-                <div class="icon-box bg-info"><i class="fas fa-chalkboard-teacher"></i></div>
-                <span>الدورات</span>
-            </a>
-            <a href="{{ url_for('activities') }}" class="menu-item">
-                <div class="icon-box bg-warning"><i class="fas fa-cubes"></i></div>
-                <span>الأنشطة</span>
-            </a>
-            <a href="{{ url_for('holidays') }}" class="menu-item">
-                <div class="icon-box bg-danger"><i class="fas fa-calendar-alt"></i></div>
-                <span>العطل</span>
-            </a>
-            <a href="{{ url_for('fees') }}" class="menu-item">
-                <div class="icon-box bg-success"><i class="fas fa-money-bill-wave"></i></div>
-                <span>الرسوم</span>
-            </a>
-            <a href="{{ url_for('parent_management') }}" class="menu-item">
-                <div class="icon-box bg-primary"><i class="fas fa-user-friends"></i></div>
-                <span>أولياء الأمور</span>
-            </a>
-            <a href="{{ url_for('users') }}" class="menu-item">
-                <div class="icon-box bg-secondary"><i class="fas fa-users-cog"></i></div>
-                <span>المستخدمين</span>
-            </a>
-            <a href="{{ url_for('badges') }}" class="menu-item">
-                <div class="icon-box bg-warning"><i class="fas fa-medal"></i></div>
-                <span>الشارات</span>
-            </a>
-            <a href="{{ url_for('announcements') }}" class="menu-item">
-                <div class="icon-box bg-info"><i class="fas fa-bullhorn"></i></div>
-                <span>الإعلانات</span>
-            </a>
-            <a href="{{ url_for('settings') }}" class="menu-item">
-                <div class="icon-box bg-dark"><i class="fas fa-cog"></i></div>
-                <span>الإعدادات</span>
-            </a>
-            <a href="{{ url_for('logout') }}" class="menu-item">
-                <div class="icon-box bg-danger"><i class="fas fa-sign-out-alt"></i></div>
-                <span>الخروج</span>
-            </a>
+            {# Define ALL possible menu items with their properties #}
+            {% set all_menu_items = {
+                'dashboard': {'endpoint': 'dashboard', 'icon': 'tachometer-alt', 'label': 'الرئيسية', 'bg': 'bg-primary'},
+                'students': {'endpoint': 'students', 'icon': 'users', 'label': 'الطلاب', 'bg': 'bg-primary'},
+                'attendance': {'endpoint': 'attendance', 'icon': 'clipboard-check', 'label': 'الحضور', 'bg': 'bg-success'},
+                'reports': {'endpoint': 'reports', 'icon': 'file-alt', 'label': 'التقارير', 'bg': 'bg-info'},
+                'add_report': {'endpoint': 'add_report', 'icon': 'plus-circle', 'label': 'إضافة تقرير', 'bg': 'bg-primary'},
+                'circles': {'endpoint': 'circles', 'icon': 'users', 'label': 'الحلقات', 'bg': 'bg-success'},
+                'courses': {'endpoint': 'courses', 'icon': 'chalkboard-teacher', 'label': 'الدورات', 'bg': 'bg-info'},
+                'activities': {'endpoint': 'activities', 'icon': 'cubes', 'label': 'الأنشطة', 'bg': 'bg-warning'},
+                'fees': {'endpoint': 'fees', 'icon': 'money-bill-wave', 'label': 'الرسوم', 'bg': 'bg-success'},
+                'holidays': {'endpoint': 'holidays', 'icon': 'calendar-alt', 'label': 'العطل', 'bg': 'bg-danger'},
+                'parent_management': {'endpoint': 'parent_management', 'icon': 'user-friends', 'label': 'أولياء الأمور', 'bg': 'bg-primary'},
+                'users': {'endpoint': 'users', 'icon': 'users-cog', 'label': 'المستخدمين', 'bg': 'bg-secondary'},
+                'badges': {'endpoint': 'badges', 'icon': 'medal', 'label': 'الشارات', 'bg': 'bg-warning'},
+                'announcements': {'endpoint': 'announcements', 'icon': 'bullhorn', 'label': 'الإعلانات', 'bg': 'bg-info'},
+                'settings': {'endpoint': 'settings', 'icon': 'cog', 'label': 'الإعدادات', 'bg': 'bg-dark'},
+                'logout': {'endpoint': 'logout', 'icon': 'sign-out-alt', 'label': 'الخروج', 'bg': 'bg-danger'}
+            } %}
+
+            {# Define the order explicitly #}
+            {% set menu_order = ['dashboard', 'students', 'attendance', 'reports', 'add_report', 'circles', 'courses', 'activities', 'fees', 'holidays', 'parent_management', 'users', 'badges', 'announcements', 'settings', 'logout'] %}
+
+            {% for key in menu_order %}
+                {# Render if NOT in the bottom bar (active_navs) #}
+                {% if key not in active_navs and key in all_menu_items %}
+                    {% set item = all_menu_items[key] %}
+                    <a href="{{ url_for(item.endpoint) }}" class="menu-item">
+                        <div class="icon-box {{ item.bg }}"><i class="fas fa-{{ item.icon }}"></i></div>
+                        <span>{{ item.label }}</span>
+                    </a>
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
     {% endif %}

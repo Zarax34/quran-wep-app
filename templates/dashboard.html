@@ -9,57 +9,61 @@
         </div>
     </div>
 
-    <!-- إحصائيات سريعة -->
+    <!-- إحصائيات سريعة (Modern Cards) -->
     <div class="row mb-4 fade-in">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card stat-card">
-                <div class="content">
-                    <div class="logo">
+            <div class="card h-100 border-0 shadow-sm modern-stat-card bg-primary-gradient text-white">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-box rounded-circle bg-white bg-opacity-25 p-3 me-3">
                         <i class="fas fa-user-graduate fa-2x"></i>
                     </div>
-                    <div class="logo-bottom-text">إجمالي الطلاب</div>
+                    <div>
+                        <h6 class="card-subtitle mb-1 opacity-75">إجمالي الطلاب</h6>
+                        <h2 class="card-title mb-0 counter" data-target="{{ total_students }}">0</h2>
+                    </div>
                 </div>
-                <div class="bottom-text counter" data-target="{{ total_students }}">0</div>
-                <div class="border"></div>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card stat-card">
-                <div class="content">
-                     <div class="logo">
+            <div class="card h-100 border-0 shadow-sm modern-stat-card bg-success-gradient text-white">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-box rounded-circle bg-white bg-opacity-25 p-3 me-3">
                         <i class="fas fa-chalkboard-teacher fa-2x"></i>
                     </div>
-                    <div class="logo-bottom-text">إجمالي المعلمين</div>
+                    <div>
+                        <h6 class="card-subtitle mb-1 opacity-75">إجمالي المعلمين</h6>
+                        <h2 class="card-title mb-0 counter" data-target="{{ total_teachers }}">0</h2>
+                    </div>
                 </div>
-                <div class="bottom-text counter" data-target="{{ total_teachers }}">0</div>
-                <div class="border"></div>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card stat-card">
-                <div class="content">
-                     <div class="logo">
+            <div class="card h-100 border-0 shadow-sm modern-stat-card bg-info-gradient text-white">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-box rounded-circle bg-white bg-opacity-25 p-3 me-3">
                         <i class="fas fa-users fa-2x"></i>
                     </div>
-                    <div class="logo-bottom-text">عدد الحلقات</div>
+                    <div>
+                        <h6 class="card-subtitle mb-1 opacity-75">عدد الحلقات</h6>
+                        <h2 class="card-title mb-0 counter" data-target="{{ total_circles }}">0</h2>
+                    </div>
                 </div>
-                <div class="bottom-text counter" data-target="{{ total_circles }}">0</div>
-                <div class="border"></div>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card stat-card">
-                 <div class="content">
-                     <div class="logo">
+            <div class="card h-100 border-0 shadow-sm modern-stat-card bg-warning-gradient text-white">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-box rounded-circle bg-white bg-opacity-25 p-3 me-3">
                         <i class="fas fa-clipboard-list fa-2x"></i>
                     </div>
-                    <div class="logo-bottom-text">التقارير اليوم</div>
+                    <div>
+                        <h6 class="card-subtitle mb-1 opacity-75">التقارير اليوم</h6>
+                        <h2 class="card-title mb-0 counter" data-target="{{ recent_reports|length }}">0</h2>
+                    </div>
                 </div>
-                <div class="bottom-text counter" data-target="{{ recent_reports|length }}">0</div>
-                <div class="border"></div>
             </div>
         </div>
     </div>
@@ -362,161 +366,18 @@
 </div>
 
 <style>
-.stat-card {
-  width: 100%;
-  height: 200px;
-  background: #243137;
-  position: relative;
-  display: grid;
-  place-content: center;
-  border-radius: 10px;
-  overflow: hidden;
-  transition: all 0.5s ease-in-out;
+.bg-primary-gradient { background: linear-gradient(45deg, #4099ff, #73b4ff); }
+.bg-success-gradient { background: linear-gradient(45deg, #2ed8b6, #59e0c5); }
+.bg-info-gradient { background: linear-gradient(45deg, #FFB64D, #ffcb80); }
+.bg-warning-gradient { background: linear-gradient(45deg, #FF5370, #ff869a); }
+
+.modern-stat-card {
+    border-radius: 15px;
+    transition: all 0.3s ease;
 }
-
-.stat-card .logo i {
-    color: #bd9f67;
-}
-
-.stat-card .border {
-  position: absolute;
-  inset: 0px;
-  border: 2px solid #bd9f67;
-  opacity: 0;
-  transform: rotate(10deg);
-  transition: all 0.5s ease-in-out;
-}
-
-.stat-card .bottom-text {
-  position: absolute;
-  left: 50%;
-  bottom: 13px;
-  transform: translateX(-50%);
-  font-size: 1.5rem;
-  text-transform: uppercase;
-  padding: 0px 5px 0px 8px;
-  color: #bd9f67;
-  background: #243137;
-  opacity: 1; /* Changed from 0 to 1 to ensure visibility */
-  letter-spacing: 3px; /* Adjusted spacing */
-  transition: all 0.5s ease-in-out;
-}
-
-.stat-card .content {
-  transition: all 0.5s ease-in-out;
-}
-
-.stat-card .content .logo {
-  height: 35px;
-  position: relative;
-  width: 33px;
-  overflow: hidden;
-  transition: all 1s ease-in-out;
-}
-
-.stat-card .content .logo .logo1 {
-  height: 33px;
-  position: absolute;
-  left: 0;
-}
-
-.stat-card .content .logo .logo2 {
-  height: 33px;
-  position: absolute;
-  left: 33px;
-}
-
-.stat-card .content .logo .trail {
-  position: absolute;
-  right: 0;
-  height: 100%;
-  width: 100%;
-  opacity: 0;
-}
-
-.stat-card .content .logo-bottom-text {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  margin-top: 30px;
-  color: #bd9f67;
-  padding-left: 8px;
-  font-size: 1rem;
-  opacity: 1; /* Changed from 0 to 1 */
-  letter-spacing: normal;
-  transition: all 0.5s ease-in-out 0.5s;
-}
-
-.stat-card:hover {
-  border-radius: 0;
-  transform: scale(1.1);
-}
-
-.stat-card:hover .logo {
-  width: 134px;
-  animation: opacity 1s ease-in-out;
-}
-
-.stat-card:hover .border {
-  inset: 15px;
-  opacity: 1;
-  transform: rotate(0);
-}
-
-.stat-card:hover .bottom-text {
-  letter-spacing: 3px;
-  opacity: 1;
-  transform: translateX(-50%);
-}
-
-.stat-card:hover .content .logo-bottom-text {
-  opacity: 1;
-  letter-spacing: 9.5px;
-}
-
-.stat-card:hover .trail {
-  animation: trail 1s ease-in-out;
-}
-
-@keyframes opacity {
-  0% {
-    border-right: 1px solid transparent;
-  }
-
-  10% {
-    border-right: 1px solid #bd9f67;
-  }
-
-  80% {
-    border-right: 1px solid #bd9f67;
-  }
-
-  100% {
-    border-right: 1px solid transparent;
-  }
-}
-
-@keyframes trail {
-  0% {
-    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 90%, rgb(189, 159, 103) 100%);
-    opacity: 0;
-  }
-
-  30% {
-    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 70%, rgb(189, 159, 103) 100%);
-    opacity: 1;
-  }
-
-  70% {
-    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 70%, rgb(189, 159, 103) 100%);
-    opacity: 1;
-  }
-
-  95% {
-    background: linear-gradient(90deg, rgba(189, 159, 103, 0) 90%, rgb(189, 159, 103) 100%);
-    opacity: 0;
-  }
+.modern-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
 }
 
 /* From Uiverse.io by Smit-Prajapati */
