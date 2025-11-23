@@ -15,7 +15,8 @@ import json
 # ---------- 2.  FLASK INIT  ----------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quran_center.db'
+# PR-01: Support external database via env var, fallback to sqlite
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or os.environ.get('SQLALCHEMY_DATABASE_URI') or 'sqlite:///quran_center.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB
@@ -4362,7 +4363,9 @@ def setup_database():
                 db.session.rollback()
 
         # 2. Default admin user and badges
-        if not User.query.filter_by(role='admin').first():
+        # PR-01: Idempotent admin creation (check by username specifically)
+        admin_exists = User.query.filter_by(username='admin').first()
+        if not admin_exists:
             try:
                 seed_badges()
                 admin_user = User(
