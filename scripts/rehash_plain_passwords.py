@@ -21,7 +21,8 @@ FAILURE_LOG = "docs/prs/PR-01-failures.log"
 def get_db_uri():
     if len(sys.argv) > 1:
         return sys.argv[1]
-    return os.environ.get('DATABASE_URL') or 'sqlite:///quran_center.db'
+    # Update for new config structure or ensure env vars are set
+    return os.environ.get('DATABASE_URL') or os.environ.get('SQLALCHEMY_DATABASE_URI') or 'sqlite:///quran_center.db'
 
 def rehash_passwords():
     uri = get_db_uri()

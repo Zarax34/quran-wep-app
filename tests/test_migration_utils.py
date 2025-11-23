@@ -78,7 +78,8 @@ def test_rehash_logic_integration(tmp_path):
     # 2. Check plain user rehashed
     assert plain_user['password'].startswith('$2')
     assert plain_user['password'] != 'plain123'
-    assert plain_user['password_needs_rehash'] == 0 # False in SQLite is 0
+    # SQLite boolean handling can vary (0/1), script sets it to 0 explicitly
+    assert plain_user['password_needs_rehash'] == 0
 
     # 3. Check hashed user untouched but marked processed
     assert hashed_user['password'] == hashed_pw

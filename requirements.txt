@@ -3,6 +3,7 @@ Flask-SQLAlchemy==3.0.5
 Werkzeug==2.3.7
 fpdf2
 Flask-Mail
+Flask-Login
 APScheduler
 openpyxl
 pandas
