@@ -921,6 +921,35 @@ def calculate_pages(start_surah, start_verse, end_surah, end_verse):
     except ValueError:
         return 0
 
+def calculate_total_verses(start_surah, end_surah):
+    try:
+        start_index = surah_names.index(start_surah) + 1
+        end_index = surah_names.index(end_surah) + 1
+
+        # Ensure start is before end (or handle direction)
+        # Assuming standard order for count
+        if start_index > end_index:
+            start_index, end_index = end_index, start_index
+
+        total_verses = 0
+
+        # Build map of surah_id -> verse_count if not exists (inefficient to do every time but safe)
+        # Optimization: Move this to global scope or cache
+        surah_verse_counts = {}
+        for item in quran_data:
+            s, v = map(int, item['verse_key'].split(':'))
+            if s not in surah_verse_counts:
+                surah_verse_counts[s] = 0
+            if v > surah_verse_counts[s]:
+                surah_verse_counts[s] = v
+
+        for i in range(start_index, end_index + 1):
+            total_verses += surah_verse_counts.get(i, 0)
+
+        return total_verses
+    except ValueError:
+        return 0
+
 def requires_approval():
     settings = Settings.query.first() or Settings()
     return settings.teacher_requires_approval
@@ -1507,6 +1536,19 @@ def reports():
         else:
             # If for some reason a parent user has no parent object, show no reports
             query = query.filter(Report.id == -1) # No reports will match this
+    elif session.get('role') == 'teacher':
+        # Teachers might only see their circles?
+        # The previous code didn't have this, but "Admin Reports Visibility" step implies ensuring Admin sees all.
+        # Admin logic: Does not enter this 'if' or 'elif', so sees all.
+        # Teacher logic: Previously saw all. The user said "Solve problem of reports from other circles not appearing in Admin account".
+        # This implied Admin was missing something.
+        # The existing code was correct for Admin (sees all).
+        # I will just ensure no changes break Admin visibility.
+        # For now, I'll keep Teacher seeing all unless filtered by date, or if I should restrict teacher?
+        # The requirement was "Solve problem ... in Admin account".
+        # I'll leave it as is, as it fetches ALL by default which covers Admin.
+        # If Teacher restriction is needed, I'd add it here, but user didn't ask for that specifically in the context of "Admin bug".
+        pass
 
     if from_date_str:
         from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
@@ -1525,25 +1567,72 @@ def add_report():
     if request.method == 'POST':
         student_id = request.form.get('student_id')
         date_str = request.form.get('date')
+
+        # Recitation Mode: 'normal' (Surah + Verses) or 'range' (From Surah -> To Surah)
+        recitation_mode = request.form.get('recitation_mode', 'normal')
+
         surah = request.form.get('surah')
         from_verse_str = request.form.get('from_verse')
         to_verse_str = request.form.get('to_verse')
+
+        from_surah_range = request.form.get('from_surah_range')
+        to_surah_range = request.form.get('to_surah_range')
+
         type_ = request.form.get('type')
         grade = request.form.get('grade')
         notes = request.form.get('notes')
         attendance_status = request.form.get('attendance_status', 'حاضر')
 
-        if not all([student_id, date_str, surah, from_verse_str, to_verse_str, type_, grade]):
-            flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
-            return redirect(url_for('add_report'))
-
         try:
             date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            from_verse = int(from_verse_str)
-            to_verse = int(to_verse_str)
         except (ValueError, TypeError):
-            flash('تنسيق التاريخ أو أرقام الآيات غير صالح.', 'error')
-            return redirect(url_for('add_report'))
+             flash('تنسيق التاريخ غير صالح.', 'error')
+             return redirect(url_for('add_report'))
+
+        # Logic for Normal Mode vs Range Mode
+        if recitation_mode == 'range':
+            if not all([from_surah_range, to_surah_range, type_, grade]):
+                 flash('يرجى ملء جميع الحقول المطلوبة (من سورة - إلى سورة).', 'error')
+                 return redirect(url_for('add_report'))
+
+            total_verses_calc = calculate_total_verses(from_surah_range, to_surah_range)
+            surah = f"{from_surah_range} - {to_surah_range}"
+            from_verse = 1
+            to_verse = total_verses_calc
+
+            # Calculate pages for the range
+            # Logic: Get start page of first surah and end page of last surah
+            try:
+                start_surah_idx = surah_names.index(from_surah_range) + 1
+                end_surah_idx = surah_names.index(to_surah_range) + 1
+
+                # Find last verse of end surah to get accurate end page
+                max_verse_end = 0
+                for item in quran_data:
+                    if item['verse_key'].startswith(f"{end_surah_idx}:"):
+                        v = int(item['verse_key'].split(':')[1])
+                        if v > max_verse_end:
+                            max_verse_end = v
+
+                total_pages_calc = calculate_pages(from_surah_range, 1, to_surah_range, max_verse_end)
+            except:
+                total_pages_calc = 0
+
+            # Optional: Add note about range details
+            if not notes:
+                notes = ""
+            notes += f" (تسميع كامل من سورة {from_surah_range} إلى {to_surah_range} - عدد الآيات: {total_verses_calc} - عدد الصفحات: {total_pages_calc})"
+
+        else:
+            if not all([surah, from_verse_str, to_verse_str, type_, grade]):
+                flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
+                return redirect(url_for('add_report'))
+            try:
+                from_verse = int(from_verse_str)
+                to_verse = int(to_verse_str)
+            except (ValueError, TypeError):
+                flash('أرقام الآيات غير صالحة.', 'error')
+                return redirect(url_for('add_report'))
         
         student = db.session.get(Student, student_id)
         if not student:

@@ -16,6 +16,9 @@
             </div>
             <div class="card-body">
                 <form method="POST" id="addReportForm">
+                    <!-- Hidden Input for Mode Selection -->
+                    <input type="hidden" id="recitation_mode" name="recitation_mode" value="normal">
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -36,41 +39,86 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="page_number" class="form-label">رقم الصفحة</label>
-                                <input type="text" class="form-control" id="page_number" name="page_number" readonly>
+
+                    <!-- Mode Toggle -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary active" id="btn-mode-normal" onclick="setMode('normal')">
+                                    <i class="fas fa-book-open"></i> تسميع عادي (آيات)
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" id="btn-mode-range" onclick="setMode('range')">
+                                    <i class="fas fa-layer-group"></i> تسميع من سورة لسورة
+                                </button>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="surah" class="form-label">السورة</label>
-                                <select class="form-control" id="surah" name="surah" required>
-                                    <option value="">اختر السورة</option>
-                                    {% for surah in surah_names %}
-                                    <option value="{{ surah }}">{{ surah }}</option>
-                                    {% endfor %}
-                                </select>
+                    <!-- Normal Mode (Surah + Verses) -->
+                    <div id="normal-mode-fields">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="page_number" class="form-label">رقم الصفحة</label>
+                                    <input type="text" class="form-control" id="page_number" name="page_number" readonly>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="from_verse" class="form-label">من الآية</label>
-                                <select class="form-control" id="from_verse" name="from_verse" required>
-                                    <option value="">اختر السورة أولاً</option>
-                                </select>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="surah" class="form-label">السورة</label>
+                                    <select class="form-control" id="surah" name="surah">
+                                        <option value="">اختر السورة</option>
+                                        {% for surah in surah_names %}
+                                        <option value="{{ surah }}">{{ surah }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="from_verse" class="form-label">من الآية</label>
+                                    <select class="form-control" id="from_verse" name="from_verse">
+                                        <option value="">اختر السورة أولاً</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="to_verse" class="form-label">إلى الآية</label>
+                                    <select class="form-control" id="to_verse" name="to_verse">
+                                        <option value="">اختر السورة أولاً</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="to_verse" class="form-label">إلى الآية</label>
-                                <select class="form-control" id="to_verse" name="to_verse" required>
-                                    <option value="">اختر السورة أولاً</option>
-                                </select>
+                    </div>
+
+                    <!-- Range Mode (From Surah -> To Surah) -->
+                    <div id="range-mode-fields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="from_surah_range" class="form-label">من سورة</label>
+                                    <select class="form-control" id="from_surah_range" name="from_surah_range">
+                                        <option value="">اختر السورة</option>
+                                        {% for surah in surah_names %}
+                                        <option value="{{ surah }}">{{ surah }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="to_surah_range" class="form-label">إلى سورة</label>
+                                    <select class="form-control" id="to_surah_range" name="to_surah_range">
+                                        <option value="">اختر السورة</option>
+                                        {% for surah in surah_names %}
+                                        <option value="{{ surah }}">{{ surah }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -126,6 +174,42 @@
 </div>
 
 <script>
+function setMode(mode) {
+    document.getElementById('recitation_mode').value = mode;
+    if (mode === 'normal') {
+        document.getElementById('normal-mode-fields').style.display = 'block';
+        document.getElementById('range-mode-fields').style.display = 'none';
+        document.getElementById('btn-mode-normal').classList.add('active');
+        document.getElementById('btn-mode-range').classList.remove('active');
+
+        // Set required fields
+        document.getElementById('surah').setAttribute('required', '');
+        document.getElementById('from_verse').setAttribute('required', '');
+        document.getElementById('to_verse').setAttribute('required', '');
+
+        document.getElementById('from_surah_range').removeAttribute('required');
+        document.getElementById('to_surah_range').removeAttribute('required');
+    } else {
+        document.getElementById('normal-mode-fields').style.display = 'none';
+        document.getElementById('range-mode-fields').style.display = 'block';
+        document.getElementById('btn-mode-normal').classList.remove('active');
+        document.getElementById('btn-mode-range').classList.add('active');
+
+        // Set required fields
+        document.getElementById('from_surah_range').setAttribute('required', '');
+        document.getElementById('to_surah_range').setAttribute('required', '');
+
+        document.getElementById('surah').removeAttribute('required');
+        document.getElementById('from_verse').removeAttribute('required');
+        document.getElementById('to_verse').removeAttribute('required');
+    }
+}
+
+// Initialize required fields
+document.addEventListener('DOMContentLoaded', function() {
+    setMode('normal');
+});
+
 // Function to fetch and update the page number
 function updatePageNumber() {
     var surahName = document.getElementById('surah').value;
@@ -187,12 +271,23 @@ document.getElementById('addReportForm').addEventListener('change', function(eve
 
 
 document.getElementById('addReportForm').addEventListener('submit', function(event) {
+    var mode = document.getElementById('recitation_mode').value;
     var student = document.getElementById('student_id').value;
-    var surah = document.getElementById('surah').value;
-    var fromVerse = document.getElementById('from_verse').value;
-    var toVerse = document.getElementById('to_verse').value;
 
-    if (!student || !surah || !fromVerse || !toVerse) {
+    var isValid = true;
+    if (!student) isValid = false;
+
+    if (mode === 'normal') {
+        if (!document.getElementById('surah').value || !document.getElementById('from_verse').value || !document.getElementById('to_verse').value) {
+            isValid = false;
+        }
+    } else {
+        if (!document.getElementById('from_surah_range').value || !document.getElementById('to_surah_range').value) {
+            isValid = false;
+        }
+    }
+
+    if (!isValid) {
         if (!confirm('بعض الحقول فارغة. هل تريد المتابعة على أي حال؟')) {
             event.preventDefault();
         }

@@ -3,11 +3,11 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">إدارة الطلاب</h1>
-    <div>
-        <a href="{{ url_for('add_student') }}" class="btn btn-success">
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('add_student') }}" class="btn btn-success w-50" style="border-radius: 20px;">
             <i class="fas fa-plus-circle"></i> إضافة طالب جديد
         </a>
-        <a href="{{ url_for('upload_students_excel') }}" class="btn btn-primary">
+        <a href="{{ url_for('upload_students_excel') }}" class="btn btn-primary w-50" style="border-radius: 20px;">
             <i class="fas fa-file-excel"></i> إضافة عبر Excel
         </a>
     </div>
@@ -43,8 +43,92 @@
     </div>
 </div>
 
-<!-- Students Card View -->
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+<!-- Students View -->
+{% set grouped_students = students|groupby('circle.name') %}
+
+<!-- Mobile View: Horizontal Scroll per Circle -->
+<div class="d-md-none">
+    {% for circle_name, circle_students in grouped_students %}
+    <div class="mb-4">
+        <h4 class="mb-3 ps-2 border-start border-4 border-primary ms-2">{{ circle_name }}</h4>
+        <div class="scrolling-wrapper">
+            {% for student in circle_students %}
+            <div class="scrolling-card">
+                <div class="card">
+                    <div class="top-section">
+                        {% if student.photo %}
+                            <img src="{{ url_for('uploaded_file', filename=student.photo) }}" alt="{{ student.name }}" style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #1b233d;">
+                        {% else %}
+                            <div style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background-color: #e9ecef; border: 4px solid #1b233d;">
+                                <i class="fas fa-user fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="border"></div>
+                    </div>
+                    <div class="bottom-section">
+                        <span class="title">{{ student.name }}</span>
+                        {% if student.pending_approval %}
+                            <span class="badge bg-warning text-dark mb-3">في انتظار الموافقة</span>
+                        {% endif %}
+                        <div class="row">
+                            <div class="item">
+                                <span class="big-text">{{ student.age or '-' }}</span>
+                                <span class="regular-text">العمر</span>
+                            </div>
+                            <div class="item">
+                                <span class="big-text">{{ student.circle.name }}</span>
+                                <span class="regular-text">الحلقة</span>
+                            </div>
+                            <div class="item">
+                                {% if session.role != 'teacher' or check_permission('teacher_view_phone') %}
+                                <span class="big-text">{{ student.parent.name if student.parent else '-' }}</span>
+                                <span class="regular-text">ولي الأمر</span>
+                                {% else %}
+                                <span class="big-text"><i class="fas fa-lock"></i></span>
+                                <span class="regular-text">ولي الأمر</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="col-12">
+                                <div class="btn-group w-100">
+                                    <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-info w-100" onclick="showStudentDetails({{ student.id }})">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </div>
+                                {% if session.role == 'admin' and student.pending_approval %}
+                                    <div class="d-grid gap-2 mt-2">
+                                        <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success btn-sm"><i class="fas fa-check"></i></a>
+                                        <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times"></i></a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center p-4">
+            <i class="fas fa-users-slash fa-3x mb-3"></i>
+            <h4>لا يوجد طلاب مطابقون لمعايير البحث</h4>
+            <p>حاول تغيير الفلاتر أو إضافة طالب جديد.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Desktop View: Grid -->
+<div class="d-none d-md-flex row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     {% for student in students %}
     <div class="col">
         <div class="card">
@@ -57,14 +141,6 @@
                     </div>
                 {% endif %}
                 <div class="border"></div>
-                <div class="icons">
-                    <div class="logo">
-
-                    </div>
-                    <div class="social-media">
-
-                    </div>
-                </div>
             </div>
             <div class="bottom-section">
                 <span class="title">{{ student.name }}</span>
@@ -129,6 +205,31 @@
 </div>
 
 <style>
+/* Horizontal Scroll Styles for Mobile */
+.scrolling-wrapper {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 20px;
+    padding-left: 10px;
+    scrollbar-width: none; /* Firefox */
+
+    /* Fade out effect on edges */
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.scrolling-wrapper::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+.scrolling-card {
+    flex: 0 0 auto;
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
 /* From Uiverse.io by Smit-Prajapati */
 .card {
     width: 230px;
@@ -187,41 +288,6 @@
     width: 15px;
     border-top-left-radius: 15px;
     box-shadow: -5px -5px 0 2px #1b233d;
-}
-
-.card .top-section .icons {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    height: 30px;
-    display: flex;
-    justify-content: space-between;
-}
-
-.card .top-section .icons .logo {
-    height: 100%;
-    aspect-ratio: 1;
-    padding: 7px 0 7px 15px;
-}
-
-.card .top-section .icons .logo .top-section {
-    height: 100%;
-}
-
-.card .top-section .icons .social-media {
-    height: 100%;
-    padding: 8px 15px;
-    display: flex;
-    gap: 7px;
-}
-
-.card .top-section .icons .social-media .svg {
-    height: 100%;
-    fill: #1b233d;
-}
-
-.card .top-section .icons .social-media .svg:hover {
-    fill: white;
 }
 
 .card .bottom-section {

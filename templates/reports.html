@@ -42,70 +42,84 @@
     {% endif %}
 
     {% if reports %}
-        {% if session.role == 'parent' or session.role == 'teacher' or session.role == 'communication_officer' %}
-            <div class="row">
-                {% for report in reports %}
-                <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="report-card">
-                        <a class="report-card-header" data-bs-toggle="collapse" href="#report-{{ report.id }}" role="button" aria-expanded="false" aria-controls="report-{{ report.id }}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span><i class="fas fa-user-graduate me-2"></i><strong>{{ report.student.name }}</strong></span>
-                                <span class="text-muted">{{ report.date.strftime('%Y-%m-%d') }}</span>
-                            </div>
-                            <div class="mt-2 d-flex justify-content-between align-items-center">
-                                <span class="badge bg-primary">{{ report.surah }}</span>
-                                <div>
-                                    {% if report.status == 'Pending' %}
-                                    <span class="badge bg-warning text-dark ms-2">قيد الانتظار</span>
-                                    {% else %}
-                                    <span class="badge bg-success ms-2">معتمد</span>
-                                    {% endif %}
-                                    <i class="fas fa-chevron-down expand-icon"></i>
+        <div class="accordion" id="reportsPageAccordion">
+            {% for circle_name, circle_reports in reports|groupby('circle.name') %}
+            <div class="accordion-item mb-3 shadow-sm" style="border-radius: 12px; overflow: hidden; border: none;">
+                <h2 class="accordion-header" id="headingReports{{ loop.index }}">
+                    <button class="accordion-button collapsed bg-white text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReports{{ loop.index }}" aria-expanded="false" aria-controls="collapseReports{{ loop.index }}" style="border-radius: 12px;">
+                        <span class="fw-bold">{{ circle_name }}</span>
+                        <span class="badge bg-primary ms-auto">{{ circle_reports|length }}</span>
+                    </button>
+                </h2>
+                <div id="collapseReports{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="headingReports{{ loop.index }}" data-bs-parent="#reportsPageAccordion">
+                    <div class="accordion-body bg-light">
+                        <div class="row g-3">
+                            {% for report in circle_reports %}
+                            <div class="col-lg-6 col-md-12">
+                                <div class="report-card h-100">
+                                    <div class="report-card-header d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-circle fa-lg text-secondary me-2"></i>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold">{{ report.student.name }}</h6>
+                                                <small class="text-muted">{{ report.date.strftime('%Y-%m-%d') }}</small>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            {% if report.status == 'Pending' %}
+                                            <span class="badge bg-warning text-dark">قيد الانتظار</span>
+                                            {% else %}
+                                            <span class="badge bg-success">معتمد</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="report-card-body p-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">السورة:</span>
+                                            <span class="fw-bold">{{ report.surah }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">الآيات:</span>
+                                            <span>{{ report.from_verse }} - {{ report.to_verse }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">النوع/التقدير:</span>
+                                            <div>
+                                                <span class="badge bg-{{ 'info' if report.type == 'مراجعة' else 'primary' }} me-1">{{ report.type }}</span>
+                                                <span class="badge bg-{{ 'success' if report.grade == 'ممتاز' else 'warning' if report.grade == 'جيد جدا' else 'secondary' }}">{{ report.grade }}</span>
+                                            </div>
+                                        </div>
+                                        {% if report.notes %}
+                                        <div class="alert alert-light p-2 mb-2 border text-muted small">
+                                            <i class="fas fa-comment-alt me-1"></i> {{ report.notes }}
+                                        </div>
+                                        {% endif %}
+
+                                        <div class="d-flex gap-2 mt-3">
+                                            {% if (session.role == 'admin' or session.role == 'communication_officer') and report.status == 'Pending' %}
+                                                <a href="{{ url_for('approve_report', report_id=report.id) }}" class="btn btn-success btn-sm flex-grow-1">
+                                                    <i class="fas fa-check"></i> موافقة
+                                                </a>
+                                                <a href="{{ url_for('reject_report', report_id=report.id) }}" class="btn btn-danger btn-sm flex-grow-1">
+                                                    <i class="fas fa-times"></i> رفض
+                                                </a>
+                                            {% endif %}
+                                            {% if session.role != 'parent' %}
+                                            <a href="{{ url_for('edit_report', report_id=report.id) }}" class="btn btn-outline-warning btn-sm w-100">
+                                                <i class="fas fa-edit"></i> تعديل
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </a>
-                        <div class="collapse" id="report-{{ report.id }}">
-                            <div class="report-card-body">
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item"><strong>التسميع:</strong> من الآية {{ report.from_verse }} إلى {{ report.to_verse }}</li>
-                                    <li class="list-group-item"><strong>النوع:</strong> <span class="badge bg-{{ 'info' if report.type == 'مراجعة' else 'success' }}">{{ report.type }}</span></li>
-                                    <li class="list-group-item"><strong>التقدير:</strong> <span class="badge bg-{{ 'success' if report.grade == 'ممتاز' else 'warning' if report.grade == 'جيد جدا' else 'info' }}">{{ report.grade }}</span></li>
-                                    <li class="list-group-item"><strong>المعلم:</strong> {{ report.teacher.name }}</li>
-                                    <li class="list-group-item"><strong>الحلقة:</strong> {{ report.circle.name }}</li>
-                                    {% if report.notes %}
-                                    <li class="list-group-item"><strong>ملاحظات:</strong> {{ report.notes }}</li>
-                                    {% endif %}
-                                    {% if (session.role == 'admin' or session.role == 'communication_officer') and report.status == 'Pending' %}
-                                    <li class="list-group-item text-center">
-                                        <div class="btn-group w-100">
-                                            <a href="{{ url_for('approve_report', report_id=report.id) }}" class="btn btn-success btn-sm">
-                                                <i class="fas fa-check"></i> موافقة
-                                            </a>
-                                            <a href="{{ url_for('reject_report', report_id=report.id) }}" class="btn btn-danger btn-sm">
-                                                <i class="fas fa-times"></i> رفض
-                                            </a>
-                                        </div>
-                                    </li>
-                                    {% endif %}
-                                    {% if session.role != 'parent' %}
-                                    <li class="list-group-item text-center">
-                                         <a href="{{ url_for('edit_report', report_id=report.id) }}" class="btn btn-outline-warning btn-sm w-100" title="تعديل"><i class="fas fa-edit"></i> تعديل</a>
-                                    </li>
-                                    {% endif %}
-                                </ul>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-        {% else %}
-            <!-- Admin Table View (Kept only for Admin if they prefer table, or switch admin to cards too if desired. For now sticking to request "Teacher and Admin like Parent") -->
-            <!-- Wait, request said "Teacher and Admin control panel reports same way as Parent". Admin control panel usually means "Reports" page. -->
-            <!-- So I should apply card view to everyone or just check roles. -->
-            <!-- The block above covers Parent, Teacher, Communication Officer. Admin is left. Let's include Admin too. -->
-            <!-- Re-writing the condition above to include admin. -->
-        {% endif %}
+            {% endfor %}
+        </div>
     {% else %}
         <div class="alert alert-info text-center fade-in">
             <i class="fas fa-clipboard-list fa-3x mb-3"></i>
@@ -121,52 +135,32 @@
             {% endif %}
         </div>
     {% endif %}
-
-    <!-- Admin Quick Stats -->
-    {% if reports and session.role != 'parent' %}
-    <div class="row mt-4 slide-in-left">
-        <!-- Stats content here -->
-    </div>
-    {% endif %}
 </div>
 <style>
     .report-card {
         background-color: var(--card-bg);
         border: 1px solid var(--border-color);
-        border-radius: 15px;
+        border-radius: 10px;
         overflow: hidden;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .report-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     .report-card-header {
-        padding: 1rem 1.2rem;
-        cursor: pointer;
-        display: block;
-        text-decoration: none;
-        color: var(--text-color);
-        background-color: transparent;
+        padding: 10px 15px;
+        background-color: rgba(0,0,0,0.02);
         border-bottom: 1px solid var(--border-color);
     }
-    .report-card-header .expand-icon {
-        transition: transform 0.3s ease;
+    /* Dark mode adjustments */
+    .dark-mode .accordion-button {
+        background-color: #2d3748;
+        color: #fff !important;
     }
-    .report-card-header[aria-expanded="true"] .expand-icon {
-        transform: rotate(180deg);
-    }
-    .report-card-body {
-        padding: 0;
-    }
-    .report-card .list-group-item {
-        background-color: transparent;
-        border: none;
-        padding: 0.8rem 1.2rem;
-    }
-    .dark-mode .report-card .list-group-item {
-        color: #e2e8f0;
+    .dark-mode .accordion-body {
+        background-color: #1a202c !important;
     }
 </style>
 {% endblock %}
