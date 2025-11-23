@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">تعديل النشاط</h1>
-    <a href="{{ url_for('activities') }}" class="btn btn-secondary">
+    <a href="{{ url_for('main.activities') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-right"></i> رجوع للأنشطة
     </a>
 </div>
@@ -47,7 +47,7 @@
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                         {% if activity.image %}
                         <div class="mt-2">
-                            <img src="{{ url_for('uploaded_file', filename=activity.image) }}" alt="{{ activity.title }}" style="max-width: 200px; border-radius: 5px;">
+                            <img src="{{ url_for('main.uploaded_file', filename=activity.image) }}" alt="{{ activity.title }}" style="max-width: 200px; border-radius: 5px;">
                         </div>
                         {% endif %}
                     </div>

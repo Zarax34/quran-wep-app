@@ -32,7 +32,7 @@
                                     <i class="fas fa-download me-2"></i>تحميل الشهادة
                                 </a>
                             {% elif student_data.certificate %}
-                                <a href="{{ url_for('uploaded_file', filename=student_data.certificate.certificate_file) }}" class="btn btn-outline-success btn-sm" download>
+                                <a href="{{ url_for('main.uploaded_file', filename=student_data.certificate.certificate_file) }}" class="btn btn-outline-success btn-sm" download>
                                     <i class="fas fa-certificate me-2"></i>تحميل الشهادة
                                 </a>
                             {% else %}

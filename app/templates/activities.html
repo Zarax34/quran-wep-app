@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">أنشطة المركز</h1>
     {% if session.get('role') == 'admin' %}
-    <a href="{{ url_for('add_activity') }}" class="btn btn-success">
+    <a href="{{ url_for('main.add_activity') }}" class="btn btn-success">
         <i class="fas fa-plus"></i> إضافة نشاط جديد
     </a>
     {% endif %}
@@ -15,7 +15,7 @@
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card h-100">
             {% if activity.image %}
-            <img src="{{ url_for('uploaded_file', filename=activity.image) }}" class="card-img-top" alt="{{ activity.title }}">
+            <img src="{{ url_for('main.uploaded_file', filename=activity.image) }}" class="card-img-top" alt="{{ activity.title }}">
             {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ activity.title }}</h5>
@@ -25,8 +25,8 @@
                 <small class="text-muted">{{ activity.date.strftime('%Y-%m-%d') }}</small>
                 {% if session.get('role') == 'admin' %}
                 <div>
-                    <a href="{{ url_for('edit_activity', activity_id=activity.id) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
-                    <form action="{{ url_for('delete_activity', activity_id=activity.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من رغبتك في حذف هذا النشاط؟');">
+                    <a href="{{ url_for('main.edit_activity', activity_id=activity.id) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
+                    <form action="{{ url_for('main.delete_activity', activity_id=activity.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من رغبتك في حذف هذا النشاط؟');">
                         <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
                     </form>
                 </div>

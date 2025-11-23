@@ -3,14 +3,14 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">تقرير جماعي للحلقة: {{ circle.name }}</h1>
-    <a href="{{ url_for('reports') }}" class="btn btn-secondary">
+    <a href="{{ url_for('main.reports') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-right"></i> رجوع للتقارير
     </a>
 </div>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-2 p-md-4">
-        <form method="POST" action="{{ url_for('collective_report_submit', circle_id=circle.id) }}">
+        <form method="POST" action="{{ url_for('main.collective_report_submit', circle_id=circle.id) }}">
             <div class="row mb-4">
                 <div class="col-md-4">
                     <label for="date" class="form-label fw-bold">تاريخ التقرير</label>

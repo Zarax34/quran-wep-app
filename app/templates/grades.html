@@ -12,7 +12,7 @@
                 <h5 class="card-title mb-0">إدخال درجات الاختبار</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('grades') }}">
+                <form method="POST" action="{{ url_for('main.grades') }}">
                     <div class="mb-3">
                         <label for="test_id" class="form-label">الاختبار</label>
                         <select class="form-control" id="test_id" name="test_id" required>

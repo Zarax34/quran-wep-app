@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">تعديل بيانات الطالب</h1>
-    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+    <a href="{{ url_for('main.students') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-right"></i> رجوع للطلاب
     </a>
 </div>
@@ -139,7 +139,7 @@
                         <label for="photo" class="form-label">صورة الطالب</label>
                         {% if student.photo %}
                         <div class="mb-2">
-                            <img src="{{ url_for('uploaded_file', filename=student.photo) }}"
+                            <img src="{{ url_for('main.uploaded_file', filename=student.photo) }}"
                                  class="student-photo" alt="صورة الطالب">
                             <div class="form-text">الصورة الحالية</div>
                         </div>
@@ -184,7 +184,7 @@
                         <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#moveStudentModal">
                             <i class="fas fa-exchange-alt"></i> نقل الطالب
                         </button>
-                        <a href="{{ url_for('students') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <a href="{{ url_for('main.students') }}" class="btn btn-secondary me-md-2">إلغاء</a>
                         <button type="submit" class="btn btn-success">حفظ التعديلات</button>
                     </div>
                 </form>
@@ -201,7 +201,7 @@
                 <h5 class="modal-title" id="moveStudentModalLabel">نقل الطالب: {{ student.name }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('move_student', student_id=student.id) }}" method="POST">
+            <form action="{{ url_for('main.move_student', student_id=student.id) }}" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="new_circle_id" class="form-label">اختر الحلقة الجديدة</label>

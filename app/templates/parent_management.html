@@ -4,10 +4,10 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">إدارة أولياء الأمور</h1>
     <div>
-        <a href="{{ url_for('add_parents') }}" class="btn btn-success">
+        <a href="{{ url_for('main.add_parents') }}" class="btn btn-success">
             <i class="fas fa-plus-circle"></i> إضافة أولياء أمور (دفعة)
         </a>
-        <a href="{{ url_for('link_students_to_parents') }}" class="btn btn-info">
+        <a href="{{ url_for('main.link_students_to_parents') }}" class="btn btn-info">
             <i class="fas fa-link"></i> ربط الطلاب بأولياء الأمور
         </a>
     </div>
@@ -46,10 +46,10 @@
                         </td>
                         <td>
                             {% if user %}
-                            <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary" title="تعديل">
+                            <a href="{{ url_for('main.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary" title="تعديل">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <a href="{{ url_for('block_user', user_id=user.id) }}" class="btn btn-sm btn-{{ 'warning' if user.is_active else 'secondary' }}" title="{{ 'حظر' if user.is_active else 'إلغاء الحظر' }}">
+                            <a href="{{ url_for('main.block_user', user_id=user.id) }}" class="btn btn-sm btn-{{ 'warning' if user.is_active else 'secondary' }}" title="{{ 'حظر' if user.is_active else 'إلغاء الحظر' }}">
                                 <i class="fas fa-{{ 'user-slash' if user.is_active else 'user-check' }}"></i>
                             </a>
                             {% endif %}

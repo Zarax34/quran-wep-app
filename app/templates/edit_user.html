@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">تعديل المستخدم: {{ user.name }}</h1>
-    <a href="{{ url_for('users') }}" class="btn btn-secondary">
+    <a href="{{ url_for('main.users') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-right"></i> رجوع للمستخدمين
     </a>
 </div>
@@ -46,7 +46,7 @@
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('users') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <a href="{{ url_for('main.users') }}" class="btn btn-secondary me-md-2">إلغاء</a>
                         <button type="submit" class="btn btn-success">حفظ التعديلات</button>
                     </div>
                 </form>

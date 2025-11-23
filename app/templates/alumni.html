@@ -10,7 +10,7 @@
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card h-100 text-center">
             {% if alumnus.photo %}
-            <img src="{{ url_for('uploaded_file', filename=alumnus.photo) }}" class="card-img-top" alt="{{ alumnus.name }}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin: 20px auto 0;">
+            <img src="{{ url_for('main.uploaded_file', filename=alumnus.photo) }}" class="card-img-top" alt="{{ alumnus.name }}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin: 20px auto 0;">
             {% else %}
             <div style="width: 150px; height: 150px; background-color: #e9ecef; border-radius: 50%; margin: 20px auto 0; display: flex; align-items: center; justify-content: center;">
                 <i class="fas fa-user-graduate fa-4x text-muted"></i>

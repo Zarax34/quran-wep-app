@@ -243,11 +243,11 @@
     <section class="hero text-center">
         <div class="container hero-content">
             {% if settings.logo %}
-            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" alt="{{ settings.site_name }}" class="logo mb-3">
+            <img src="{{ url_for('main.uploaded_file', filename=settings.logo) }}" alt="{{ settings.site_name }}" class="logo mb-3">
             {% endif %}
             <h1 class="display-4">{{ settings.site_name }}</h1>
             <p class="lead">{{ settings.site_description }}</p>
-            <a href="{{ url_for('login') }}" class="btn btn-lg btn-login mt-3 pulse">
+            <a href="{{ url_for('main.login') }}" class="btn btn-lg btn-login mt-3 pulse">
                 <i class="fas fa-sign-in-alt ms-2"></i>تسجيل الدخول
             </a>
         </div>
@@ -362,10 +362,10 @@
             {% endif %}
 
             <div class="mt-4">
-                <a href="{{ url_for('login') }}" class="btn btn-light btn-lg me-2">
+                <a href="{{ url_for('main.login') }}" class="btn btn-light btn-lg me-2">
                     <i class="fas fa-user-plus ms-1"></i> انضم إلينا
                 </a>
-                <a href="{{ url_for('support') }}" class="btn btn-support btn-lg">
+                <a href="{{ url_for('main.support') }}" class="btn btn-support btn-lg">
                     <i class="fas fa-info-circle ms-1"></i> المزيد عن الدعم
                 </a>
             </div>

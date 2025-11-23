@@ -22,7 +22,7 @@
                 <td>{{ student.circle.name }}</td>
                 <td>{{ student.circle.teacher.name if student.circle.teacher else student.circle.teacher_name }}</td>
                 <td>
-                    <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-sm btn-info">عرض التقارير</a>
+                    <a href="{{ url_for('main.student_reports', student_id=student.id) }}" class="btn btn-sm btn-info">عرض التقارير</a>
                 </td>
             </tr>
             {% else %}

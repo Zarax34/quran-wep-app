@@ -1181,7 +1181,7 @@
 
         <div class="container header-content">
             {% if settings.logo %}
-            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="mb-2" alt="{{ settings.site_name }}" style="background: transparent; border: none;">
+            <img src="{{ url_for('main.uploaded_file', filename=settings.logo) }}" class="mb-2" alt="{{ settings.site_name }}" style="background: transparent; border: none;">
             {% endif %}
             <h4>{{ settings.site_name }}</h4>
             {% if settings.site_description %}
@@ -1208,7 +1208,7 @@
         <div class="sidebar-content">
             <div class="logo-container">
                 {% if settings.logo %}
-                <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo" alt="{{ settings.site_name }}" style="background: transparent; border: none;">
+                <img src="{{ url_for('main.uploaded_file', filename=settings.logo) }}" class="logo" alt="{{ settings.site_name }}" style="background: transparent; border: none;">
                 {% else %}
                 <h4 class="text-white">
                     <i class="fas fa-mosque"></i>
@@ -1232,7 +1232,7 @@
             {% if session.role == 'parent' %}
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_dashboard' }}" href="{{ url_for('parent_dashboard') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_dashboard' }}" href="{{ url_for('main.parent_dashboard') }}">
                         <i class="fas fa-home me-2"></i> الرئيسية
                     </a>
                 </li>
@@ -1242,27 +1242,27 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'activities' }}" href="{{ url_for('activities') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'activities' }}" href="{{ url_for('main.activities') }}">
                         <i class="fas fa-cubes me-2"></i> الأنشطة
                     </a>
                 </li>
                  <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'messaging' }}" href="{{ url_for('messaging') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'messaging' }}" href="{{ url_for('main.messaging') }}">
                         <i class="fas fa-comments me-2"></i> المراسلة
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_notes' }}" href="{{ url_for('parent_notes') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_notes' }}" href="{{ url_for('main.parent_notes') }}">
                         <i class="fas fa-pen me-2"></i> ملاحظاتي
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('main.support') }}">
                         <i class="fas fa-hand-holding-heart me-2"></i> الدعم
                     </a>
                 </li>
                 <li class="nav-item mt-4">
-                    <a class="nav-link logout-btn text-white" href="{{ url_for('parent_logout') }}">
+                    <a class="nav-link logout-btn text-white" href="{{ url_for('main.parent_logout') }}">
                         <i class="fas fa-sign-out-alt me-2"></i> تسجيل الخروج
                     </a>
                 </li>
@@ -1270,7 +1270,7 @@
             {% else %}
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('main.dashboard') }}">
                         <i class="fas fa-tachometer-alt me-2"></i>
                         لوحة التحكم
                     </a>
@@ -1278,62 +1278,62 @@
                 {% if session.role in ['admin', 'teacher', 'support'] %}
                 {% if session.role == 'admin' %}
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'circles' }}" href="{{ url_for('circles') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'circles' }}" href="{{ url_for('main.circles') }}">
                         <i class="fas fa-layer-group me-2"></i>
                         إدارة الحلقات
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint in ['courses', 'add_course', 'edit_course'] }}" href="{{ url_for('courses') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint in ['courses', 'add_course', 'edit_course'] }}" href="{{ url_for('main.courses') }}">
                         <i class="fas fa-chalkboard-teacher me-2"></i>
                         الدورات التدريبية
                     </a>
                 </li>
                 {% endif %}
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'students' }}" href="{{ url_for('students') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'students' }}" href="{{ url_for('main.students') }}">
                         <i class="fas fa-user-graduate me-2"></i>
                         إدارة الطلاب
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'delayed_students' }}" href="{{ url_for('delayed_students') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'delayed_students' }}" href="{{ url_for('main.delayed_students') }}">
                         <i class="fas fa-user-clock me-2"></i>
                         الطلاب المتأخرون
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'honor_board' }}" href="{{ url_for('honor_board') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'honor_board' }}" href="{{ url_for('main.honor_board') }}">
                         <i class="fas fa-trophy me-2"></i>
                         لوحة الشرف
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'attendance' }}" href="{{ url_for('attendance') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'attendance' }}" href="{{ url_for('main.attendance') }}">
                         <i class="fas fa-clipboard-check me-2"></i>
                         الحضور والغياب
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint in ['add_report', 'collective_report'] }}" href="{{ url_for('add_report') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint in ['add_report', 'collective_report'] }}" href="{{ url_for('main.add_report') }}">
                         <i class="fas fa-plus-circle me-2"></i>
                         إضافة تقارير
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'reports' }}" href="{{ url_for('reports') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'reports' }}" href="{{ url_for('main.reports') }}">
                         <i class="fas fa-clipboard-list me-2"></i>
                         التقارير
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'holidays' }}" href="{{ url_for('holidays') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'holidays' }}" href="{{ url_for('main.holidays') }}">
                         <i class="fas fa-calendar-alt me-2"></i>
                         إدارة العطل
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'activities' }}" href="{{ url_for('activities') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'activities' }}" href="{{ url_for('main.activities') }}">
                         <i class="fas fa-cubes me-2"></i>
                         أنشطة المركز
                     </a>
@@ -1342,61 +1342,61 @@
                 
                 {% if session.role == 'admin' %}
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint in ['fees', 'add_fee', 'edit_fee'] }}" href="{{ url_for('fees') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint in ['fees', 'add_fee', 'edit_fee'] }}" href="{{ url_for('main.fees') }}">
                         <i class="fas fa-money-bill-wave me-2"></i>
                         إدارة الرسوم
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_management' }}" href="{{ url_for('parent_management') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'parent_management' }}" href="{{ url_for('main.parent_management') }}">
                         <i class="fas fa-user-friends me-2"></i>
                         إدارة أولياء الأمور
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'admin_parent_notes' }}" href="{{ url_for('admin_parent_notes') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin_parent_notes' }}" href="{{ url_for('main.admin_parent_notes') }}">
                         <i class="fas fa-sticky-note me-2"></i>
                         ملاحظات أولياء الأمور
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'users' }}" href="{{ url_for('users') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'users' }}" href="{{ url_for('main.users') }}">
                         <i class="fas fa-users-cog me-2"></i>
                         إدارة المستخدمين
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'badges' }}" href="{{ url_for('badges') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'badges' }}" href="{{ url_for('main.badges') }}">
                         <i class="fas fa-medal me-2"></i>
                         إدارة الشارات
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'user_logins' }}" href="{{ url_for('user_logins') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'user_logins' }}" href="{{ url_for('main.user_logins') }}">
                         <i class="fas fa-history me-2"></i>
                         سجل الدخول
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'announcements' }}" href="{{ url_for('announcements') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'announcements' }}" href="{{ url_for('main.announcements') }}">
                         <i class="fas fa-bullhorn me-2"></i>
                         إدارة الإعلانات
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'settings' }}" href="{{ url_for('settings') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'settings' }}" href="{{ url_for('main.settings') }}">
                         <i class="fas fa-cog me-2"></i>
                         إعدادات الموقع
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'manage_alumni' }}" href="{{ url_for('manage_alumni') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'manage_alumni' }}" href="{{ url_for('main.manage_alumni') }}">
                         <i class="fas fa-user-graduate me-2"></i>
                         إدارة الخريجين
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'manage_work' }}" href="{{ url_for('manage_work') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'manage_work' }}" href="{{ url_for('main.manage_work') }}">
                         <i class="fas fa-briefcase me-2"></i>
                         إدارة أعمالنا
                     </a>
@@ -1404,7 +1404,7 @@
                 {% endif %}
 
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('main.support') }}">
                         <i class="fas fa-hand-holding-heart me-2"></i>
                         ادعم المركز
                     </a>
@@ -1415,13 +1415,13 @@
                     <div class="view-switcher-sidebar">
                         <small class="text-light d-block mb-2">تبديل الواجهة:</small>
                         <div class="btn-group" role="group">
-                            <a href="{{ url_for('set_view', view_type='desktop') }}" class="btn {% if session.get('view_type') == 'desktop' %}active{% endif %}">
+                            <a href="{{ url_for('main.set_view', view_type='desktop') }}" class="btn {% if session.get('view_type') == 'desktop' %}active{% endif %}">
                                 <i class="fas fa-desktop"></i>
                             </a>
-                            <a href="{{ url_for('set_view', view_type='mobile') }}" class="btn {% if session.get('view_type') == 'mobile' %}active{% endif %}">
+                            <a href="{{ url_for('main.set_view', view_type='mobile') }}" class="btn {% if session.get('view_type') == 'mobile' %}active{% endif %}">
                                 <i class="fas fa-mobile-alt"></i>
                             </a>
-                            <a href="{{ url_for('set_view', view_type='auto') }}" class="btn {% if session.get('view_type') == 'auto' or not session.get('view_type') %}active{% endif %}">
+                            <a href="{{ url_for('main.set_view', view_type='auto') }}" class="btn {% if session.get('view_type') == 'auto' or not session.get('view_type') %}active{% endif %}">
                                 <i class="fas fa-sync-alt"></i>
                             </a>
                         </div>
@@ -1429,7 +1429,7 @@
                 </li>
                 
                 <li class="nav-item mt-4">
-                    <a class="nav-link logout-btn text-white" href="{{ url_for('logout') }}">
+                    <a class="nav-link logout-btn text-white" href="{{ url_for('main.logout') }}">
                         <i class="fas fa-sign-out-alt me-2"></i>
                         تسجيل الخروج
                     </a>
@@ -1484,76 +1484,76 @@
         <div class="parent-nav-container glass">
             <div class="parent-nav-scroll">
                 {% if session.role == 'parent' %}
-                    <a href="{{ url_for('parent_dashboard') }}" class="{{ 'active' if request.endpoint == 'parent_dashboard' }}">
+                    <a href="{{ url_for('main.parent_dashboard') }}" class="{{ 'active' if request.endpoint == 'parent_dashboard' }}">
                         <i class="fas fa-home"></i><span>الرئيسية</span>
                     </a>
-                    <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
+                    <a href="{{ url_for('main.reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
                         <i class="fas fa-file-alt"></i><span>التقارير</span>
                     </a>
-                    <a href="{{ url_for('parent_courses') }}" class="{{ 'active' if request.endpoint == 'parent_courses' }}">
+                    <a href="{{ url_for('main.parent_courses') }}" class="{{ 'active' if request.endpoint == 'parent_courses' }}">
                         <i class="fas fa-chalkboard-teacher"></i><span>الدورات</span>
                     </a>
-                    <a href="{{ url_for('activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
+                    <a href="{{ url_for('main.activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
                        <i class="fas fa-cubes"></i><span>الأنشطة</span>
                     </a>
-                    <a href="{{ url_for('announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
+                    <a href="{{ url_for('main.announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
                         <i class="fas fa-bullhorn"></i><span>الإعلانات</span>
                     </a>
-                    <a href="{{ url_for('messaging') }}" class="{{ 'active' if request.endpoint == 'messaging' }}">
+                    <a href="{{ url_for('main.messaging') }}" class="{{ 'active' if request.endpoint == 'messaging' }}">
                         <i class="fas fa-comments"></i><span>المراسلة</span>
                     </a>
-                    <a href="{{ url_for('parent_notes') }}" class="{{ 'active' if request.endpoint == 'parent_notes' }}">
+                    <a href="{{ url_for('main.parent_notes') }}" class="{{ 'active' if request.endpoint == 'parent_notes' }}">
                         <i class="fas fa-pen"></i><span>ملاحظاتي</span>
                     </a>
-                    <a href="{{ url_for('notifications') }}" class="position-relative {{ 'active' if request.endpoint == 'notifications' }}">
+                    <a href="{{ url_for('main.notifications') }}" class="position-relative {{ 'active' if request.endpoint == 'notifications' }}">
                         <i class="fas fa-bell"></i><span>الإشعارات</span>
                         <span class="notification-badge" style="display: none;"></span>
                     </a>
-                    <a href="{{ url_for('support') }}" class="{{ 'active' if request.endpoint == 'support' }}">
+                    <a href="{{ url_for('main.support') }}" class="{{ 'active' if request.endpoint == 'support' }}">
                         <i class="fas fa-hand-holding-heart"></i><span>الدعم</span>
                     </a>
-                    <a href="{{ url_for('parent_settings') }}" class="{{ 'active' if request.endpoint == 'parent_settings' }}">
+                    <a href="{{ url_for('main.parent_settings') }}" class="{{ 'active' if request.endpoint == 'parent_settings' }}">
                         <i class="fas fa-cog"></i><span>الإعدادات</span>
                     </a>
-                    <a href="{{ url_for('parent_logout') }}">
+                    <a href="{{ url_for('main.parent_logout') }}">
                         <i class="fas fa-sign-out-alt"></i><span>الخروج</span>
                     </a>
                 {% elif session.role == 'teacher' or session.role == 'communication_officer' %}
-                    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">
+                    <a href="{{ url_for('main.dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">
                         <i class="fas fa-tachometer-alt"></i><span>الرئيسية</span>
                     </a>
-                    <a href="{{ url_for('students') }}" class="{{ 'active' if request.endpoint == 'students' }}">
+                    <a href="{{ url_for('main.students') }}" class="{{ 'active' if request.endpoint == 'students' }}">
                         <i class="fas fa-users"></i><span>الطلاب</span>
                     </a>
-                    <a href="{{ url_for('attendance') }}" class="{{ 'active' if request.endpoint == 'attendance' }}">
+                    <a href="{{ url_for('main.attendance') }}" class="{{ 'active' if request.endpoint == 'attendance' }}">
                         <i class="fas fa-clipboard-check"></i><span>الحضور</span>
                     </a>
-                    <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
+                    <a href="{{ url_for('main.reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
                         <i class="fas fa-file-alt"></i><span>التقارير</span>
                     </a>
-                    <a href="{{ url_for('add_report') }}" class="{{ 'active' if request.endpoint in ['add_report', 'collective_report'] }}">
+                    <a href="{{ url_for('main.add_report') }}" class="{{ 'active' if request.endpoint in ['add_report', 'collective_report'] }}">
                         <i class="fas fa-plus-circle"></i><span>إضافة</span>
                     </a>
-                    <a href="{{ url_for('holidays') }}" class="{{ 'active' if request.endpoint == 'holidays' }}">
+                    <a href="{{ url_for('main.holidays') }}" class="{{ 'active' if request.endpoint == 'holidays' }}">
                         <i class="fas fa-calendar-alt"></i><span>العطل</span>
                     </a>
-                    <a href="{{ url_for('fees') }}" class="{{ 'active' if request.endpoint == 'fees' }}">
+                    <a href="{{ url_for('main.fees') }}" class="{{ 'active' if request.endpoint == 'fees' }}">
                         <i class="fas fa-money-bill-wave"></i><span>الرسوم</span>
                     </a>
-                    <a href="{{ url_for('teacher_settings') }}" class="{{ 'active' if request.endpoint == 'teacher_settings' }}">
+                    <a href="{{ url_for('main.teacher_settings') }}" class="{{ 'active' if request.endpoint == 'teacher_settings' }}">
                         <i class="fas fa-cog"></i><span>الإعدادات</span>
                     </a>
-                    <a href="{{ url_for('logout') }}">
+                    <a href="{{ url_for('main.logout') }}">
                         <i class="fas fa-sign-out-alt"></i><span>الخروج</span>
                     </a>
                 {% elif session.role == 'student' %}
-                    <a href="{{ url_for('student_dashboard') }}" class="{{ 'active' if request.endpoint == 'student_dashboard' }}">
+                    <a href="{{ url_for('main.student_dashboard') }}" class="{{ 'active' if request.endpoint == 'student_dashboard' }}">
                         <i class="fas fa-user"></i><span>الرئيسية</span>
                     </a>
-                    <a href="{{ url_for('announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
+                    <a href="{{ url_for('main.announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
                         <i class="fas fa-bullhorn"></i><span>الإعلانات</span>
                     </a>
-                    <a href="{{ url_for('logout') }}">
+                    <a href="{{ url_for('main.logout') }}">
                         <i class="fas fa-sign-out-alt"></i><span>الخروج</span>
                     </a>
                 {% elif session.role == 'admin' %}

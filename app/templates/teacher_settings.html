@@ -61,7 +61,7 @@
     function toggleDarkModeAjax() {
         // Trigger the existing toggle logic by redirecting or fetch
         // Since the toggle_dark_mode route redirects back, fetch is better to stay on page or just let it reload
-        window.location.href = "{{ url_for('toggle_dark_mode') }}";
+        window.location.href = "{{ url_for('main.toggle_dark_mode') }}";
     }
 </script>
 {% endblock %}

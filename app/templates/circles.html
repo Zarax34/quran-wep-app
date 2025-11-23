@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">إدارة الحلقات</h1>
     {% if session.role == 'admin' %}
-    <a href="{{ url_for('add_circle') }}" class="btn btn-primary">
+    <a href="{{ url_for('main.add_circle') }}" class="btn btn-primary">
         <i class="fas fa-plus"></i> إضافة حلقة جديدة
     </a>
     {% endif %}
@@ -45,20 +45,20 @@
             </div>
             <div class="card-footer bg-transparent">
                 <div class="btn-group w-100 mb-2">
-                    <a href="{{ url_for('students', circle_id=circle.id) }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('main.students', circle_id=circle.id) }}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-list"></i> الطلاب
                     </a>
-                    <a href="{{ url_for('edit_circle', circle_id=circle.id) }}" class="btn btn-outline-warning btn-sm">
+                    <a href="{{ url_for('main.edit_circle', circle_id=circle.id) }}" class="btn btn-outline-warning btn-sm">
                         <i class="fas fa-edit"></i> تعديل
                     </a>
                 </div>
                 <div class="btn-group w-100">
-                    <a href="{{ url_for('send_bulk_reports_route', circle_id=circle.id, report_type='أسبوعي') }}" 
+                    <a href="{{ url_for('main.send_bulk_reports_route', circle_id=circle.id, report_type='أسبوعي') }}"
                        class="btn btn-outline-success btn-sm" 
                        onclick="return confirm('هل تريد إرسال التقارير الأسبوعية لجميع الطلاب في هذه الحلقة؟')">
                         <i class="fab fa-whatsapp"></i> أرسل أسبوعي
                     </a>
-                    <a href="{{ url_for('send_bulk_reports_route', circle_id=circle.id, report_type='شهري') }}" 
+                    <a href="{{ url_for('main.send_bulk_reports_route', circle_id=circle.id, report_type='شهري') }}"
                        class="btn btn-outline-info btn-sm"
                        onclick="return confirm('هل تريد إرسال التقارير الشهرية لجميع الطلاب في هذه الحلقة؟')">
                         <i class="fab fa-whatsapp"></i> أرسل شهري
@@ -66,10 +66,10 @@
                 </div>
                 {% if session.role == 'admin' and circle.requires_approval %}
                 <div class="mt-2">
-                    <a href="{{ url_for('approve_circle', circle_id=circle.id) }}" class="btn btn-success btn-sm w-100 mb-1">
+                    <a href="{{ url_for('main.approve_circle', circle_id=circle.id) }}" class="btn btn-success btn-sm w-100 mb-1">
                         <i class="fas fa-check"></i> الموافقة على الحلقة
                     </a>
-                    <a href="{{ url_for('reject_circle', circle_id=circle.id) }}" class="btn btn-danger btn-sm w-100" onclick="return confirm('هل أنت متأكد من رفض الحلقة؟')">
+                    <a href="{{ url_for('main.reject_circle', circle_id=circle.id) }}" class="btn btn-danger btn-sm w-100" onclick="return confirm('هل أنت متأكد من رفض الحلقة؟')">
                         <i class="fas fa-times"></i> رفض الحلقة
                     </a>
                 </div>
@@ -83,7 +83,7 @@
             <i class="fas fa-info-circle fa-2x mb-3"></i>
             <h4>لا توجد حلقات</h4>
             <p>يمكنك إضافة حلقة جديدة لبدء إدارة الطلاب والتقارير</p>
-            <a href="{{ url_for('add_circle') }}" class="btn btn-primary">إضافة حلقة جديدة</a>
+            <a href="{{ url_for('main.add_circle') }}" class="btn btn-primary">إضافة حلقة جديدة</a>
         </div>
     </div>
     {% endfor %}

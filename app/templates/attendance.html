@@ -38,7 +38,7 @@
     </div>
 
     {% if students %}
-    <form method="POST" action="{{ url_for('update_attendance') }}">
+    <form method="POST" action="{{ url_for('main.update_attendance') }}">
         <input type="hidden" name="date" value="{{ selected_date }}">
         <input type="hidden" name="circle_id" value="{{ selected_circle or '' }}">
         

@@ -6,10 +6,10 @@
     <div>
         {% if session.role == 'admin' %}
         <div class="d-flex gap-2">
-            <a href="{{ url_for('generate_monthly_fees') }}" class="btn btn-primary w-50" style="border-radius: 20px;">
+            <a href="{{ url_for('main.generate_monthly_fees') }}" class="btn btn-primary w-50" style="border-radius: 20px;">
                 <i class="fas fa-calendar-plus"></i> إنشاء رسوم شهرية
             </a>
-            <a href="{{ url_for('add_fee') }}" class="btn btn-success w-50" style="border-radius: 20px;">
+            <a href="{{ url_for('main.add_fee') }}" class="btn btn-success w-50" style="border-radius: 20px;">
                 <i class="fas fa-plus-circle"></i> إضافة رسوم فردية
             </a>
         </div>
@@ -56,17 +56,17 @@
                         <td>
                             <div class="btn-group btn-group-sm">
                                 {% if fee.status != 'Paid' %}
-                                <form action="{{ url_for('confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل تؤكد استلام المبلغ؟');">
+                                <form action="{{ url_for('main.confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل تؤكد استلام المبلغ؟');">
                                     <button type="submit" class="btn btn-success" title="تأكيد الدفع">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 </form>
                                 {% endif %}
                                 {% if session.role == 'admin' %}
-                                <a href="{{ url_for('edit_fee', fee_id=fee.id) }}" class="btn btn-outline-primary" title="تعديل">
+                                <a href="{{ url_for('main.edit_fee', fee_id=fee.id) }}" class="btn btn-outline-primary" title="تعديل">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');">
+                                <form action="{{ url_for('main.delete_fee', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');">
                                     <button type="submit" class="btn btn-outline-danger" title="حذف">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
@@ -122,17 +122,17 @@
 
                     <div class="d-flex gap-2 mt-2">
                         {% if fee.status != 'Paid' %}
-                        <form action="{{ url_for('confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('هل تؤكد استلام المبلغ؟');">
+                        <form action="{{ url_for('main.confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('هل تؤكد استلام المبلغ؟');">
                             <button type="submit" class="btn btn-sm btn-success w-100">
                                 <i class="fas fa-check"></i> تأكيد الدفع
                             </button>
                         </form>
                         {% endif %}
                         {% if session.role == 'admin' %}
-                        <a href="{{ url_for('edit_fee', fee_id=fee.id) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                        <a href="{{ url_for('main.edit_fee', fee_id=fee.id) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');">
+                        <form action="{{ url_for('main.delete_fee', fee_id=fee.id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');">
                             <button type="submit" class="btn btn-sm btn-outline-danger w-100">
                                 <i class="fas fa-trash-alt"></i>
                             </button>

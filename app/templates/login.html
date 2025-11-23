@@ -18,7 +18,7 @@
         body {
             background-color: var(--primary-color);
             {% if settings.login_background %}
-            background-image: url("{{ url_for('uploaded_file', filename=settings.login_background) }}");
+            background-image: url("{{ url_for('main.uploaded_file', filename=settings.login_background) }}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -109,7 +109,7 @@
 <body>
     <div class="login-container">
         {% if settings.logo %}
-            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo" alt="{{ settings.site_name }}">
+            <img src="{{ url_for('main.uploaded_file', filename=settings.logo) }}" class="logo" alt="{{ settings.site_name }}">
         {% else %}
             <h1 class="mb-4">{{ settings.site_name }}</h1>
         {% endif %}
@@ -136,9 +136,9 @@
         </form>
 
         <div class="login-links">
-            <a href="{{ url_for('support') }}">نسيت كلمة المرور</a>
+            <a href="{{ url_for('main.support') }}">نسيت كلمة المرور</a>
             <span>|</span>
-            <a href="{{ url_for('guest_dashboard') }}">الدخول كضيف</a>
+            <a href="{{ url_for('main.guest_dashboard') }}">الدخول كضيف</a>
 	    </div>
     </div>
 

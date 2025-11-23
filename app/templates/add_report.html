@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">إضافة تقرير فردي</h1>
-    <a href="{{ url_for('collective_report') }}" class="btn btn-success">
+    <a href="{{ url_for('main.collective_report') }}" class="btn btn-success">
         <i class="fas fa-users"></i> التقرير الجماعي
     </a>
 </div>
@@ -164,7 +164,7 @@
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('reports') }}" class="btn btn-secondary me-md-2">إلغاء</a>
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-secondary me-md-2">إلغاء</a>
                         <button type="submit" class="btn btn-success">إضافة التقرير</button>
                     </div>
                 </form>

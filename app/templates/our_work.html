@@ -13,7 +13,7 @@
             <div class="row g-0">
                 <div class="col-md-4">
                     {% if work.image %}
-                    <img src="{{ url_for('uploaded_file', filename=work.image) }}" class="img-fluid rounded-start work-image" alt="{{ work.title }}">
+                    <img src="{{ url_for('main.uploaded_file', filename=work.image) }}" class="img-fluid rounded-start work-image" alt="{{ work.title }}">
                     {% endif %}
                 </div>
                 <div class="col-md-8">

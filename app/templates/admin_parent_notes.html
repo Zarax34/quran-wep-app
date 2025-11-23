@@ -37,7 +37,7 @@
                             </td>
                             <td>
                                 {% if not note.is_read %}
-                                <a href="{{ url_for('mark_note_read', note_id=note.id) }}" class="btn btn-sm btn-outline-primary" title="تحديد كمقروء">
+                                <a href="{{ url_for('main.mark_note_read', note_id=note.id) }}" class="btn btn-sm btn-outline-primary" title="تحديد كمقروء">
                                     <i class="fas fa-check"></i>
                                 </a>
                                 {% endif %}

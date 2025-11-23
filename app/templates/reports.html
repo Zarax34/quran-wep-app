@@ -6,10 +6,10 @@
         <h1 class="h2">{% if session.role == 'parent' %}تقارير أبنائي{% else %}جميع التقارير{% endif %}</h1>
         {% if session.role != 'parent' %}
         <div>
-            <a href="{{ url_for('add_report') }}" class="btn btn-primary me-2 btn-hover">
+            <a href="{{ url_for('main.add_report') }}" class="btn btn-primary me-2 btn-hover">
                 <i class="fas fa-plus"></i> تقرير فردي
             </a>
-            <a href="{{ url_for('collective_report') }}" class="btn btn-success btn-hover">
+            <a href="{{ url_for('main.collective_report') }}" class="btn btn-success btn-hover">
                 <i class="fas fa-users"></i> تقرير جماعي
             </a>
         </div>
@@ -22,7 +22,7 @@
             <h5 class="card-title mb-0"><i class="fas fa-filter"></i> فلترة التقارير</h5>
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ url_for('reports') }}">
+            <form method="GET" action="{{ url_for('main.reports') }}">
                 <div class="row g-3 align-items-center">
                     <div class="col-md-5">
                         <label for="from_date" class="form-label">من تاريخ</label>
@@ -97,15 +97,15 @@
 
                                         <div class="d-flex gap-2 mt-3">
                                             {% if (session.role == 'admin' or session.role == 'communication_officer') and report.status == 'Pending' %}
-                                                <a href="{{ url_for('approve_report', report_id=report.id) }}" class="btn btn-success btn-sm flex-grow-1">
+                                                <a href="{{ url_for('main.approve_report', report_id=report.id) }}" class="btn btn-success btn-sm flex-grow-1">
                                                     <i class="fas fa-check"></i> موافقة
                                                 </a>
-                                                <a href="{{ url_for('reject_report', report_id=report.id) }}" class="btn btn-danger btn-sm flex-grow-1">
+                                                <a href="{{ url_for('main.reject_report', report_id=report.id) }}" class="btn btn-danger btn-sm flex-grow-1">
                                                     <i class="fas fa-times"></i> رفض
                                                 </a>
                                             {% endif %}
                                             {% if session.role != 'parent' %}
-                                            <a href="{{ url_for('edit_report', report_id=report.id) }}" class="btn btn-outline-warning btn-sm w-100">
+                                            <a href="{{ url_for('main.edit_report', report_id=report.id) }}" class="btn btn-outline-warning btn-sm w-100">
                                                 <i class="fas fa-edit"></i> تعديل
                                             </a>
                                             {% endif %}
@@ -127,8 +127,8 @@
             {% if session.role != 'parent' %}
             <p>يمكنك بدء إضافة التقارير الفردية أو الجماعية</p>
             <div class="mt-3">
-                <a href="{{ url_for('add_report') }}" class="btn btn-primary me-2 btn-hover">إضافة تقرير فردي</a>
-                <a href="{{ url_for('collective_report') }}" class="btn btn-success btn-hover">إضافة تقرير جماعي</a>
+                <a href="{{ url_for('main.add_report') }}" class="btn btn-primary me-2 btn-hover">إضافة تقرير فردي</a>
+                <a href="{{ url_for('main.collective_report') }}" class="btn btn-success btn-hover">إضافة تقرير جماعي</a>
             </div>
             {% else %}
             <p>لا توجد تقارير لأبنائك لعرضها حالياً.</p>
