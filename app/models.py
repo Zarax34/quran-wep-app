@@ -243,8 +243,9 @@ class ActivityApproval(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     activity_id = db.Column(db.Integer, db.ForeignKey('center_activity.id'), nullable=False)
     status = db.Column(db.String(20), default='Pending') # Pending, Approved, Rejected
-    student = db.relationship('Student', backref='approvals', overlaps="activities,participants")
-    activity = db.relationship('CenterActivity', backref='approvals', overlaps="activities,participants,student")
+    # Explicitly define overlaps to silence SQLAlchemy warnings
+    student = db.relationship('Student', backref=db.backref('approvals', overlaps="activities,participants"), overlaps="activities,participants")
+    activity = db.relationship('CenterActivity', backref=db.backref('approvals', overlaps="participants,activities"), overlaps="activities,participants,student")
 
 class Alumni(db.Model):
     id = db.Column(db.Integer, primary_key=True)
