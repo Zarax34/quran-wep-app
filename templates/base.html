@@ -536,6 +536,22 @@
         .parent-nav-scroll a i {
             font-size: 1.4rem;
             margin-bottom: 3px;
+            /* Force FontAwesome rendering */
+            font-family: "Font Awesome 6 Free" !important;
+            font-weight: 900 !important;
+            -webkit-font-smoothing: antialiased;
+            display: inline-block !important;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            line-height: 1;
+        }
+
+        /* Ensure icons in the 'More' menu also render correctly */
+        .menu-item .icon-box i {
+            font-family: "Font Awesome 6 Free" !important;
+            font-weight: 900 !important;
+            display: inline-block !important;
         }
 
         .parent-nav-scroll a span {
