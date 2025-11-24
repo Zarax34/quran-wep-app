@@ -20,21 +20,22 @@
 <!-- Grouped Fees Accordion -->
 <div class="accordion" id="feesAccordion">
     {% for title, circles_data in grouped_fees.items() %}
+    {% set outer_index = loop.index %}
     <div class="accordion-item mb-3 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
-        <h2 class="accordion-header" id="heading{{ loop.index }}">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
+        <h2 class="accordion-header" id="heading{{ outer_index }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ outer_index }}" aria-expanded="false" aria-controls="collapse{{ outer_index }}">
                 <div class="d-flex justify-content-between w-100 align-items-center">
                     <span class="fw-bold"><i class="fas fa-folder text-warning me-2"></i> {{ title }}</span>
                     <!-- Optional: Show total stats for the whole title/month here if desired -->
                 </div>
             </button>
         </h2>
-        <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#feesAccordion">
+        <div id="collapse{{ outer_index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ outer_index }}" data-bs-parent="#feesAccordion">
             <div class="accordion-body bg-light">
                 <div class="row g-3">
                     {% for circle_name, stats in circles_data.items() %}
                     <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-0 shadow-sm fee-circle-card" onclick="toggleDetails('details_{{ loop.parent.index }}_{{ loop.index }}')">
+                        <div class="card h-100 border-0 shadow-sm fee-circle-card" onclick="toggleDetails('details_{{ outer_index }}_{{ loop.index }}')">
                             <div class="card-body">
                                 <h5 class="card-title mb-3 text-primary fw-bold">{{ circle_name }}</h5>
 
@@ -63,7 +64,7 @@
                     </div>
 
                     <!-- Hidden Details Modal/Section -->
-                    <div class="modal fade" id="details_{{ loop.parent.index }}_{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal fade" id="details_{{ outer_index }}_{{ loop.index }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
