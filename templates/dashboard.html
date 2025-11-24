@@ -61,7 +61,7 @@
                     </div>
                     <div>
                         <h6 class="card-subtitle mb-1 opacity-75">التقارير اليوم</h6>
-                        <h2 class="card-title mb-0 counter" data-target="{{ recent_reports|length }}">0</h2>
+                        <h2 class="card-title mb-0 counter" data-target="{{ todays_reports_count }}">0</h2>
                     </div>
                 </div>
             </div>
@@ -73,30 +73,39 @@
         <div class="col-md-6 mb-4">
             <div class="card h-100 fade-in main-card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0"><i class="fas fa-chart-pie"></i> إحصائيات الحضور لهذا الأسبوع</h5>
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-pie"></i> إحصائيات الحضور (أسبوعي)</h5>
                 </div>
                 <div class="card-body">
-                    {% if attendance_stats %}
-                    <div class="row">
-                        {% for status, count in attendance_stats %}
-                        <div class="col-6 mb-3">
-                            <div class="d-flex align-items-center">
-                                {% if status == 'حاضر' %}
-                                <span class="badge bg-success badge-attendance me-2">حاضر</span>
-                                {% elif status == 'غائب بعذر' %}
-                                <span class="badge bg-warning badge-attendance me-2">✖️ غائب بعذر</span>
-                                {% elif status == 'غائب بلا عذر' %}
-                                <span class="badge bg-danger badge-attendance me-2">❌ غائب بلا عذر</span>
-                                {% elif status == 'هروب' %}
-                                <span class="badge bg-dark badge-attendance me-2">هروب</span>
-                                {% else %}
-                                <span class="badge bg-secondary badge-attendance me-2">{{ status }}</span>
-                                {% endif %}
-                                <strong class="text-primary">{{ count }}</strong>
-                            </div>
+                    {% if circle_attendance_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>الحلقة</th>
+                                        <th class="text-center">نسبة الحضور</th>
+                                        <th class="text-center">السجلات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in circle_attendance_stats %}
+                                    <tr>
+                                        <td>{{ stat.name }}</td>
+                                        <td class="text-center">
+                                            <div class="progress" style="height: 15px;">
+                                                <div class="progress-bar bg-{{ 'success' if stat.rate >= 80 else 'warning' if stat.rate >= 50 else 'danger' }}"
+                                                     role="progressbar"
+                                                     style="width: {{ stat.rate }}%;"
+                                                     aria-valuenow="{{ stat.rate }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ stat.rate }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">{{ stat.total_records }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                        {% endfor %}
-                    </div>
                     {% else %}
                     <div class="text-center text-muted">
                         <i class="fas fa-chart-pie fa-3x mb-3"></i>

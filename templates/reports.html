@@ -41,20 +41,83 @@
     </div>
     {% endif %}
 
+    {% if session.role in ['admin', 'communication_officer'] %}
+        {% set pending_reports = reports | selectattr('status', 'equalto', 'Pending') | list %}
+        {% if pending_reports %}
+        <div class="card mb-4 fade-in border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0"><i class="fas fa-hourglass-half"></i> طلبات الاعتماد المعلقة</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="pendingReportsAccordion">
+                    {% for circle_name, circle_pending in pending_reports|groupby('circle.name') %}
+                    <div class="accordion-item mb-2 border-0 shadow-sm">
+                        <h2 class="accordion-header" id="headingPending{{ loop.index }}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePending{{ loop.index }}" aria-expanded="false">
+                                <div>
+                                    <strong>{{ circle_name }}</strong>
+                                    <span class="text-muted small ms-2">({{ circle_pending|length }} طلبات)</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapsePending{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#pendingReportsAccordion">
+                            <div class="accordion-body bg-light">
+                                <!-- Bulk Action Button (Optional Future Feature) -->
+                                <!-- <div class="text-end mb-2">
+                                    <button class="btn btn-sm btn-success">اعتماد الكل</button>
+                                </div> -->
+                                <div class="row g-2">
+                                    {% for report in circle_pending %}
+                                    <div class="col-md-6">
+                                        <div class="card h-100 border-0 shadow-sm p-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-0">{{ report.student.name }}</h6>
+                                                    <small class="text-muted">{{ report.surah }} ({{ report.from_verse }}-{{ report.to_verse }})</small>
+                                                </div>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ url_for('approve_report', report_id=report.id) }}" class="btn btn-success" title="اعتماد"><i class="fas fa-check"></i></a>
+                                                    <a href="{{ url_for('reject_report', report_id=report.id) }}" class="btn btn-danger" title="رفض"><i class="fas fa-times"></i></a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+
     {% if reports %}
+        <!-- Approved/All Reports History -->
         <div class="accordion" id="reportsPageAccordion">
             {% for circle_name, circle_reports in reports|groupby('circle.name') %}
+            {# Filter out pending from main view if admin? User said "pending requests in one card". #}
+            {# Assuming user wants pending SEPARATED. #}
+            {% if session.role in ['admin', 'communication_officer'] %}
+                {% set display_reports = circle_reports | selectattr('status', 'ne', 'Pending') | list %}
+            {% else %}
+                {% set display_reports = circle_reports %}
+            {% endif %}
+
+            {% if display_reports %}
             <div class="accordion-item mb-3 shadow-sm" style="border-radius: 12px; overflow: hidden; border: none;">
                 <h2 class="accordion-header" id="headingReports{{ loop.index }}">
                     <button class="accordion-button collapsed bg-white text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReports{{ loop.index }}" aria-expanded="false" aria-controls="collapseReports{{ loop.index }}" style="border-radius: 12px;">
                         <span class="fw-bold">{{ circle_name }}</span>
-                        <span class="badge bg-primary ms-auto">{{ circle_reports|length }}</span>
+                        <span class="badge bg-primary ms-auto">{{ display_reports|length }}</span>
                     </button>
                 </h2>
                 <div id="collapseReports{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="headingReports{{ loop.index }}" data-bs-parent="#reportsPageAccordion">
                     <div class="accordion-body bg-light">
                         <div class="row g-3">
-                            {% for report in circle_reports %}
+                            {% for report in display_reports %}
                             <div class="col-lg-6 col-md-12">
                                 <div class="report-card h-100">
                                     <div class="report-card-header d-flex justify-content-between align-items-center">
@@ -118,6 +181,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
             {% endfor %}
         </div>
     {% else %}

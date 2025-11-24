@@ -6,10 +6,10 @@
     <div>
         {% if session.role == 'admin' %}
         <div class="d-flex gap-2">
-            <a href="{{ url_for('generate_monthly_fees') }}" class="btn btn-primary w-50" style="border-radius: 20px;">
+            <a href="{{ url_for('generate_monthly_fees') }}" class="btn btn-primary" style="border-radius: 20px;">
                 <i class="fas fa-calendar-plus"></i> إنشاء رسوم شهرية
             </a>
-            <a href="{{ url_for('add_fee') }}" class="btn btn-success w-50" style="border-radius: 20px;">
+            <a href="{{ url_for('add_fee') }}" class="btn btn-success" style="border-radius: 20px;">
                 <i class="fas fa-plus-circle"></i> إضافة رسوم فردية
             </a>
         </div>
@@ -17,132 +17,157 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h5 class="card-title mb-0"><i class="fas fa-money-bill-wave"></i> سجل الرسوم</h5>
-    </div>
-    <div class="card-body">
-        <!-- Desktop View -->
-        <div class="table-responsive d-none d-md-block">
-            <table class="table table-striped table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>الطالب</th>
-                        <th>الحلقة</th>
-                        <th>العنوان</th>
-                        <th>المبلغ</th>
-                        <th>الحالة</th>
-                        <th>تاريخ الدفع</th>
-                        <th>ملاحظات</th>
-                        <th>إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for fee in fees %}
-                    <tr>
-                        <td>{{ fee.student.name }}</td>
-                        <td>{{ fee.student.circle.name }}</td>
-                        <td>{{ fee.title or '-' }}</td>
-                        <td>{{ fee.amount }}</td>
-                        <td>
-                            {% if fee.status == 'Paid' %}
-                            <span class="badge bg-success">مدفوع</span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">غير مدفوع</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ fee.date_paid.strftime('%Y-%m-%d') if fee.date_paid else '-' }}</td>
-                        <td>{{ fee.notes or '-' }}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                {% if fee.status != 'Paid' %}
-                                <form action="{{ url_for('confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل تؤكد استلام المبلغ؟');">
-                                    <button type="submit" class="btn btn-success" title="تأكيد الدفع">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                                {% if session.role == 'admin' %}
-                                <a href="{{ url_for('edit_fee', fee_id=fee.id) }}" class="btn btn-outline-primary" title="تعديل">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');">
-                                    <button type="submit" class="btn btn-outline-danger" title="حذف">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
+<!-- Grouped Fees Accordion -->
+<div class="accordion" id="feesAccordion">
+    {% for title, circles_data in grouped_fees.items() %}
+    <div class="accordion-item mb-3 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+        <h2 class="accordion-header" id="heading{{ loop.index }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
+                <div class="d-flex justify-content-between w-100 align-items-center">
+                    <span class="fw-bold"><i class="fas fa-folder text-warning me-2"></i> {{ title }}</span>
+                    <!-- Optional: Show total stats for the whole title/month here if desired -->
+                </div>
+            </button>
+        </h2>
+        <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#feesAccordion">
+            <div class="accordion-body bg-light">
+                <div class="row g-3">
+                    {% for circle_name, stats in circles_data.items() %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-0 shadow-sm fee-circle-card" onclick="toggleDetails('details_{{ loop.parent.index }}_{{ loop.index }}')">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3 text-primary fw-bold">{{ circle_name }}</h5>
+
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> مدفوع:</span>
+                                    <strong>{{ stats.paid_count }} طالب</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-danger"><i class="fas fa-times-circle"></i> غير مدفوع:</span>
+                                    <strong>{{ stats.unpaid_count }} طالب</strong>
+                                </div>
+                                <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                                    <span>المحصلة:</span>
+                                    <span class="fw-bold text-success">{{ stats.paid_amount }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>المتبقي:</span>
+                                    <span class="fw-bold text-danger">{{ stats.unpaid_amount }}</span>
+                                </div>
+
+                                <div class="text-center mt-3 text-muted small">
+                                    <i class="fas fa-chevron-down"></i> التفاصيل
+                                </div>
                             </div>
-                        </td>
-                    </tr>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Details Modal/Section -->
+                    <div class="modal fade" id="details_{{ loop.parent.index }}_{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">تفاصيل الرسوم - {{ circle_name }} ({{ title }})</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- Paid Students -->
+                                    <h6 class="text-success border-bottom pb-2 mb-3">الطلاب الذين دفعوا ({{ stats.paid_count }})</h6>
+                                    <div class="table-responsive mb-4">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>الطالب</th>
+                                                    <th>المبلغ</th>
+                                                    <th>التاريخ</th>
+                                                    <th>الإجراءات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for fee in stats.paid_fees %}
+                                                <tr>
+                                                    <td>{{ fee.student.name }}</td>
+                                                    <td>{{ fee.amount }}</td>
+                                                    <td>{{ fee.date_paid }}</td>
+                                                    <td>
+                                                        {% if session.role == 'admin' %}
+                                                        <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('حذف؟');">
+                                                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                                        </form>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Unpaid Students -->
+                                    <h6 class="text-danger border-bottom pb-2 mb-3">الطلاب الذين لم يدفعوا ({{ stats.unpaid_count }})</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>الطالب</th>
+                                                    <th>المبلغ</th>
+                                                    <th>ملاحظات</th>
+                                                    <th>الإجراءات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for fee in stats.unpaid_fees %}
+                                                <tr>
+                                                    <td>{{ fee.student.name }}</td>
+                                                    <td>{{ fee.amount }}</td>
+                                                    <td>{{ fee.notes or '-' }}</td>
+                                                    <td>
+                                                        <form action="{{ url_for('confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="d-inline">
+                                                            <button class="btn btn-sm btn-success"><i class="fas fa-check"></i> دفع</button>
+                                                        </form>
+                                                        {% if session.role == 'admin' %}
+                                                        <a href="{{ url_for('edit_fee', fee_id=fee.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+                                                        <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('حذف؟');">
+                                                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                                        </form>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Mobile View (Cards) -->
-        <div class="d-block d-md-none">
-            {% for fee in fees %}
-            <div class="card mb-3 shadow-sm border-0" style="background-color: var(--card-bg);">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-money-check-alt fa-lg text-success me-2"></i>
-                            <div>
-                                <h6 class="mb-0 fw-bold">{{ fee.title or 'رسوم' }}</h6>
-                                <small class="text-muted">{{ fee.student.name }}</small>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <div class="fw-bold text-primary">{{ fee.amount }}</div>
-                            {% if fee.status == 'Paid' %}
-                            <span class="badge bg-success">مدفوع</span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">غير مدفوع</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <hr class="my-2">
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <small class="text-muted d-block">الحلقة</small>
-                            <span>{{ fee.student.circle.name }}</span>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted d-block">تاريخ الدفع</small>
-                            <span>{{ fee.date_paid.strftime('%Y-%m-%d') if fee.date_paid else '-' }}</span>
-                        </div>
-                    </div>
-                    {% if fee.notes %}
-                    <div class="alert alert-light p-2 mb-2 border">
-                        <small class="text-muted d-block">ملاحظات:</small>
-                        {{ fee.notes }}
-                    </div>
-                    {% endif %}
-
-                    <div class="d-flex gap-2 mt-2">
-                        {% if fee.status != 'Paid' %}
-                        <form action="{{ url_for('confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('هل تؤكد استلام المبلغ؟');">
-                            <button type="submit" class="btn btn-sm btn-success w-100">
-                                <i class="fas fa-check"></i> تأكيد الدفع
-                            </button>
-                        </form>
-                        {% endif %}
-                        {% if session.role == 'admin' %}
-                        <a href="{{ url_for('edit_fee', fee_id=fee.id) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
     </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+        <i class="fas fa-money-bill-wave fa-3x mb-3"></i>
+        <h4>لا توجد سجلات رسوم</h4>
+        <p>قم بإضافة رسوم جديدة لعرضها هنا</p>
+    </div>
+    {% endfor %}
 </div>
+
+<style>
+.fee-circle-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.fee-circle-card:hover {
+    transform: translateY(-5px);
+}
+</style>
+
+<script>
+function toggleDetails(modalId) {
+    var modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+}
+</script>
 {% endblock %}

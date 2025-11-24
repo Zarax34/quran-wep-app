@@ -138,11 +138,22 @@
             margin: 0 auto;
         }
 
+        .info-card-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
         .info-card-logo img {
             max-height: 120px;
+            max-width: 120px;
             width: auto;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: auto;
+            object-fit: contain; /* Prevent cropping */
         }
 
         .info-card-details {
@@ -1235,18 +1246,18 @@
     
     <!-- New Top Bar -->
     <div class="top-bar" onclick="toggleInfoCard()">
-        <div class="d-flex align-items-center">
-            {% if session.user_id %}
-            <!-- Placeholder for menu button space if needed -->
-            <div style="width: 40px;"></div>
-            {% endif %}
-            <span class="top-bar-title">{{ settings.site_name }}</span>
-        </div>
         <div class="top-bar-logo">
             {% if settings.logo %}
             <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" alt="Logo">
             {% else %}
             <i class="fas fa-mosque fa-lg"></i>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="top-bar-title">{{ settings.site_name }}</span>
+            {% if session.user_id %}
+            <!-- Placeholder for menu button space if needed -->
+            <div style="width: 40px;"></div>
             {% endif %}
         </div>
     </div>

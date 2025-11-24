@@ -36,14 +36,18 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label class="form-label fw-bold">نوع العطلة</label>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="has_attendance" name="has_attendance">
-                            <label class="form-check-label" for="has_attendance">
-                                يوم نشاط (يتم تسجيل الحضور)
+                            <input class="form-check-input" type="radio" name="holiday_type" id="type_no_attendance" value="no_attendance" checked>
+                            <label class="form-check-label" for="type_no_attendance">
+                                عطلة رسمية (بدون تسجيل حضور)
                             </label>
                         </div>
-                        <div class="form-text">
-                            إذا لم يتم اختيار هذا الخيار، سيكون اليوم عطلة بدون حضور
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="holiday_type" id="type_activity" value="activity">
+                            <label class="form-check-label" for="type_activity">
+                                يوم نشاط (يتطلب تسجيل حضور)
+                            </label>
                         </div>
                     </div>
 
@@ -59,6 +63,7 @@
                         </div>
                     </div>
 
+                    {% if session.role == 'admin' %}
                     <div class="mb-3">
                         <label for="circle_ids" class="form-label">الحلقات المستهدفة (قائمة منسدلة متعددة)</label>
                         <select class="form-select" id="circle_ids" name="circle_ids" multiple style="height: 150px;">
@@ -68,6 +73,7 @@
                         </select>
                         <small class="form-text text-muted">يمكنك اختيار أكثر من حلقة بالضغط على Ctrl (أو Command في Mac) والنقر. إذا لم تختر أي حلقة، ستطبق العطلة على جميع الحلقات.</small>
                     </div>
+                    {% endif %}
                     
                     <div class="alert alert-info">
                         <h6><i class="fas fa-info-circle"></i> معلومات:</h6>

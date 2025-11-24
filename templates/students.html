@@ -232,7 +232,7 @@
 
 /* From Uiverse.io by Smit-Prajapati */
 .card {
-    width: 230px;
+    width: 200px; /* Reduced size */
     border-radius: 20px;
     background: #1b233d;
     padding: 5px;
@@ -332,49 +332,54 @@
 }
 
 /* From Uiverse.io by OnlyCodeChannel */
+/* New Elegant Search Bar */
 .searchBox {
     display: flex;
-    max-width: 230px;
+    width: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    background: #2f3640;
+    background: #fff;
+    border: 1px solid #e0e0e0;
     border-radius: 50px;
     position: relative;
+    transition: box-shadow 0.3s ease;
+}
+
+.searchBox:focus-within {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-color: var(--primary-color);
 }
 
 .searchButton {
     color: white;
     position: absolute;
-    right: 8px;
-    width: 50px;
-    height: 50px;
+    left: 5px; /* RTL: Left side */
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: var(--gradient-2, linear-gradient(90deg, #2AF598 0%, #009EFD 100%));
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     border: 0;
-    display: inline-block;
-    transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-/*hover effect*/
+
 .searchButton:hover {
-    color: #fff;
-    background-color: #1A1A1A;
-    box-shadow: rgba(0, 0, 0, 0.5) 0 10px 20px;
-    transform: translateY(-3px);
-}
-/*button pressing effect*/
-.searchButton:active {
-    box-shadow: none;
-    transform: translateY(0);
+    transform: scale(1.05);
 }
 
 .searchInput {
     border: none;
     background: none;
     outline: none;
-    color: var(--text-color);
-    font-size: 15px;
-    padding: 24px 46px 24px 26px;
+    color: #333;
+    font-size: 1rem;
+    padding: 12px 20px 12px 55px; /* Padding for button on left */
+    width: 100%;
+    border-radius: 50px;
 }
 
 .searchBox.focused {
