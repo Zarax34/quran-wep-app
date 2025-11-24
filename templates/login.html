@@ -8,138 +8,208 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: {{ settings.primary_color or '#D32F2F' }}; /* Default to red */
-            --secondary-color: {{ settings.secondary_color or '#2E7D32' }}; /* Default to green */
-            --input-bg: rgba(255, 255, 255, 0.9);
-            --text-color: #ffffff;
-        }
-
         body {
-            background-color: var(--primary-color);
-            {% if settings.login_background %}
-            background-image: url("{{ url_for('uploaded_file', filename=settings.login_background) }}");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            {% else %}
-            background-image: repeating-linear-gradient(
-                45deg,
-                var(--secondary-color) 0,
-                var(--secondary-color) 5px,
-                transparent 5px,
-                transparent 10px
-            );
-            background-size: 15px 15px;
-            {% endif %}
+            background: #e0e5ec;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Tajawal', sans-serif;
-            padding: 20px;
-            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            {% if settings.login_background %}
+            background-image: url("{{ url_for('uploaded_file', filename=settings.login_background) }}");
+            background-size: cover;
+            background-position: center;
+            {% endif %}
         }
 
-        .login-container {
+        /* From Uiverse.io by Smit-Prajapati (Adapted for RTL) */
+        .container {
+          max-width: 350px;
+          background: #F8F9FD;
+          background: linear-gradient(0deg, rgb(255, 255, 255) 0%, rgb(244, 247, 251) 100%);
+          border-radius: 40px;
+          padding: 25px 35px;
+          border: 5px solid rgb(255, 255, 255);
+          box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 30px 30px -20px;
+          margin: 20px;
+        }
+
+        .heading {
+          text-align: center;
+          font-weight: 900;
+          font-size: 30px;
+          color: rgb(16, 137, 211);
+          margin-bottom: 10px;
+        }
+
+        .form {
+          margin-top: 20px;
+        }
+
+        .form .input {
+          width: 100%;
+          background: white;
+          border: none;
+          padding: 15px 20px;
+          border-radius: 20px;
+          margin-top: 15px;
+          box-shadow: #cff0ff 0px 10px 10px -5px;
+          border-inline: 2px solid transparent;
+        }
+
+        .form .input::-moz-placeholder {
+          color: rgb(170, 170, 170);
+        }
+
+        .form .input::placeholder {
+          color: rgb(170, 170, 170);
+        }
+
+        .form .input:focus {
+          outline: none;
+          border-inline: 2px solid #12B1D1;
+        }
+
+        .form .forgot-password {
+          display: block;
+          margin-top: 10px;
+          margin-left: 10px;
+          text-align: center;
+        }
+
+        .form .forgot-password a {
+          font-size: 11px;
+          color: #0099ff;
+          text-decoration: none;
+        }
+
+        .form .login-button {
+          display: block;
+          width: 100%;
+          font-weight: bold;
+          background: linear-gradient(45deg, rgb(16, 137, 211) 0%, rgb(18, 177, 209) 100%);
+          color: white;
+          padding-block: 15px;
+          margin: 20px auto;
+          border-radius: 20px;
+          box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 20px 10px -15px;
+          border: none;
+          transition: all 0.2s ease-in-out;
+        }
+
+        .form .login-button:hover {
+          transform: scale(1.03);
+          box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 23px 10px -20px;
+        }
+
+        .form .login-button:active {
+          transform: scale(0.95);
+          box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 15px 10px -10px;
+        }
+
+        .social-account-container {
+          margin-top: 25px;
+        }
+
+        .social-account-container .title {
+          display: block;
+          text-align: center;
+          font-size: 10px;
+          color: rgb(170, 170, 170);
+        }
+
+        .social-account-container .social-accounts {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          gap: 15px;
+          margin-top: 5px;
+        }
+
+        .social-account-container .social-accounts .social-button {
+          background: linear-gradient(45deg, rgb(0, 0, 0) 0%, rgb(112, 112, 112) 100%);
+          border: 5px solid white;
+          padding: 5px;
+          border-radius: 50%;
+          width: 40px;
+          aspect-ratio: 1;
+          display: grid;
+          place-content: center;
+          box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 12px 10px -8px;
+          transition: all 0.2s ease-in-out;
+          color: white;
+          text-decoration: none;
+        }
+
+        .social-account-container .social-accounts .social-button:hover {
+          transform: scale(1.2);
+        }
+
+        .social-account-container .social-accounts .social-button:active {
+          transform: scale(0.9);
+        }
+
+        .agreement {
+          display: block;
+          text-align: center;
+          margin-top: 15px;
+        }
+
+        .agreement a {
+          text-decoration: none;
+          color: #0099ff;
+          font-size: 9px;
+        }
+
+        .flash-messages {
             width: 100%;
-            max-width: 400px;
-            padding: 30px;
-            color: var(--text-color);
-            text-align: center;
-        }
-
-        .logo {
-            max-height: 120px;
-            max-width: 100%;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-
-        .form-control, .btn {
-            border-radius: 50px;
-            border: none;
-            padding: 15px 25px;
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            width: 100%;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .form-control {
-            background-color: var(--input-bg);
-            color: #333;
-        }
-
-        .form-control::placeholder {
-            color: #999;
-        }
-
-        .btn-login {
-            background-color: #fff;
-            color: var(--primary-color);
-            font-weight: bold;
-            transition: transform 0.2s;
-        }
-
-        .btn-login:hover {
-            transform: scale(1.05);
-        }
-
-        .login-links {
-            margin-top: 20px;
-        }
-
-        .login-links a {
-            color: #ffcdd2; /* Light red for visibility */
-            text-decoration: none;
-            margin: 0 10px;
-            transition: opacity 0.2s;
-        }
-
-        .login-links a:hover {
-            opacity: 0.8;
-        }
-
-        .alert {
-            border-radius: 20px;
+            max-width: 350px;
+            position: absolute;
+            top: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        {% if settings.logo %}
-            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo" alt="{{ settings.site_name }}">
-        {% else %}
-            <h1 class="mb-4">{{ settings.site_name }}</h1>
-        {% endif %}
 
+    <div class="flash-messages">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show shadow-sm">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
+    </div>
 
-        <form method="POST">
-            <div class="mb-3">
-                <input type="text" class="form-control" name="username" placeholder="اسم المستخدم" required>
-            </div>
-            <div class="mb-3">
-                <input type="password" class="form-control" name="password" placeholder="كلمة المرور" required>
-            </div>
-            <button type="submit" class="btn btn-login">تسجيل الدخول</button>
+    <div class="container">
+        <div class="heading">{{ settings.site_name }}</div>
+
+        <form action="" method="POST" class="form">
+            <input required="" class="input" type="text" name="username" placeholder="اسم المستخدم">
+            <input required="" class="input" type="password" name="password" placeholder="كلمة المرور">
+
+            <span class="forgot-password"><a href="{{ url_for('support') }}">نسيت كلمة المرور؟</a></span>
+
+            <button class="login-button" type="submit">تسجيل الدخول</button>
         </form>
 
-        <div class="login-links">
-            <a href="{{ url_for('support') }}">نسيت كلمة المرور</a>
-            <span>|</span>
-            <a href="{{ url_for('guest_dashboard') }}">الدخول كضيف</a>
-	    </div>
+        <div class="social-account-container">
+            <span class="title">خيارات أخرى</span>
+            <div class="social-accounts">
+                <a href="{{ url_for('guest_dashboard') }}" class="social-button" title="الدخول كضيف">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="agreement">
+            <a href="#">جميع الحقوق محفوظة &copy; {{ current_year }}</a>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -70,6 +70,10 @@
                                         </button>
                                     </div>
                                 </div>
+                                <!-- Daily Note Field -->
+                                <div class="mt-2" id="note_container_{{ student.id }}">
+                                    <input type="text" class="form-control form-control-sm" name="note_{{ student.id }}" placeholder="ملاحظة للمعلم (اختياري)">
+                                </div>
                             </td>
                             <td>
                                 <div class="recitation-fields" id="grade_container_{{ student.id }}">
@@ -160,6 +164,12 @@
                                     <button type="button" class="btn btn-sm btn-outline-success" onclick="addMobileRecitationRow('{{ student.id }}')">
                                         <i class="fas fa-plus"></i> إضافة تسميع آخر
                                     </button>
+                                </div>
+
+                                <!-- Mobile Daily Note -->
+                                <div class="mt-3">
+                                    <label class="small fw-bold text-muted mb-1">ملاحظات:</label>
+                                    <textarea class="form-control form-control-sm" name="note_{{ student.id }}" rows="2" placeholder="ملاحظة عن الطالب لهذا اليوم..."></textarea>
                                 </div>
 
                             </div>

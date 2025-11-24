@@ -510,12 +510,17 @@ def inject_globals():
         # So default is True.
         return perms.get(feature, True)
 
+    total_students_count = Student.query.filter_by(is_active=True).count()
+    total_circles_count = Circle.query.filter_by(is_active=True).count()
+
     return dict(
         datetime=datetime, now=datetime.now, timedelta=timedelta,
         settings=settings, Report=Report, Attendance=Attendance,
         Holiday=Holiday, Parent=Parent, current_year=current_year,
         unread_notifications=unread_notifications,
-        check_permission=check_permission
+        check_permission=check_permission,
+        total_students_count=total_students_count,
+        total_circles_count=total_circles_count
     )
 
 # ---------- 5.  HELPERS  ----------
@@ -1818,13 +1823,16 @@ def collective_report_submit(circle_id):
 
     for student in students:
         status = request.form.get(f'status_{student.id}')
+        daily_note = request.form.get(f'note_{student.id}')
 
         # 1. Handle Attendance
         existing_attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
         if existing_attendance:
             existing_attendance.status = status
+            if daily_note: # Update note if provided, or append? Just overwrite for daily summary
+                existing_attendance.notes = daily_note
         else:
-            attendance = Attendance(student_id=student.id, date=date, status=status)
+            attendance = Attendance(student_id=student.id, date=date, status=status, notes=daily_note)
             db.session.add(attendance)
 
         # Handle 'Escaped' notification
@@ -1861,6 +1869,15 @@ def collective_report_submit(circle_id):
                     except ValueError:
                         continue
 
+                    # We attach the daily note to the report as well if needed, but Attendance covers the "daily" aspect.
+                    # However, report cards usually show report notes.
+                    # Let's add the note to the report if it's the FIRST report for this student today
+                    # But since we are looping, checking "first" is tricky unless we track it.
+                    # Simplest is to just add it to all, or rely on Attendance notes.
+                    # User asked for "add a field so teacher can write notes on student".
+                    # Usually this implies notes on performance.
+                    # I'll save it to the report 'notes' field as well.
+
                     report = Report(
                         student_id=student.id,
                         teacher_id=session['user_id'],
@@ -1871,6 +1888,7 @@ def collective_report_submit(circle_id):
                         to_verse=to_v,
                         type=r_type,
                         grade=grade,
+                        notes=daily_note,
                         status=report_status
                     )
                     db.session.add(report)
