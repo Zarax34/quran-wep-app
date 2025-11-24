@@ -44,48 +44,7 @@ surah_names = [
 ]
 
 
-with open('quran_data.json', 'r') as f:
-    quran_data = json.load(f)
-quran_data_map = {item['verse_key']: item for item in quran_data}
-
-# ---------- 4.  CONTEXT PROCESSOR  ----------
-@main_bp.context_processor
-def inject_globals():
-    settings = Settings.query.first() or Settings()
-    current_year = datetime.now().year
-    unread_notifications = 0
-    if 'user_id' in session and session.get('role') == 'parent':
-        parent = Parent.query.filter_by(user_id=session['user_id']).first()
-        if parent and parent.user_id:
-            unread_notifications = Notification.query.filter_by(user_id=parent.user_id, is_read=False).count()
-
-    # Helper to check permissions in templates
-    def check_permission(feature):
-        # Admin always has access
-        if session.get('role') == 'admin':
-            return True
-
-        # Get permissions from settings
-        try:
-            perms = json.loads(settings.permissions or '{}')
-        except:
-            perms = {}
-
-        # Default behavior if permission is not set
-        # For security, default to False for sensitive features if not explicitly allowed
-        # However, for backward compatibility during migration, we might want to consider defaults.
-        # But the requirement is to "stop features", so defaults should probably be True until turned off?
-        # The user said "Can stop these features", implying they are currently active.
-        # So default is True.
-        return perms.get(feature, True)
-
-    return dict(
-        datetime=datetime, now=datetime.now, timedelta=timedelta,
-        settings=settings, Report=Report, Attendance=Attendance,
-        Holiday=Holiday, Parent=Parent, current_year=current_year,
-        unread_notifications=unread_notifications,
-        check_permission=check_permission
-    )
+# Context processor removed (moved to app/__init__.py)
 
 # ---------- 5.  HELPERS  ----------
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -97,7 +56,7 @@ def require_login(f):
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
             flash('يجب تسجيل الدخول أولاً', 'error')
-            return redirect(url_for('login'))
+            return redirect(url_for('main.login'))
         return f(*args, **kwargs)
     return decorated
 
@@ -126,7 +85,7 @@ def require_role(role):
 
             if not allowed:
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
-                return redirect(url_for('dashboard'))
+                return redirect(url_for('main.dashboard'))
             return f(*args, **kwargs)
         return decorated
     return decorator
@@ -548,8 +507,8 @@ def index():
     if 'user_id' not in session:
         return render_template('guest_dashboard.html')
     if session.get('role') == 'parent':
-        return redirect(url_for('parent_dashboard'))
-    return redirect(url_for('dashboard'))
+        return redirect(url_for('main.parent_dashboard'))
+    return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/guest_dashboard')
 def guest_dashboard():
@@ -581,21 +540,21 @@ def set_view(view_type):
     if view_type in ['desktop', 'mobile', 'auto']:
         session['view_type'] = view_type
         flash(f'تم تغيير الواجهة إلى {view_type}', 'success')
-    return redirect(request.referrer or url_for('dashboard'))
+    return redirect(request.referrer or url_for('main.dashboard'))
 
 @main_bp.route('/toggle_dark_mode')
 @require_login
 def toggle_dark_mode():
     session['dark_mode'] = not session.get('dark_mode', False)
     flash('تم تغيير وضع التصفح', 'success')
-    return redirect(request.referrer or url_for('index'))
+    return redirect(request.referrer or url_for('main.index'))
 
 @main_bp.route('/set_academic_year/<year>')
 @require_role('admin')
 def set_academic_year(year):
     session['academic_year'] = year
     flash(f'تم تغيير السنة الدراسية إلى {year}', 'success')
-    return redirect(request.referrer or url_for('dashboard'))
+    return redirect(request.referrer or url_for('main.dashboard'))
 
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -613,10 +572,10 @@ def login():
             session['name'] = user.name
             flash('تم تسجيل الدخول بنجاح', 'success')
             if user.role == 'parent':
-                return redirect(url_for('parent_dashboard'))
+                return redirect(url_for('main.parent_dashboard'))
             elif user.role == 'student':
-                return redirect(url_for('student_dashboard'))
-            return redirect(url_for('dashboard'))
+                return redirect(url_for('main.student_dashboard'))
+            return redirect(url_for('main.dashboard'))
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'error')
     settings = Settings.query.first() or Settings()
@@ -626,19 +585,19 @@ def login():
 def logout():
     session.clear()
     flash('تم تسجيل الخروج بنجاح', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 @main_bp.route('/parent_logout')
 def parent_logout():
     session.clear()
     flash('تم تسجيل الخروج بنجاح', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 @main_bp.route('/dashboard')
 @require_login
 def dashboard():
     if session.get('role') == 'parent':
-        return redirect(url_for('parent_dashboard'))
+        return redirect(url_for('main.parent_dashboard'))
 
     total_students = Student.query.filter_by(is_active=True).count()
     total_teachers = User.query.filter_by(role='teacher', is_active=True).count()
@@ -781,7 +740,7 @@ def add_student():
             flash('تم إضافة الطالب بنجاح', 'success')
             if requires_approval():
                 flash('سيتم إرسال الطالب للمسؤول للموافقة عليه', 'info')
-            return redirect(url_for('students'))
+            return redirect(url_for('main.students'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة الطالب: {str(e)}', 'error')
@@ -796,7 +755,7 @@ def upload_students_excel():
     if request.method == 'POST':
         # Logic to handle file upload and processing will be added here
         flash('File upload functionality is not yet implemented.', 'info')
-        return redirect(url_for('upload_students_excel'))
+        return redirect(url_for('main.upload_students_excel'))
     return render_template('upload_excel.html')
 
 
@@ -811,7 +770,7 @@ def move_student(student_id):
         flash('تم نقل الطالب بنجاح!', 'success')
     else:
         flash('يرجى اختيار حلقة جديدة.', 'error')
-    return redirect(url_for('edit_student', student_id=student_id))
+    return redirect(url_for('main.edit_student', student_id=student_id))
 
 @main_bp.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
 @require_login
@@ -821,7 +780,7 @@ def edit_student(student_id):
         teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
         if student.circle_id not in teacher_circles:
             flash('ليس لديك الصلاحية لتعديل هذا الطالب', 'error')
-            return redirect(url_for('students'))
+            return redirect(url_for('main.students'))
 
     if request.method == 'POST':
         # Find associated user account before name change
@@ -869,7 +828,7 @@ def edit_student(student_id):
         try:
             db.session.commit()
             flash('تم تعديل بيانات الطالب بنجاح', 'success')
-            return redirect(url_for('students'))
+            return redirect(url_for('main.students'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء تعديل الطالب: {str(e)}', 'error')
@@ -885,12 +844,12 @@ def delete_student(student_id):
         teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
         if student.circle_id not in teacher_circles:
             flash('ليس لديك الصلاحية لحذف هذا الطالب', 'error')
-            return redirect(url_for('students'))
+            return redirect(url_for('main.students'))
 
     student.is_active = False
     db.session.commit()
     flash('تم حذف الطالب بنجاح', 'success')
-    return redirect(url_for('students'))
+    return redirect(url_for('main.students'))
 
 @main_bp.route('/approve_student/<int:student_id>')
 @require_role('admin')
@@ -899,7 +858,7 @@ def approve_student(student_id):
     student.pending_approval = False
     db.session.commit()
     flash('تمت الموافقة على الطالب بنجاح', 'success')
-    return redirect(url_for('students'))
+    return redirect(url_for('main.students'))
 
 @main_bp.route('/delayed_students')
 @require_login
@@ -935,7 +894,7 @@ def reject_student(student_id):
         db.session.commit()
 
     flash('تم رفض الطالب وإشعار ولي الأمر', 'warning')
-    return redirect(url_for('students'))
+    return redirect(url_for('main.students'))
 
 # ---------- 9.  CIRCLES ----------
 @main_bp.route('/circles')
@@ -967,7 +926,7 @@ def add_circle():
             flash('تم إضافة الحلقة بنجاح', 'success')
             if requires_approval():
                 flash('سيتم إرسال الحلقة للمسؤول للموافقة عليها', 'info')
-            return redirect(url_for('circles'))
+            return redirect(url_for('main.circles'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة الحلقة: {str(e)}', 'error')
@@ -988,7 +947,7 @@ def edit_circle(circle_id):
         try:
             db.session.commit()
             flash('تم تعديل الحلقة بنجاح', 'success')
-            return redirect(url_for('circles'))
+            return redirect(url_for('main.circles'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء تعديل الحلقة: {str(e)}', 'error')
@@ -1003,7 +962,7 @@ def approve_circle(circle_id):
     circle.requires_approval = False
     db.session.commit()
     flash('تمت الموافقة على الحلقة بنجاح', 'success')
-    return redirect(url_for('circles'))
+    return redirect(url_for('main.circles'))
 
 def update_honor_board():
     today = datetime.now().date()
@@ -1048,7 +1007,7 @@ def honor_board():
 @require_role('admin')
 def update_honor_board_manual():
     update_honor_board()
-    return redirect(url_for('honor_board'))
+    return redirect(url_for('main.honor_board'))
 
 @main_bp.route('/badges', methods=['GET', 'POST'])
 @require_role('admin')
@@ -1061,7 +1020,7 @@ def badges():
         db.session.add(badge)
         db.session.commit()
         flash('تمت إضافة الشارة بنجاح!', 'success')
-        return redirect(url_for('badges'))
+        return redirect(url_for('main.badges'))
 
     all_badges = Badge.query.all()
     return render_template('badges.html', badges=all_badges)
@@ -1084,7 +1043,7 @@ def reject_circle(circle_id):
         db.session.commit()
 
     flash('تم رفض الحلقة وإشعار المعلم', 'warning')
-    return redirect(url_for('circles'))
+    return redirect(url_for('main.circles'))
 
 # ---------- 10.  REPORTS ----------
 @main_bp.route('/reports')
@@ -1156,13 +1115,13 @@ def add_report():
             date = datetime.strptime(date_str, '%Y-%m-%d').date()
         except (ValueError, TypeError):
              flash('تنسيق التاريخ غير صالح.', 'error')
-             return redirect(url_for('add_report'))
+             return redirect(url_for('main.add_report'))
 
         # Logic for Normal Mode vs Range Mode
         if recitation_mode == 'range':
             if not all([from_surah_range, to_surah_range, type_, grade]):
                  flash('يرجى ملء جميع الحقول المطلوبة (من سورة - إلى سورة).', 'error')
-                 return redirect(url_for('add_report'))
+                 return redirect(url_for('main.add_report'))
 
             total_verses_calc = calculate_total_verses(from_surah_range, to_surah_range)
             surah = f"{from_surah_range} - {to_surah_range}"
@@ -1195,24 +1154,24 @@ def add_report():
         else:
             if not all([surah, from_verse_str, to_verse_str, type_, grade]):
                 flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
-                return redirect(url_for('add_report'))
+                return redirect(url_for('main.add_report'))
             try:
                 from_verse = int(from_verse_str)
                 to_verse = int(to_verse_str)
             except (ValueError, TypeError):
                 flash('أرقام الآيات غير صالحة.', 'error')
-                return redirect(url_for('add_report'))
+                return redirect(url_for('main.add_report'))
 
         student = db.session.get(Student, student_id)
         if not student:
             flash('الطالب غير موجود', 'error')
-            return redirect(url_for('add_report'))
+            return redirect(url_for('main.add_report'))
 
         if session['role'] == 'teacher':
             teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
             if student.circle_id not in teacher_circles:
                 flash('ليس لديك الصلاحية لإضافة تقرير لهذا الطالب', 'error')
-                return redirect(url_for('add_report'))
+                return redirect(url_for('main.add_report'))
 
         # Handle Attendance
         existing_attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
@@ -1296,7 +1255,7 @@ def add_report():
                 db.session.commit()
 
             flash('تم إضافة التقرير بنجاح', 'success')
-            return redirect(url_for('reports'))
+            return redirect(url_for('main.reports'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة التقرير: {str(e)}', 'error')
@@ -1325,7 +1284,7 @@ def add_report():
 def collective_report():
     if request.method == 'POST':
         circle_id = request.form['circle_id']
-        return redirect(url_for('collective_report_form', circle_id=circle_id))
+        return redirect(url_for('main.collective_report_form', circle_id=circle_id))
 
     if session['role'] == 'teacher':
         circles = Circle.query.filter_by(teacher_id=session['user_id'], is_active=True).all()
@@ -1459,14 +1418,14 @@ def collective_report_submit(circle_id):
         db.session.rollback()
         flash(f'حدث خطأ: {e}', 'error')
 
-    return redirect(url_for('collective_report_form', circle_id=circle_id))
+    return redirect(url_for('main.collective_report_form', circle_id=circle_id))
 
 @main_bp.route('/approve_report/<int:report_id>')
 @require_login
 def approve_report(report_id):
     if session['role'] not in ['admin', 'communication_officer']:
         flash('ليس لديك صلاحية', 'error')
-        return redirect(url_for('reports'))
+        return redirect(url_for('main.reports'))
 
     report = Report.query.get_or_404(report_id)
     report.status = 'Approved'
@@ -1482,14 +1441,14 @@ def approve_report(report_id):
     # Notify parent if not already notified?
     # Notification logic is in add_report.
 
-    return redirect(url_for('reports'))
+    return redirect(url_for('main.reports'))
 
 @main_bp.route('/reject_report/<int:report_id>')
 @require_login
 def reject_report(report_id):
     if session['role'] not in ['admin', 'communication_officer']:
         flash('ليس لديك صلاحية', 'error')
-        return redirect(url_for('reports'))
+        return redirect(url_for('main.reports'))
 
     report = Report.query.get_or_404(report_id)
     # Instead of deleting, maybe set status to 'Rejected'?
@@ -1501,7 +1460,7 @@ def reject_report(report_id):
     db.session.delete(report)
     db.session.commit()
     flash('تم رفض التقرير وحذفه', 'success')
-    return redirect(url_for('reports'))
+    return redirect(url_for('main.reports'))
 
 @main_bp.route('/edit_report/<int:report_id>', methods=['GET', 'POST'])
 @require_login
@@ -1519,7 +1478,7 @@ def edit_report(report_id):
         try:
             db.session.commit()
             flash('تم تعديل التقرير بنجاح', 'success')
-            return redirect(url_for('reports'))
+            return redirect(url_for('main.reports'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء تعديل التقرير: {str(e)}', 'error')
@@ -1609,7 +1568,7 @@ def update_attendance():
         db.session.rollback()
         flash(f'حدث خطأ أثناء تحديث الحضور: {str(e)}', 'error')
 
-    return redirect(url_for('attendance', date=date.strftime('%Y-%m-%d'), circle_id=circle_id))
+    return redirect(url_for('main.attendance', date=date.strftime('%Y-%m-%d'), circle_id=circle_id))
 
 # ---------- 12.  HOLIDAYS ----------
 @main_bp.route('/holidays')
@@ -1681,7 +1640,7 @@ def add_holiday():
                 flash(f'تم إرسال طلب العطلة للموافقة ({added_count} أيام)', 'info')
             else:
                 flash(f'تم إضافة العطلة بنجاح ({added_count} أيام)', 'success')
-            return redirect(url_for('holidays'))
+            return redirect(url_for('main.holidays'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة العطلة: {str(e)}', 'error')
@@ -1696,7 +1655,7 @@ def approve_holiday(holiday_id):
     holiday.status = 'Approved'
     db.session.commit()
     flash('تمت الموافقة على العطلة بنجاح', 'success')
-    return redirect(url_for('holidays'))
+    return redirect(url_for('main.holidays'))
 
 @main_bp.route('/delete_holiday/<int:holiday_id>')
 @require_login
@@ -1705,7 +1664,7 @@ def delete_holiday(holiday_id):
     db.session.delete(holiday)
     db.session.commit()
     flash('تم حذف العطلة بنجاح', 'success')
-    return redirect(url_for('holidays'))
+    return redirect(url_for('main.holidays'))
 
 # ---------- 13.  PARENTS ----------
 @main_bp.route('/parent_management')
@@ -1761,7 +1720,7 @@ def add_parents():
 
             db.session.commit()
             flash(f'تم إضافة {created_count} من أولياء الأمور بنجاح', 'success')
-            return redirect(url_for('parent_management'))
+            return redirect(url_for('main.parent_management'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة أولياء الأمور: {str(e)}', 'error')
@@ -1782,7 +1741,7 @@ def link_students_to_parents():
             student.parent_id = parent.id
             db.session.commit()
             flash('تم ربط الطالب بولي الأمر بنجاح', 'success')
-            return redirect(url_for('link_students_to_parents'))
+            return redirect(url_for('main.link_students_to_parents'))
         else:
             flash('الطالب أو ولي الأمر غير موجود', 'error')
 
@@ -1825,7 +1784,7 @@ def add_user():
                         db.session.commit()
 
             flash('تم إضافة المستخدم بنجاح', 'success')
-            return redirect(url_for('users'))
+            return redirect(url_for('main.users'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة المستخدم: {str(e)}', 'error')
@@ -1853,7 +1812,7 @@ def add_announcement():
                 event_date = datetime.strptime(event_date_str, '%Y-%m-%d').date()
             except ValueError:
                 flash('تنسيق التاريخ غير صحيح', 'error')
-                return redirect(url_for('add_announcement'))
+                return redirect(url_for('main.add_announcement'))
 
         filename = None
         if image and allowed_file(image.filename):
@@ -1864,7 +1823,7 @@ def add_announcement():
         db.session.add(announcement)
         db.session.commit()
         flash('تم نشر الإعلان بنجاح!', 'success')
-        return redirect(url_for('announcements'))
+        return redirect(url_for('main.announcements'))
     return render_template('add_announcement.html')
 
 @main_bp.route('/edit_announcement/<int:announcement_id>', methods=['GET', 'POST'])
@@ -1884,7 +1843,7 @@ def edit_announcement(announcement_id):
 
         db.session.commit()
         flash('تم تحديث الإعلان بنجاح!', 'success')
-        return redirect(url_for('announcements'))
+        return redirect(url_for('main.announcements'))
     return render_template('edit_announcement.html', announcement=announcement)
 
 @main_bp.route('/delete_announcement/<int:announcement_id>')
@@ -1894,7 +1853,7 @@ def delete_announcement(announcement_id):
     db.session.delete(announcement)
     db.session.commit()
     flash('تم حذف الإعلان بنجاح.', 'success')
-    return redirect(url_for('announcements'))
+    return redirect(url_for('main.announcements'))
 
 # ---------- Center Activities Routes ----------
 @main_bp.route('/activities')
@@ -1999,7 +1958,7 @@ def add_activity():
 
         db.session.commit()
         flash('تم إضافة النشاط وإشعار أولياء الأمور بنجاح!', 'success')
-        return redirect(url_for('activities'))
+        return redirect(url_for('main.activities'))
 
     students = Student.query.filter_by(is_active=True).all()
     circles = Circle.query.filter_by(is_active=True).all()
@@ -2025,7 +1984,7 @@ def edit_activity(activity_id):
 
         db.session.commit()
         flash('تم تعديل النشاط بنجاح!', 'success')
-        return redirect(url_for('activities'))
+        return redirect(url_for('main.activities'))
 
     return render_template('edit_activity.html', activity=activity)
 
@@ -2068,7 +2027,7 @@ def generate_monthly_fees():
 
         db.session.commit()
         flash(f'تم إنشاء {count} سجل رسوم بنجاح.', 'success')
-        return redirect(url_for('fees'))
+        return redirect(url_for('main.fees'))
 
     circles = Circle.query.filter_by(is_active=True).all()
     return render_template('generate_fees.html', circles=circles)
@@ -2083,16 +2042,16 @@ def confirm_fee_payment(fee_id):
         teacher_circles = [c.id for c in Circle.query.filter_by(teacher_id=session['user_id']).all()]
         if fee.student.circle_id not in teacher_circles:
              flash('ليس لديك صلاحية لتعديل هذا السجل.', 'error')
-             return redirect(url_for('fees'))
+             return redirect(url_for('main.fees'))
     elif session['role'] != 'admin':
          flash('ليس لديك صلاحية.', 'error')
-         return redirect(url_for('fees'))
+         return redirect(url_for('main.fees'))
 
     fee.status = 'Paid'
     fee.date_paid = datetime.now().date()
     db.session.commit()
     flash('تم تأكيد الدفع بنجاح.', 'success')
-    return redirect(url_for('fees'))
+    return redirect(url_for('main.fees'))
 
 @main_bp.route('/add_certificate_link/<int:course_id>', methods=['POST'])
 @require_login
@@ -2102,7 +2061,7 @@ def add_certificate_link_route(course_id):
 
     if not student_id or not certificate_url:
         flash('بيانات غير مكتملة', 'error')
-        return redirect(url_for('course_details', course_id=course_id))
+        return redirect(url_for('main.course_details', course_id=course_id))
 
     # Check if certificate exists
     cert = Certificate.query.filter_by(course_id=course_id, student_id=student_id).first()
@@ -2124,7 +2083,7 @@ def add_certificate_link_route(course_id):
         db.session.rollback()
         flash(f'حدث خطأ: {str(e)}', 'error')
 
-    return redirect(url_for('course_details', course_id=course_id))
+    return redirect(url_for('main.course_details', course_id=course_id))
 
 @main_bp.route('/upload_certificates_excel/<int:course_id>', methods=['GET', 'POST'])
 @require_role('admin')
@@ -2205,13 +2164,13 @@ def add_fee():
 
         if not student_id or not amount:
             flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
-            return redirect(url_for('add_fee'))
+            return redirect(url_for('main.add_fee'))
 
         fee = Fee(student_id=student_id, amount=amount, date_paid=date_paid, notes=notes)
         db.session.add(fee)
         db.session.commit()
         flash('تمت إضافة الرسوم بنجاح!', 'success')
-        return redirect(url_for('fees'))
+        return redirect(url_for('main.fees'))
 
     students = Student.query.filter_by(is_active=True).all()
     return render_template('add_fee.html', students=students)
@@ -2227,7 +2186,7 @@ def edit_fee(fee_id):
         fee.notes = request.form.get('notes')
         db.session.commit()
         flash('تم تعديل الرسوم بنجاح!', 'success')
-        return redirect(url_for('fees'))
+        return redirect(url_for('main.fees'))
 
     students = Student.query.filter_by(is_active=True).all()
     return render_template('edit_fee.html', fee=fee, students=students)
@@ -2239,7 +2198,7 @@ def delete_fee(fee_id):
     db.session.delete(fee)
     db.session.commit()
     flash('تم حذف الرسوم بنجاح!', 'success')
-    return redirect(url_for('fees'))
+    return redirect(url_for('main.fees'))
 
 @main_bp.route('/approve_activity/<int:student_id>/<int:activity_id>', methods=['POST'])
 @require_login
@@ -2277,7 +2236,7 @@ def delete_activity(activity_id):
     db.session.delete(activity)
     db.session.commit()
     flash('تم حذف النشاط بنجاح!', 'success')
-    return redirect(url_for('activities'))
+    return redirect(url_for('main.activities'))
 
 # ---------- Alumni Routes ----------
 @main_bp.route('/alumni')
@@ -2309,7 +2268,7 @@ def add_alumni():
         db.session.add(alumnus)
         db.session.commit()
         flash('تمت إضافة الخريج بنجاح!', 'success')
-        return redirect(url_for('manage_alumni'))
+        return redirect(url_for('main.manage_alumni'))
 
     return render_template('add_alumni.html')
 
@@ -2330,7 +2289,7 @@ def edit_alumni(alumni_id):
 
         db.session.commit()
         flash('تم تعديل بيانات الخريج بنجاح!', 'success')
-        return redirect(url_for('manage_alumni'))
+        return redirect(url_for('main.manage_alumni'))
 
     return render_template('edit_alumni.html', alumnus=alumnus)
 
@@ -2341,7 +2300,7 @@ def delete_alumni(alumni_id):
     db.session.delete(alumnus)
     db.session.commit()
     flash('تم حذف الخريج بنجاح!', 'success')
-    return redirect(url_for('manage_alumni'))
+    return redirect(url_for('main.manage_alumni'))
 
 # ---------- Our Work Routes ----------
 @main_bp.route('/our_work')
@@ -2373,7 +2332,7 @@ def add_work():
         db.session.add(work_item)
         db.session.commit()
         flash('تمت إضافة العمل بنجاح!', 'success')
-        return redirect(url_for('manage_work'))
+        return redirect(url_for('main.manage_work'))
 
     return render_template('add_work.html')
 
@@ -2394,7 +2353,7 @@ def edit_work(work_id):
 
         db.session.commit()
         flash('تم تعديل العمل بنجاح!', 'success')
-        return redirect(url_for('manage_work'))
+        return redirect(url_for('main.manage_work'))
 
     return render_template('edit_work.html', work_item=work_item)
 
@@ -2405,7 +2364,7 @@ def delete_work(work_id):
     db.session.delete(work_item)
     db.session.commit()
     flash('تم حذف العمل بنجاح!', 'success')
-    return redirect(url_for('manage_work'))
+    return redirect(url_for('main.manage_work'))
 
 @main_bp.route('/api/get_page_number', methods=['GET'])
 def get_page_number():
@@ -2541,7 +2500,7 @@ def edit_user(user_id):
         try:
             db.session.commit()
             flash('تم تعديل المستخدم بنجاح', 'success')
-            return redirect(url_for('users'))
+            return redirect(url_for('main.users'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء تعديل المستخدم: {str(e)}', 'error')
@@ -2555,7 +2514,7 @@ def block_user(user_id):
     user.is_active = not user.is_active
     db.session.commit()
     flash(f'تم {"إلغاء حظر" if user.is_active else "حظر"} المستخدم {user.name} بنجاح.', 'success')
-    return redirect(request.referrer or url_for('users'))
+    return redirect(request.referrer or url_for('main.users'))
 
 # ---------- 15.  SETTINGS ----------
 @main_bp.route('/settings', methods=['GET', 'POST'])
@@ -2622,7 +2581,7 @@ def settings():
         try:
             db.session.commit()
             flash('تم حفظ الإعدادات بنجاح', 'success')
-            return redirect(url_for('settings'))
+            return redirect(url_for('main.settings'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء حفظ الإعدادات: {str(e)}', 'error')
@@ -2673,7 +2632,7 @@ def delete_logo():
             db.session.rollback()
             flash(f'حدث خطأ أثناء حذف الشعار: {str(e)}', 'error')
 
-    return redirect(url_for('settings'))
+    return redirect(url_for('main.settings'))
 
 # ---------- 16.  SUPPORT ----------
 @main_bp.route('/support')
@@ -2687,7 +2646,7 @@ def support():
 def notifications():
     if session.get('role') != 'parent':
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
 
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if parent and parent.user_id:
@@ -2699,7 +2658,7 @@ def notifications():
         return render_template('notifications.html', notifications=notifs)
 
     flash('لم يتم العثور على بيانات ولي الأمر', 'error')
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/api/unread_notifications_count')
 @require_login
@@ -2731,14 +2690,14 @@ def send_whatsapp_report(student_id, report_type):
         return redirect(whatsapp_url)
     else:
         flash('لا يوجد رقم هاتف لولي الأمر', 'error')
-        return redirect(request.referrer or url_for('student_reports', student_id=student_id))
+        return redirect(request.referrer or url_for('main.student_reports', student_id=student_id))
 
 @main_bp.route('/send_bulk_reports_route/<int:circle_id>/<report_type>')
 @require_login
 def send_bulk_reports_route(circle_id, report_type):
     sent, errors = send_bulk_reports(circle_id, report_type)
     flash(f'تم إرسال {sent} رسالة وحدث خطأ في {errors}', 'success' if errors == 0 else 'warning')
-    return redirect(url_for('circles'))
+    return redirect(url_for('main.circles'))
 
 # ---------- 19.  UPLOADED FILES ----------
 @main_bp.route('/uploads/<filename>')
@@ -2751,7 +2710,7 @@ def uploaded_file(filename):
 def messaging():
     if session.get('role') != 'parent':
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
     return render_template('messaging.html')
 
 @main_bp.route('/parent/notes', methods=['GET', 'POST'])
@@ -2759,12 +2718,12 @@ def messaging():
 def parent_notes():
     if session.get('role') != 'parent':
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
 
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if not parent:
         flash('لم يتم العثور على بيانات ولي الأمر', 'error')
-        return redirect(url_for('logout'))
+        return redirect(url_for('main.logout'))
 
     if request.method == 'POST':
         content = request.form.get('content')
@@ -2779,7 +2738,7 @@ def parent_notes():
                 flash(f'حدث خطأ أثناء إرسال الملاحظة: {e}', 'error')
         else:
              flash('لا يمكن إرسال ملاحظة فارغة', 'error')
-        return redirect(url_for('parent_notes'))
+        return redirect(url_for('main.parent_notes'))
 
     return render_template('parent_notes.html', parent=parent)
 
@@ -2796,19 +2755,19 @@ def mark_note_read(note_id):
     note.is_read = True
     db.session.commit()
     flash('تم تحديد الملاحظة كمقروءة', 'success')
-    return redirect(url_for('admin_parent_notes'))
+    return redirect(url_for('main.admin_parent_notes'))
 
 @main_bp.route('/parent_dashboard')
 @require_login
 def parent_dashboard():
     if session.get('role') != 'parent':
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
 
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if not parent:
         flash('لم يتم العثور على بيانات ولي الأمر', 'error')
-        return redirect(url_for('logout'))
+        return redirect(url_for('main.logout'))
 
     students = Student.query.filter_by(parent_id=parent.id, is_active=True).all()
     student_stats = []
@@ -2902,7 +2861,7 @@ def add_educational_note(student_id):
     else:
         flash('نص الملاحظة لا يمكن أن يكون فارغًا.', 'error')
 
-    return redirect(url_for('student_reports', student_id=student_id))
+    return redirect(url_for('main.student_reports', student_id=student_id))
 
 @main_bp.route('/add_plan/<int:student_id>', methods=['GET', 'POST'])
 @require_login
@@ -2912,7 +2871,7 @@ def add_plan(student_id):
         teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
         if student.circle_id not in teacher_circles:
             flash('ليس لديك الصلاحية لإضافة خطة لهذا الطالب', 'error')
-            return redirect(url_for('students'))
+            return redirect(url_for('main.students'))
 
     if request.method == 'POST':
         start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
@@ -2944,7 +2903,7 @@ def add_plan(student_id):
 
         if days_count == 0:
              flash('المدة المحددة لا تحتوي على أيام عمل (أيام الجمعة والعطل مستثناة).', 'error')
-             return redirect(url_for('add_plan', student_id=student.id))
+             return redirect(url_for('main.add_plan', student_id=student.id))
 
         total_pages_calc = 0
         if start_surah and end_surah:
@@ -2974,7 +2933,7 @@ def add_plan(student_id):
         try:
             db.session.commit()
             flash(f'تم إضافة الخطة بنجاح. المعدل اليومي: {daily_pages} صفحة. (أيام العمل: {days_count})', 'success')
-            return redirect(url_for('student_details', student_id=student.id))
+            return redirect(url_for('main.student_details', student_id=student.id))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ: {e}', 'error')
@@ -2991,7 +2950,7 @@ def student_reports(student_id):
         teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
         if student.circle_id not in teacher_circles:
             flash('ليس لديك الصلاحية لعرض تقارير هذا الطالب', 'error')
-            return redirect(url_for('students'))
+            return redirect(url_for('main.students'))
 
     end_date_weekly = datetime.now().date()
     start_date_weekly = end_date_weekly - timedelta(days=7)
@@ -3080,7 +3039,7 @@ def add_course():
         try:
             db.session.commit()
             flash('تم إنشاء الدورة بنجاح!', 'success')
-            return redirect(url_for('courses'))
+            return redirect(url_for('main.courses'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إنشاء الدورة: {e}', 'error')
@@ -3095,7 +3054,7 @@ def edit_course(course_id):
     # Authorization check
     if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لتعديل هذه الدورة', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     if request.method == 'POST':
         course.name = request.form.get('name')
@@ -3109,7 +3068,7 @@ def edit_course(course_id):
         try:
             db.session.commit()
             flash('تم تحديث الدورة بنجاح!', 'success')
-            return redirect(url_for('courses'))
+            return redirect(url_for('main.courses'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء تحديث الدورة: {e}', 'error')
@@ -3124,7 +3083,7 @@ def delete_course(course_id):
     # Authorization check
     if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لحذف هذه الدورة', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     try:
         # This will also delete related enrollments and tests due to cascading
@@ -3135,7 +3094,7 @@ def delete_course(course_id):
         db.session.rollback()
         flash(f'حدث خطأ أثناء حذف الدورة: {e}', 'error')
 
-    return redirect(url_for('courses'))
+    return redirect(url_for('main.courses'))
 
 @main_bp.route('/course/<int:course_id>')
 @require_login
@@ -3144,7 +3103,7 @@ def course_details(course_id):
     # Authorization check
     if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لعرض تفاصيل هذه الدورة', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     enrolled_students = Student.query.join(CourseEnrollment).filter(CourseEnrollment.course_id == course.id).all()
 
@@ -3161,12 +3120,12 @@ def enroll_student(course_id):
     # Authorization
     if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لتسجيل طلاب في هذه الدورة', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     student_ids = request.form.getlist('student_ids')
     if not student_ids:
         flash('لم يتم تحديد أي طالب.', 'warning')
-        return redirect(url_for('course_details', course_id=course_id))
+        return redirect(url_for('main.course_details', course_id=course_id))
 
     for student_id in student_ids:
         # Check if already enrolled
@@ -3192,7 +3151,7 @@ def enroll_student(course_id):
         db.session.rollback()
         flash(f'حدث خطأ أثناء تسجيل الطلاب: {e}', 'error')
 
-    return redirect(url_for('course_details', course_id=course_id))
+    return redirect(url_for('main.course_details', course_id=course_id))
 
 @main_bp.route('/unenroll_student/<int:course_id>/<int:student_id>')
 @require_login
@@ -3202,7 +3161,7 @@ def unenroll_student(course_id, student_id):
     # Authorization
     if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لإزالة طلاب من هذه الدورة', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     try:
         db.session.delete(enrollment)
@@ -3212,7 +3171,7 @@ def unenroll_student(course_id, student_id):
         db.session.rollback()
         flash(f'حدث خطأ أثناء إلغاء التسجيل: {e}', 'error')
 
-    return redirect(url_for('course_details', course_id=course_id))
+    return redirect(url_for('main.course_details', course_id=course_id))
 
 @main_bp.route('/course/<int:course_id>/tests')
 @require_login
@@ -3221,7 +3180,7 @@ def manage_tests(course_id):
     # Authorization
     if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لإدارة اختبارات هذه الدورة', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     return render_template('manage_tests.html', course=course)
 
@@ -3232,7 +3191,7 @@ def add_test(course_id):
     # Authorization
     if session['role'] == 'teacher' and course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لإضافة اختبارات لهذه الدورة', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     name = request.form.get('name')
     test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
@@ -3248,7 +3207,7 @@ def add_test(course_id):
         db.session.rollback()
         flash(f'حدث خطأ أثناء إضافة الاختبار: {e}', 'error')
 
-    return redirect(url_for('manage_tests', course_id=course_id))
+    return redirect(url_for('main.manage_tests', course_id=course_id))
 
 @main_bp.route('/edit_test/<int:test_id>', methods=['POST'])
 @require_login
@@ -3257,7 +3216,7 @@ def edit_test(test_id):
     # Authorization
     if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لتعديل هذا الاختبار', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     test.name = request.form.get('name')
     test.test_date = datetime.strptime(request.form.get('test_date'), '%Y-%m-%d')
@@ -3271,7 +3230,7 @@ def edit_test(test_id):
         db.session.rollback()
         flash(f'حدث خطأ أثناء تعديل الاختبار: {e}', 'error')
 
-    return redirect(url_for('manage_tests', course_id=test.course_id))
+    return redirect(url_for('main.manage_tests', course_id=test.course_id))
 
 @main_bp.route('/delete_test/<int:test_id>')
 @require_login
@@ -3281,7 +3240,7 @@ def delete_test(test_id):
     # Authorization
     if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لحذف هذا الاختبار', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     try:
         db.session.delete(test)
@@ -3291,7 +3250,7 @@ def delete_test(test_id):
         db.session.rollback()
         flash(f'حدث خطأ أثناء حذف الاختبار: {e}', 'error')
 
-    return redirect(url_for('manage_tests', course_id=course_id))
+    return redirect(url_for('main.manage_tests', course_id=course_id))
 
 @main_bp.route('/record_scores/<int:test_id>', methods=['GET', 'POST'])
 @require_login
@@ -3300,7 +3259,7 @@ def record_scores(test_id):
     # Authorization
     if session['role'] == 'teacher' and test.course.teacher_id != session['user_id']:
         flash('ليس لديك الصلاحية لتسجيل درجات لهذا الاختبار', 'error')
-        return redirect(url_for('courses'))
+        return redirect(url_for('main.courses'))
 
     if request.method == 'POST':
         for student in test.course.enrollments:
@@ -3321,7 +3280,7 @@ def record_scores(test_id):
         try:
             db.session.commit()
             flash('تم حفظ الدرجات بنجاح!', 'success')
-            return redirect(url_for('manage_tests', course_id=test.course_id))
+            return redirect(url_for('main.manage_tests', course_id=test.course_id))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء حفظ الدرجات: {e}', 'error')
@@ -3338,7 +3297,7 @@ def parent_courses():
     parent = Parent.query.filter_by(user_id=session['user_id']).first()
     if not parent:
         flash('لم يتم العثور على بيانات ولي الأمر', 'error')
-        return redirect(url_for('logout'))
+        return redirect(url_for('main.logout'))
 
     # استعلام لجلب الدورات المسجل فيها أبناء ولي الأمر
     student_ids = [student.id for student in parent.students]
@@ -3400,7 +3359,7 @@ def parent_settings():
             flash('تم تحديث إعداداتك بنجاح!', 'success')
             # Update session data in case the name changed
             session['name'] = user.name
-            return redirect(url_for('parent_settings'))
+            return redirect(url_for('main.parent_settings'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء تحديث الإعدادات: {e}', 'error')
@@ -3412,7 +3371,7 @@ def parent_settings():
 def teacher_settings():
     if session.get('role') not in ['teacher', 'communication_officer']:
         flash('ليس لديك صلاحية', 'error')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
 
     user = User.query.get_or_404(session['user_id'])
 
@@ -3430,7 +3389,7 @@ def teacher_settings():
             flash('تم حفظ الإعدادات بنجاح', 'success')
             session['name'] = user.name
             session['username'] = user.username
-            return redirect(url_for('teacher_settings'))
+            return redirect(url_for('main.teacher_settings'))
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ: {e}', 'error')
@@ -3442,15 +3401,15 @@ def teacher_settings():
 def student_dashboard():
     if session.get('role') != 'student':
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
 
     user = db.session.get(User, session['user_id'])
     student = Student.query.filter_by(name=user.name).first()
     if not student:
         flash('لم يتم العثور على بيانات الطالب', 'error')
-        return redirect(url_for('logout'))
+        return redirect(url_for('main.logout'))
 
-    return redirect(url_for('student_details', student_id=student.id))
+    return redirect(url_for('main.student_details', student_id=student.id))
 
 @main_bp.route('/student_details/<int:student_id>')
 @require_login
@@ -3462,16 +3421,16 @@ def student_details(student_id):
         parent = Parent.query.filter_by(user_id=session['user_id']).first()
         if not parent or student.parent_id != parent.id:
             flash('ليس لديك صلاحية لعرض تفاصيل هذا الطالب', 'error')
-            return redirect(url_for('parent_dashboard'))
+            return redirect(url_for('main.parent_dashboard'))
     elif session['role'] == 'student':
         if student.name != session['name']:
             flash('ليس لديك صلاحية لعرض تفاصيل هذا الطالب', 'error')
-            return redirect(url_for('student_dashboard'))
+            return redirect(url_for('main.student_dashboard'))
     elif session['role'] == 'teacher':
         teacher_circles = [circle.id for circle in Circle.query.filter_by(teacher_id=session['user_id']).all()]
         if student.circle_id not in teacher_circles:
             flash('ليس لديك صلاحية لعرض تفاصيل هذا الطالب', 'error')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('main.dashboard'))
 
     stats = get_student_stats(student_id)
     recent_reports = Report.query.filter_by(student_id=student_id).order_by(Report.date.desc()).limit(10).all()
@@ -3605,13 +3564,13 @@ def grades():
 
         if not all([test_id, student_id, score]):
             flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
-            return redirect(url_for('grades'))
+            return redirect(url_for('main.grades'))
 
         try:
             score = float(score)
         except ValueError:
             flash('الدرجة يجب أن تكون رقمًا.', 'error')
-            return redirect(url_for('grades'))
+            return redirect(url_for('main.grades'))
 
         test_score = TestScore(
             test_id=test_id,
@@ -3622,7 +3581,7 @@ def grades():
         db.session.add(test_score)
         db.session.commit()
         flash('تم حفظ الدرجة بنجاح.', 'success')
-        return redirect(url_for('grades'))
+        return redirect(url_for('main.grades'))
 
     tests = Test.query.all()
     students = Student.query.all()
@@ -3638,7 +3597,7 @@ def certificates():
 
         if not all([course_id, student_id]):
             flash('يرجى ملء جميع الحقول المطلوبة.', 'error')
-            return redirect(url_for('certificates'))
+            return redirect(url_for('main.certificates'))
 
         student = db.session.get(Student, student_id)
         course = db.session.get(Course, course_id)
@@ -3683,7 +3642,7 @@ def certificates():
         db.session.add(certificate)
         db.session.commit()
         flash('تم إنشاء الشهادة بنجاح.', 'success')
-        return redirect(url_for('certificates'))
+        return redirect(url_for('main.certificates'))
 
     courses = Course.query.all()
     students = Student.query.all()

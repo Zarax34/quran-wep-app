@@ -1,9 +1,10 @@
 import os
 import json
-from flask import Flask
+from flask import Flask, session
 from flask_mail import Mail
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_migrate import Migrate
+from datetime import datetime, timedelta
 from app.config import Config
 from app.extensions import db
 
@@ -24,7 +25,6 @@ def create_app(config_class=Config):
         os.makedirs(app.config['UPLOAD_FOLDER'])
 
     # Load Quran data
-    # In a real app, we might want to do this lazily or in a service
     try:
         with open('quran_data.json', 'r') as f:
             app.quran_data = json.load(f)
@@ -35,6 +35,48 @@ def create_app(config_class=Config):
 
     from app.routes import main_bp
     app.register_blueprint(main_bp)
+
+    # Global Context Processor
+    @app.context_processor
+    def inject_globals():
+        from app.models import Settings, Parent, Notification, Report, Attendance, Holiday
+
+        try:
+            settings = Settings.query.first() or Settings()
+        except Exception:
+            # Fallback if DB is not ready or accessible
+            settings = Settings()
+            settings.site_name = "Quran Center" # Default fallback
+            settings.primary_color = "#D32F2F"
+            settings.secondary_color = "#2E7D32"
+
+        current_year = datetime.now().year
+        unread_notifications = 0
+        if 'user_id' in session and session.get('role') == 'parent':
+            try:
+                parent = Parent.query.filter_by(user_id=session['user_id']).first()
+                if parent and parent.user_id:
+                    unread_notifications = Notification.query.filter_by(user_id=parent.user_id, is_read=False).count()
+            except Exception:
+                pass
+
+        def check_permission(feature):
+            if session.get('role') == 'admin':
+                return True
+            try:
+                import json
+                perms = json.loads(settings.permissions or '{}')
+            except:
+                perms = {}
+            return perms.get(feature, True)
+
+        return dict(
+            datetime=datetime, now=datetime.now, timedelta=timedelta,
+            settings=settings, Report=Report, Attendance=Attendance,
+            Holiday=Holiday, Parent=Parent, current_year=current_year,
+            unread_notifications=unread_notifications,
+            check_permission=check_permission
+        )
 
     if not scheduler.running:
         scheduler.start()
