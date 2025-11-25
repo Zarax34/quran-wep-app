@@ -491,24 +491,23 @@ def inject_globals():
             unread_notifications = Notification.query.filter_by(user_id=parent.user_id, is_read=False).count()
 
     # Helper to check permissions in templates
+    # Optimized: Use cached permissions if available to avoid re-parsing JSON on every check
     def check_permission(feature):
-        # Admin always has access
         if session.get('role') == 'admin':
             return True
 
-        # Get permissions from settings
-        try:
-            perms = json.loads(settings.permissions or '{}')
-        except:
-            perms = {}
+        # Cache permissions in session for the duration of the request/session
+        # But session is persistent. We should refresh if settings change.
+        # For now, simple caching is better than re-parsing settings object every time.
+        # A better way is to parse it once per request.
 
-        # Default behavior if permission is not set
-        # For security, default to False for sensitive features if not explicitly allowed
-        # However, for backward compatibility during migration, we might want to consider defaults.
-        # But the requirement is to "stop features", so defaults should probably be True until turned off?
-        # The user said "Can stop these features", implying they are currently active.
-        # So default is True.
-        return perms.get(feature, True)
+        if not hasattr(request, 'permissions_cache'):
+            try:
+                request.permissions_cache = json.loads(settings.permissions or '{}')
+            except:
+                request.permissions_cache = {}
+
+        return request.permissions_cache.get(feature, True)
 
     total_students_count = Student.query.filter_by(is_active=True).count()
     total_circles_count = Circle.query.filter_by(is_active=True).count()
@@ -1283,8 +1282,15 @@ def add_student():
             student.parent_id = parent.id
         
         # Create user account for student, ensuring full name is stored for display
+        # Username: Student Name (handled by create_student_username for uniqueness)
+        # Password: Student Phone if available, else Parent Phone
         student_username = create_student_username(name)
-        student_user = User(username=student_username, password=generate_password_hash(parent_phone or student_phone or '123456'), name=name, role='student')
+        password_source = student_phone if student_phone else parent_phone
+        # Fallback if both empty (shouldn't happen given required fields but good for safety)
+        if not password_source:
+            password_source = '123456'
+
+        student_user = User(username=student_username, password=generate_password_hash(password_source), name=name, role='student')
         db.session.add(student_user)
 
         try:
@@ -2646,9 +2652,9 @@ def edit_activity(activity_id):
 def fees():
     query = Fee.query
     if session['role'] == 'teacher':
-        # Show fees for students in teacher's circles
-        teacher_circles = [c.id for c in Circle.query.filter_by(teacher_id=session['user_id']).all()]
-        query = query.join(Student).filter(Student.circle_id.in_(teacher_circles))
+        # Show fees for students in teacher's circles ONLY
+        # Explicitly filter by joining Student and Circle
+        query = query.join(Student).join(Circle).filter(Circle.teacher_id == session['user_id'])
 
     fees = query.order_by(Fee.date_paid.desc().nullslast()).all()
 

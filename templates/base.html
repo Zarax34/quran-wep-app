@@ -1503,11 +1503,13 @@
                         <i class="fas fa-comments me-2"></i> المراسلة
                     </a>
                 </li>
+                {% if session.role == 'parent' %}
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'parent_notes' }}" href="{{ url_for('parent_notes') }}">
                         <i class="fas fa-pen me-2"></i> ملاحظاتي
                     </a>
                 </li>
+                {% endif %}
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'support' }}" href="{{ url_for('support') }}">
                         <i class="fas fa-hand-holding-heart me-2"></i> الدعم
@@ -1758,9 +1760,11 @@
                     <a href="{{ url_for('messaging') }}" class="{{ 'active' if request.endpoint == 'messaging' }}">
                         <i class="fas fa-comments"></i><span>المراسلة</span>
                     </a>
+                    {% if session.role == 'parent' %}
                     <a href="{{ url_for('parent_notes') }}" class="{{ 'active' if request.endpoint == 'parent_notes' }}">
                         <i class="fas fa-pen"></i><span>ملاحظاتي</span>
                     </a>
+                    {% endif %}
                     <a href="{{ url_for('notifications') }}" class="position-relative {{ 'active' if request.endpoint == 'notifications' }}">
                         <i class="fas fa-bell"></i><span>الإشعارات</span>
                         <span class="notification-badge" style="display: none;"></span>
