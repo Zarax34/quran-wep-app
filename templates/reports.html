@@ -67,6 +67,12 @@
                                     <button class="btn btn-sm btn-success">اعتماد الكل</button>
                                 </div> -->
                                 <div class="row g-2">
+                                    <!-- Bulk Action Button -->
+                                    <div class="text-end mb-2">
+                                        <a href="{{ url_for('approve_all_reports', circle_id=circle_pending[0].circle_id) }}" class="btn btn-sm btn-success" onclick="return confirm('هل أنت متأكد من اعتماد جميع التقارير لهذه الحلقة؟')">
+                                            <i class="fas fa-check-double"></i> اعتماد الكل
+                                        </a>
+                                    </div>
                                     {% for report in circle_pending %}
                                     <div class="col-md-6">
                                         <div class="card h-100 border-0 shadow-sm p-2">

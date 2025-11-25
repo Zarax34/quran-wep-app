@@ -1852,6 +1852,8 @@ def collective_report():
 
     if session['role'] == 'teacher':
         circles = Circle.query.filter_by(teacher_id=session['user_id'], is_active=True).all()
+        if len(circles) == 1:
+            return redirect(url_for('collective_report_form', circle_id=circles[0].id))
     else:
         circles = Circle.query.filter_by(is_active=True).all()
     return render_template('collective_report.html', circles=circles)
@@ -2018,6 +2020,23 @@ def approve_report(report_id):
     # Notify parent if not already notified?
     # Notification logic is in add_report.
 
+    return redirect(url_for('reports'))
+
+@app.route('/approve_all_reports/<int:circle_id>')
+@require_login
+def approve_all_reports(circle_id):
+    if session['role'] not in ['admin', 'communication_officer']:
+        flash('ليس لديك صلاحية', 'error')
+        return redirect(url_for('reports'))
+
+    pending_reports = Report.query.filter_by(circle_id=circle_id, status='Pending').all()
+    count = len(pending_reports)
+
+    for report in pending_reports:
+        report.status = 'Approved'
+
+    db.session.commit()
+    flash(f'تم اعتماد {count} تقرير بنجاح.', 'success')
     return redirect(url_for('reports'))
 
 @app.route('/reject_report/<int:report_id>')
@@ -2190,6 +2209,51 @@ def add_holiday():
         if session['role'] == 'teacher':
             status = 'Pending'
 
+        # Activity Attendance Logic for Teachers
+        if session['role'] == 'teacher' and holiday_type == 'activity':
+            attended_student_ids = request.form.getlist('attended_student_ids')
+            # Get all students in teacher's circles to determine absents
+            teacher_circles = Circle.query.filter_by(teacher_id=session['user_id']).all()
+            teacher_circle_ids = [c.id for c in teacher_circles]
+            all_students = Student.query.filter(Student.circle_id.in_(teacher_circle_ids), Student.is_active==True).all()
+
+            attendance_count = 0
+            for student in all_students:
+                att_status = 'حاضر' if str(student.id) in attended_student_ids else 'غائب بلا عذر'
+
+                # Check existing attendance
+                existing = Attendance.query.filter_by(student_id=student.id, date=start_date).first()
+                if existing:
+                    existing.status = att_status
+                    existing.notes = reason # Use activity name as note
+                else:
+                    attendance = Attendance(
+                        student_id=student.id,
+                        date=start_date,
+                        status=att_status,
+                        notes=reason
+                    )
+                    db.session.add(attendance)
+                attendance_count += 1
+
+                if att_status == 'حاضر':
+                    # Create Report
+                    existing_report = Report.query.filter_by(student_id=student.id, date=start_date).first()
+                    if not existing_report:
+                        report = Report(
+                            student_id=student.id,
+                            teacher_id=session['user_id'],
+                            circle_id=student.circle_id,
+                            date=start_date,
+                            surah=reason, # Activity Name
+                            from_verse=0,
+                            to_verse=0,
+                            grade='-',
+                            type='نشاط',
+                            status='Pending' # Default Pending for teachers
+                        )
+                        db.session.add(report)
+
         current_date = start_date
         added_count = 0
         
@@ -2226,8 +2290,15 @@ def add_holiday():
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة العطلة: {str(e)}', 'error')
     
-    circles = Circle.query.filter_by(is_active=True).all()
-    return render_template('add_holiday.html', circles=circles)
+    if session['role'] == 'teacher':
+        circles = Circle.query.filter_by(teacher_id=session['user_id'], is_active=True).all()
+        # Fetch students for teacher's circles for the activity checklist
+        teacher_students = Student.query.filter(Student.circle_id.in_([c.id for c in circles]), Student.is_active==True).all()
+    else:
+        circles = Circle.query.filter_by(is_active=True).all()
+        teacher_students = []
+
+    return render_template('add_holiday.html', circles=circles, students=teacher_students)
 
 @app.route('/approve_holiday/<int:holiday_id>')
 @require_role('admin')

@@ -74,7 +74,9 @@
                                 <div class="modal-body">
                                     <!-- Paid Students -->
                                     <h6 class="text-success border-bottom pb-2 mb-3">الطلاب الذين دفعوا ({{ stats.paid_count }})</h6>
-                                    <div class="table-responsive mb-4">
+
+                                    <!-- Desktop View -->
+                                    <div class="d-none d-md-block table-responsive mb-4">
                                         <table class="table table-sm table-hover">
                                             <thead>
                                                 <tr>
@@ -103,9 +105,31 @@
                                         </table>
                                     </div>
 
+                                    <!-- Mobile View (Mini Cards) -->
+                                    <div class="d-md-none mb-4">
+                                        <div class="row g-2">
+                                            {% for fee in stats.paid_fees %}
+                                            <div class="col-6">
+                                                <div class="card h-100 border shadow-sm p-2 text-center bg-light">
+                                                    <div class="fw-bold small mb-1">{{ fee.student.name }}</div>
+                                                    <div class="text-success small mb-1">{{ fee.amount }}</div>
+                                                    <div class="text-muted x-small mb-1">{{ fee.date_paid }}</div>
+                                                    {% if session.role == 'admin' %}
+                                                    <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" onsubmit="return confirm('حذف؟');">
+                                                        <button class="btn btn-xs btn-outline-danger w-100"><i class="fas fa-trash"></i></button>
+                                                    </form>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
                                     <!-- Unpaid Students -->
                                     <h6 class="text-danger border-bottom pb-2 mb-3">الطلاب الذين لم يدفعوا ({{ stats.unpaid_count }})</h6>
-                                    <div class="table-responsive">
+
+                                    <!-- Desktop View -->
+                                    <div class="d-none d-md-block table-responsive">
                                         <table class="table table-sm table-hover">
                                             <thead>
                                                 <tr>
@@ -136,6 +160,30 @@
                                                 {% endfor %}
                                             </tbody>
                                         </table>
+                                    </div>
+
+                                    <!-- Mobile View (Mini Cards) -->
+                                    <div class="d-md-none">
+                                        <div class="row g-2">
+                                            {% for fee in stats.unpaid_fees %}
+                                            <div class="col-6">
+                                                <div class="card h-100 border shadow-sm p-2 text-center bg-white">
+                                                    <div class="fw-bold small mb-1">{{ fee.student.name }}</div>
+                                                    <div class="text-danger small mb-1">{{ fee.amount }}</div>
+                                                    <div class="d-flex gap-1 justify-content-center mt-2">
+                                                        <form action="{{ url_for('confirm_fee_payment', fee_id=fee.id) }}" method="POST" class="flex-grow-1">
+                                                            <button class="btn btn-sm btn-success w-100 py-0" style="font-size: 0.7rem;">دفع</button>
+                                                        </form>
+                                                        {% if session.role == 'admin' %}
+                                                        <form action="{{ url_for('delete_fee', fee_id=fee.id) }}" method="POST" onsubmit="return confirm('حذف؟');">
+                                                            <button class="btn btn-sm btn-outline-danger py-0" style="font-size: 0.7rem;"><i class="fas fa-trash"></i></button>
+                                                        </form>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

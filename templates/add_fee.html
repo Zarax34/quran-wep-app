@@ -33,6 +33,32 @@
                         <label for="date_paid" class="form-label">تاريخ الدفع</label>
                         <input type="date" class="form-control" id="date_paid" name="date_paid" value="{{ now().strftime('%Y-%m-%d') }}" required>
                     </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="month_select" class="form-label">الشهر (اختياري)</label>
+                            <select class="form-select" id="month_select" name="month_select">
+                                <option value="">اختر الشهر</option>
+                                <option value="يناير">يناير</option>
+                                <option value="فبراير">فبراير</option>
+                                <option value="مارس">مارس</option>
+                                <option value="أبريل">أبريل</option>
+                                <option value="مايو">مايو</option>
+                                <option value="يونيو">يونيو</option>
+                                <option value="يوليو">يوليو</option>
+                                <option value="أغسطس">أغسطس</option>
+                                <option value="سبتمبر">سبتمبر</option>
+                                <option value="أكتوبر">أكتوبر</option>
+                                <option value="نوفمبر">نوفمبر</option>
+                                <option value="ديسمبر">ديسمبر</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="fee_name" class="form-label">اسم الرسوم (اختياري)</label>
+                            <input type="text" class="form-control" id="fee_name" name="fee_name" placeholder="مثال: رسوم رحلة">
+                            <div class="form-text">إذا اخترت الشهر ولم تكتب اسماً، سيتم تسميتها "رسوم شهر X" تلقائياً.</div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="notes" class="form-label">ملاحظات</label>
                         <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>

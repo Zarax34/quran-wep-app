@@ -33,6 +33,22 @@
                         </div>
                     </div>
 
+                    <!-- Positives & Negatives -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="positives" class="form-label">إيجابيات الطالب</label>
+                                <textarea class="form-control" id="positives" name="positives" rows="2" placeholder="نقاط القوة..."></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="negatives" class="form-label">سلبيات الطالب</label>
+                                <textarea class="form-control" id="negatives" name="negatives" rows="2" placeholder="نقاط الضعف..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -155,7 +171,7 @@
                         <select class="form-control" id="circle_id" name="circle_id" required>
                             <option value="">اختر الحلقة</option>
                             {% for circle in circles %}
-                            <option value="{{ circle.id }}">{{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}</option>
+                            <option value="{{ circle.id }}" {% if circles|length == 1 %}selected{% endif %}>{{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}</option>
                             {% endfor %}
                         </select>
                     </div>

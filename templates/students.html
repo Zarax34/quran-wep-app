@@ -17,26 +17,24 @@
 <div class="card mb-4 shadow-sm">
     <div class="card-body">
         <form method="GET">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-5">
-                    <label for="circle_id" class="form-label">تصفية حسب الحلقة</label>
-                    <select class="form-select" id="circle_id" name="circle_id">
-                        <option value="">جميع الحلقات</option>
-                        {% for circle in circles %}
-                        <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
-                            {{ circle.name }} - {{ circle.teacher.name if circle.teacher else circle.teacher_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-5">
-                    <label for="search" class="form-label">بحث عن طالب</label>
+            <div class="d-flex flex-row gap-2">
+                <div style="flex: 1;">
                     <div class="searchBox">
                         <input class="searchInput" type="text" id="search" name="search" placeholder="بحث..." value="{{ request.args.get('search', '') }}">
                         <button class="searchButton" type="submit">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
+                </div>
+                <div style="flex: 1;">
+                    <select class="form-select" id="circle_id" name="circle_id" onchange="this.form.submit()" style="height: 45px; border-radius: 25px;">
+                        <option value="">جميع الحلقات</option>
+                        {% for circle in circles %}
+                        <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
+                            {{ circle.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
         </form>
