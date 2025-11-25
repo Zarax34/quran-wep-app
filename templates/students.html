@@ -13,21 +13,14 @@
     </div>
 </div>
 
-<!-- Filter and Search -->
+<!-- Filter and Search Area -->
 <div class="card mb-4 shadow-sm">
     <div class="card-body">
         <form method="GET">
-            <div class="d-flex flex-row gap-2">
-                <div style="flex: 1;">
-                    <div class="searchBox">
-                        <input class="searchInput" type="text" id="search" name="search" placeholder="بحث..." value="{{ request.args.get('search', '') }}">
-                        <button class="searchButton" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </div>
-                <div style="flex: 1;">
-                    <select class="form-select" id="circle_id" name="circle_id" onchange="this.form.submit()" style="height: 45px; border-radius: 25px;">
+            <div class="d-flex flex-column flex-md-row gap-3 align-items-center justify-content-between">
+                <!-- Circle Select (Header Area) -->
+                <div class="w-100 w-md-50 order-1 order-md-2">
+                    <select class="form-select" id="circle_id" name="circle_id" onchange="this.form.submit()" style="height: 44px; border-radius: 24px;">
                         <option value="">جميع الحلقات</option>
                         {% for circle in circles %}
                         <option value="{{ circle.id }}" {% if circle.id == selected_circle|int %}selected{% endif %}>
@@ -35,6 +28,33 @@
                         </option>
                         {% endfor %}
                     </select>
+                </div>
+
+                <!-- New Search Bar Design -->
+                <div class="searchbar order-2 order-md-1">
+                    <div class="searchbar-wrapper">
+                        <div class="searchbar-left">
+                            <div class="search-icon-wrapper">
+                                <span class="search-icon searchbar-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="searchbar-center">
+                            <div class="searchbar-input-spacer"></div>
+                            <input type="text" class="searchbar-input" maxlength="2048" name="search" autocapitalize="off" autocomplete="off" title="Search" role="combobox" placeholder="بحث عن طالب..." value="{{ request.args.get('search', '') }}">
+                        </div>
+                        <div class="searchbar-right">
+                            <!-- Voice search placeholder or submit button -->
+                            <button type="submit" class="voice-search" title="بحث">
+                                <svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style="fill: #4285f4;">
+                                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </form>
@@ -44,428 +64,214 @@
 <!-- Students View -->
 {% set grouped_students = students|groupby('circle.name') %}
 
-<!-- Mobile View: Horizontal Scroll per Circle -->
-<div class="d-md-none">
-    {% for circle_name, circle_students in grouped_students %}
-    <div class="mb-4">
-        <h4 class="mb-3 ps-2 border-start border-4 border-primary ms-2">{{ circle_name }}</h4>
-        <div class="scrolling-wrapper">
-            {% for student in circle_students %}
-            <div class="scrolling-card">
-                <div class="card">
-                    <div class="top-section">
-                        {% if student.photo %}
-                            <img src="{{ url_for('uploaded_file', filename=student.photo) }}" alt="{{ student.name }}" style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #1b233d;">
-                        {% else %}
-                            <div style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background-color: #e9ecef; border: 4px solid #1b233d;">
-                                <i class="fas fa-user fa-3x text-muted"></i>
-                            </div>
-                        {% endif %}
-                        <div class="border"></div>
-                    </div>
-                    <div class="bottom-section">
-                        <span class="title">{{ student.name }}</span>
-                        {% if student.pending_approval %}
-                            <span class="badge bg-warning text-dark mb-3">في انتظار الموافقة</span>
-                        {% endif %}
-                        <div class="row">
-                            <div class="item">
-                                <span class="big-text">{{ student.age or '-' }}</span>
-                                <span class="regular-text">العمر</span>
-                            </div>
-                            <div class="item">
-                                <span class="big-text">{{ student.circle.name }}</span>
-                                <span class="regular-text">الحلقة</span>
-                            </div>
-                            <div class="item">
-                                {% if session.role != 'teacher' or check_permission('teacher_view_phone') %}
-                                <span class="big-text">{{ student.parent.name if student.parent else '-' }}</span>
-                                <span class="regular-text">ولي الأمر</span>
-                                {% else %}
-                                <span class="big-text"><i class="fas fa-lock"></i></span>
-                                <span class="regular-text">ولي الأمر</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="row" style="margin-top: 10px;">
-                            <div class="col-12">
-                                <div class="btn-group w-100">
-                                    <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary w-100">
-                                        <i class="fas fa-chart-line"></i>
-                                    </a>
-                                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-outline-info w-100" onclick="showStudentDetails({{ student.id }})">
-                                        <i class="fas fa-info-circle"></i>
-                                    </button>
-                                </div>
-                                {% if session.role == 'admin' and student.pending_approval %}
-                                    <div class="d-grid gap-2 mt-2">
-                                        <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success btn-sm"><i class="fas fa-check"></i></a>
-                                        <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times"></i></a>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% else %}
-    <div class="col-12">
-        <div class="alert alert-info text-center p-4">
-            <i class="fas fa-users-slash fa-3x mb-3"></i>
-            <h4>لا يوجد طلاب مطابقون لمعايير البحث</h4>
-            <p>حاول تغيير الفلاتر أو إضافة طالب جديد.</p>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-
-<!-- Desktop View: Grid -->
-<div class="d-none d-md-flex row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+<!-- Accordion Students List -->
+<div class="accordion" id="studentsAccordion">
     {% for student in students %}
-    <div class="col">
-        <div class="card">
-            <div class="top-section">
-                 {% if student.photo %}
-                    <img src="{{ url_for('uploaded_file', filename=student.photo) }}" alt="{{ student.name }}" style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #1b233d;">
-                {% else %}
-                    <div style="position: absolute; top: 40px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background-color: #e9ecef; border: 4px solid #1b233d;">
-                        <i class="fas fa-user fa-3x text-muted"></i>
+    <div class="accordion-item mb-3 border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+        <h2 class="accordion-header" id="headingStudent{{ loop.index }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStudent{{ loop.index }}" aria-expanded="false" aria-controls="collapseStudent{{ loop.index }}">
+                <div class="d-flex align-items-center w-100 me-2">
+                    {% if student.photo %}
+                        <img src="{{ url_for('uploaded_file', filename=student.photo) }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex flex-column">
+                        <span class="fw-bold text-dark">{{ student.name }}</span>
+                        <small class="text-muted">{{ student.circle.name }}</small>
                     </div>
-                {% endif %}
-                <div class="border"></div>
-            </div>
-            <div class="bottom-section">
-                <span class="title">{{ student.name }}</span>
-                 {% if student.pending_approval %}
-                    <span class="badge bg-warning text-dark mb-3">في انتظار الموافقة</span>
-                {% endif %}
-                <div class="row">
-                    <div class="item">
-                        <span class="big-text">{{ student.age or '-' }}</span>
-                        <span class="regular-text">العمر</span>
+
+                    {% if student.pending_approval %}
+                    <span class="badge bg-warning text-dark ms-auto">في انتظار الموافقة</span>
+                    {% endif %}
+                </div>
+            </button>
+        </h2>
+        <div id="collapseStudent{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="headingStudent{{ loop.index }}" data-bs-parent="#studentsAccordion">
+            <div class="accordion-body bg-light">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <small class="text-muted d-block">العمر</small>
+                            <strong>{{ student.age or '-' }}</strong>
+                        </div>
                     </div>
-                    <div class="item">
-                        <span class="big-text">{{ student.circle.name }}</span>
-                        <span class="regular-text">الحلقة</span>
+                    <div class="col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <small class="text-muted d-block">رقم الهاتف</small>
+                            <strong>{{ student.student_phone or '-' }}</strong>
+                        </div>
                     </div>
-                    <div class="item">
-                        {% if session.role != 'teacher' or check_permission('teacher_view_phone') %}
-                        <span class="big-text">{{ student.parent.name if student.parent else '-' }}</span>
-                        <span class="regular-text">ولي الأمر</span>
-                        {% else %}
-                        <span class="big-text"><i class="fas fa-lock"></i></span>
-                        <span class="regular-text">ولي الأمر</span>
-                        {% endif %}
+                    <div class="col-md-4">
+                        <div class="p-2 border rounded bg-white">
+                            <small class="text-muted d-block">ولي الأمر</small>
+                            {% if session.role != 'teacher' or check_permission('teacher_view_phone') %}
+                                <strong>{{ student.parent.name if student.parent else '-' }} ({{ student.parent_phone or '-' }})</strong>
+                            {% else %}
+                                <strong><i class="fas fa-lock"></i> محمي</strong>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-2 border rounded bg-white">
+                            <small class="text-muted d-block">العنوان</small>
+                            <strong>{{ student.current_address or '-' }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-2 border rounded bg-white">
+                            <small class="text-muted d-block">التحفيظ السابق</small>
+                            <strong>{{ student.previous_memorization or '-' }}</strong>
+                        </div>
                     </div>
                 </div>
-                 <div class="row" style="margin-top: 10px;">
-                    <div class="col-12">
-                        <div class="btn-group" style="width: 100%;">
-                            <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-chart-line"></i> التقارير
-                            </a>
-                            <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary w-100">
-                                <i class="fas fa-edit"></i> تعديل
-                            </a>
-                            <button type="button" class="btn btn-outline-info w-100" onclick="showStudentDetails({{ student.id }})">
-                                <i class="fas fa-info-circle"></i> التفاصيل
-                            </button>
-                        </div>
-                        {% if session.role == 'admin' and student.pending_approval %}
-                            <div class="d-grid gap-2 mt-2">
-                                <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success"><i class="fas fa-check-circle"></i> موافقة</a>
-                                <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times-circle"></i> رفض</a>
-                            </div>
-                        {% endif %}
-                    </div>
+
+                <div class="mt-3 d-flex gap-2 flex-wrap border-top pt-3">
+                    <a href="{{ url_for('student_reports', student_id=student.id) }}" class="btn btn-outline-primary flex-grow-1">
+                        <i class="fas fa-chart-line"></i> التقارير
+                    </a>
+                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-secondary flex-grow-1">
+                        <i class="fas fa-edit"></i> تعديل
+                    </a>
+                    {% if session.role == 'admin' and student.pending_approval %}
+                        <a href="{{ url_for('approve_student', student_id=student.id) }}" class="btn btn-success flex-grow-1"><i class="fas fa-check"></i> موافقة</a>
+                        <a href="{{ url_for('reject_student', student_id=student.id) }}" class="btn btn-danger flex-grow-1" onclick="return confirm('هل أنت متأكد من رفض الطالب؟')"><i class="fas fa-times"></i> رفض</a>
+                    {% endif %}
+                    {% if session.role == 'admin' or session.role == 'teacher' %}
+                        <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn btn-outline-danger flex-grow-1" onclick="return confirm('حذف الطالب؟')"><i class="fas fa-trash"></i> حذف</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
     {% else %}
-    <div class="col-12">
-        <div class="alert alert-info text-center p-4">
-            <i class="fas fa-users-slash fa-3x mb-3"></i>
-            <h4>لا يوجد طلاب مطابقون لمعايير البحث</h4>
-            <p>حاول تغيير الفلاتر أو إضافة طالب جديد.</p>
-            <a href="{{ url_for('add_student') }}" class="btn btn-primary mt-2">
-                <i class="fas fa-plus"></i> إضافة طالب جديد
-            </a>
-        </div>
+    <div class="alert alert-info text-center p-5 rounded-3">
+        <i class="fas fa-user-slash fa-3x mb-3 text-muted"></i>
+        <h4>لا يوجد طلاب</h4>
+        <p class="text-muted">لم يتم العثور على طلاب مطابقين للبحث.</p>
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary mt-2">إضافة طالب جديد</a>
     </div>
     {% endfor %}
 </div>
 
 <style>
-/* Horizontal Scroll Styles for Mobile */
-.scrolling-wrapper {
-    display: flex;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 20px;
-    padding-left: 10px;
-    scrollbar-width: none; /* Firefox */
-
-    /* Fade out effect on edges */
-    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+/* From Uiverse.io by TimTrayler */
+.searchbar {
+  font-size: 14px;
+  font-family: arial, sans-serif;
+  color: #202124;
+  display: flex;
+  z-index: 3;
+  height: 44px;
+  background: white;
+  border: 1px solid #dfe1e5;
+  box-shadow: none;
+  border-radius: 24px;
+  margin: 0 auto;
+  width: 100%; /* Changed from auto/max-width fixed for better fit */
+  max-width: 100%;
 }
 
-.scrolling-wrapper::-webkit-scrollbar {
-    display: none; /* Safari and Chrome */
+.searchbar:hover {
+  box-shadow: 0 1px 6px rgb(32 33 36 / 28%);
+  border-color: rgba(223,225,229,0);
 }
 
-.scrolling-card {
-    flex: 0 0 auto;
-    margin-right: 15px;
-    margin-left: 15px;
+.searchbar-wrapper {
+  flex: 1;
+  display: flex;
+  padding: 5px 8px 0 14px;
 }
 
-/* From Uiverse.io by Smit-Prajapati */
-.card {
-    width: 200px; /* Reduced size */
-    border-radius: 20px;
-    background: #1b233d;
-    padding: 5px;
-    overflow: hidden;
-    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 20px 0px;
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    margin: auto;
+.searchbar-left {
+  font-size: 14px;
+  font-family: arial, sans-serif;
+  color: #202124;
+  display: flex;
+  align-items: center;
+  padding-right: 13px;
+  margin-top: -5px;
 }
 
-.card:hover {
-    transform: scale(1.05);
+.search-icon-wrapper {
+  margin: auto;
 }
 
-.card .top-section {
-    height: 150px;
-    border-radius: 15px;
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(45deg, rgb(4, 159, 187) 0%, rgb(80, 246, 255) 100%);
-    position: relative;
+.search-icon {
+  margin-top: 3px;
+  color: #9aa0a6;
+  height: 20px;
+  line-height: 20px;
+  width: 20px;
 }
 
-.card .top-section .border {
-    border-bottom-right-radius: 10px;
-    height: 30px;
-    width: 130px;
-    background: white;
-    background: #1b233d;
-    position: relative;
-    transform: skew(-40deg);
-    box-shadow: -10px -10px 0 0 #1b233d;
+.searchbar-icon {
+  display: inline-block;
+  fill: currentColor;
+  height: 24px;
+  line-height: 24px;
+  position: relative;
+  width: 24px;
 }
 
-.card .top-section .border::before {
-    content: "";
-    position: absolute;
-    width: 15px;
-    height: 15px;
-    top: 0;
-    right: -15px;
-    background: rgba(255, 255, 255, 0);
-    border-top-left-radius: 10px;
-    box-shadow: -5px -5px 0 2px #1b233d;
+.searchbar-center {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
 }
 
-.card .top-section::before {
-    content: "";
-    position: absolute;
-    top: 30px;
-    left: 0;
-    background: rgba(255, 255, 255, 0);
-    height: 15px;
-    width: 15px;
-    border-top-left-radius: 15px;
-    box-shadow: -5px -5px 0 2px #1b233d;
+.searchbar-input-spacer {
+  color: transparent;
+  flex: 100%;
+  white-space: pre;
+  height: 34px;
+  font-size: 16px;
 }
 
-.card .bottom-section {
-    margin-top: 15px;
-    padding: 10px 5px;
+.searchbar-input {
+  background-color: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, .87);
+  word-wrap: break-word;
+  outline: none;
+  display: flex;
+  flex: 100%;
+  margin-top: -37px;
+  height: 34px;
+  font-size: 16px;
+  max-width: 100%;
+  width: 100%;
 }
 
-.card .bottom-section .title {
-    display: block;
-    font-size: 17px;
-    font-weight: bolder;
-    color: white;
-    text-align: center;
-    letter-spacing: 2px;
+.searchbar-right {
+  display: flex;
+  flex: 0 0 auto;
+  margin-top: -5px;
+  align-items: stretch;
+  flex-direction: row
 }
 
-.card .bottom-section .row {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
+.searchbar-clear-icon {
+  margin-right: 12px
 }
 
-.card .bottom-section .row .item {
-    flex: 30%;
-    text-align: center;
-    padding: 5px;
-    color: rgba(170, 222, 243, 0.721);
-}
-
-.card .bottom-section .row .item .big-text {
-    font-size: 12px;
-    display: block;
-}
-
-.card .bottom-section .row .item .regular-text {
-    font-size: 9px;
-}
-
-.card .bottom-section .row .item:nth-child(2) {
-    border-left: 1px solid rgba(255, 255, 255, 0.126);
-    border-right: 1px solid rgba(255, 255, 255, 0.126);
-}
-
-/* From Uiverse.io by OnlyCodeChannel */
-/* New Elegant Search Bar */
-.searchBox {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 50px;
-    position: relative;
-    transition: box-shadow 0.3s ease;
-}
-
-.searchBox:focus-within {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border-color: var(--primary-color);
-}
-
-.searchButton {
-    color: white;
-    position: absolute;
-    left: 5px; /* RTL: Left side */
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    border: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.searchButton:hover {
-    transform: scale(1.05);
-}
-
-.searchInput {
-    border: none;
-    background: none;
-    outline: none;
-    color: #333;
-    font-size: 1rem;
-    padding: 12px 20px 12px 55px; /* Padding for button on left */
-    width: 100%;
-    border-radius: 50px;
-}
-
-.searchBox.focused {
-    max-width: 100%;
-    z-index: 1100;
-}
-
-.page-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1099;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.page-overlay.visible {
-    display: block;
-    opacity: 1;
+.voice-search {
+  flex: 1 0 auto;
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  outline: none;
+  padding: 0 8px;
+  width: 2.8em;
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('search');
-    const searchBox = searchInput.closest('.searchBox');
-    const overlay = document.createElement('div');
-    overlay.className = 'page-overlay';
-    document.body.appendChild(overlay);
-
-    searchInput.addEventListener('focus', () => {
-        searchBox.classList.add('focused');
-        overlay.classList.add('visible');
-    });
-
-    searchInput.addEventListener('blur', () => {
-        searchBox.classList.remove('focused');
-        overlay.classList.remove('visible');
-    });
-});
-
-function showStudentDetails(studentId) {
-    fetch(`/api/student_details/${studentId}`)
-        .then(response => response.json())
-        .then(data => {
-            const modalBody = document.getElementById('studentDetailsModalBody');
-            modalBody.innerHTML = `
-                <div class="text-center mb-3">
-                    ${data.photo ? `<img src="/uploads/${data.photo}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">` : '<i class="fas fa-user-circle fa-4x text-secondary"></i>'}
-                    <h4>${data.name}</h4>
-                    <p class="text-muted">${data.circle}</p>
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><strong>العمر:</strong> ${data.age || '-'}</li>
-                    <li class="list-group-item"><strong>رقم الهاتف:</strong> ${data.student_phone || '-'}</li>
-                    <li class="list-group-item"><strong>ولي الأمر:</strong> ${data.parent_name || '-'} (${data.parent_phone || '-'})</li>
-                    <li class="list-group-item"><strong>المعلم:</strong> ${data.teacher || '-'}</li>
-                    <li class="list-group-item"><strong>السكن:</strong> ${data.current_address || '-'}</li>
-                    <li class="list-group-item"><strong>تاريخ الميلاد:</strong> ${data.date_of_birth || '-'}</li>
-                    <li class="list-group-item"><strong>تاريخ الالتحاق:</strong> ${data.enrollment_date || '-'}</li>
-                </ul>
-            `;
-            var modal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
-            modal.show();
-        });
-}
-</script>
-
-<!-- Student Details Modal -->
-<div class="modal fade" id="studentDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">تفاصيل الطالب</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="studentDetailsModalBody">
-                <div class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">جاري التحميل...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Scripts mostly removed as new accordion design doesn't need JS for modals -->
 {% endblock %}

@@ -2690,10 +2690,18 @@ def fees():
 @require_role('admin')
 def generate_monthly_fees():
     if request.method == 'POST':
-        title = request.form['title']
+        title = request.form.get('title')
         amount = request.form.get('amount', type=float)
         circle_ids = request.form.getlist('circle_ids')
         notes = request.form.get('notes')
+        month_select = request.form.get('month_select')
+
+        if not title and month_select:
+            title = f"رسوم شهر {month_select}"
+
+        # Fallback if both empty (should be prevented by UI required but good for safety)
+        if not title:
+            title = f"رسوم شهرية - {datetime.now().strftime('%B')}"
 
         count = 0
         for circle_id in circle_ids:

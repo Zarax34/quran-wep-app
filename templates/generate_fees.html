@@ -16,10 +16,32 @@
             </div>
             <div class="card-body">
                 <form method="POST">
-                    <div class="mb-3">
-                        <label for="title" class="form-label">عنوان الرسوم</label>
-                        <input type="text" class="form-control" id="title" name="title" placeholder="مثال: رسوم شهر أكتوبر 2025" required>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="month_select" class="form-label">الشهر (اختياري)</label>
+                            <select class="form-select" id="month_select" name="month_select">
+                                <option value="">اختر الشهر</option>
+                                <option value="يناير">يناير</option>
+                                <option value="فبراير">فبراير</option>
+                                <option value="مارس">مارس</option>
+                                <option value="أبريل">أبريل</option>
+                                <option value="مايو">مايو</option>
+                                <option value="يونيو">يونيو</option>
+                                <option value="يوليو">يوليو</option>
+                                <option value="أغسطس">أغسطس</option>
+                                <option value="سبتمبر">سبتمبر</option>
+                                <option value="أكتوبر">أكتوبر</option>
+                                <option value="نوفمبر">نوفمبر</option>
+                                <option value="ديسمبر">ديسمبر</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="title" class="form-label">عنوان الرسوم (اختياري)</label>
+                            <input type="text" class="form-control" id="title" name="title" placeholder="مثال: رسوم رحلة">
+                            <div class="form-text">إذا اخترت الشهر ولم تكتب اسماً، سيتم تسميتها "رسوم شهر X" تلقائياً.</div>
+                        </div>
                     </div>
+
                     <div class="mb-3">
                         <label for="amount" class="form-label">المبلغ المطلوب</label>
                         <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
