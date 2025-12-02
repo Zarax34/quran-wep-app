@@ -446,6 +446,7 @@
     </div>
 
     <!-- Educational Notes -->
+    {% if session.role != 'student' %}
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
@@ -467,6 +468,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Certificates -->
     <div class="row mt-4">

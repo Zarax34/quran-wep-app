@@ -196,6 +196,7 @@ class Student(db.Model):
     last_memorized_ayah = db.Column(db.Integer, default=0)
     memorization_direction = db.Column(db.String(50), default='BaqarahToNas') # or 'NasToBaqarah'
     parent_relationship = db.Column(db.String(50), default='أب')
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     circle = db.relationship('Circle', backref='students')
     parent = db.relationship('Parent', backref='students')
 
@@ -539,11 +540,12 @@ def create_parent_username(full_name):
     return username
 
 def create_student_username(full_name):
-    username = full_name.strip().replace(' ', '_')
+    # استخدام الاسم كما هو (بدون استبدال المسافات)
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
-        username = f"{base_username}_{counter}"
+        username = f"{base_username} {counter}"
         counter += 1
     return username
 
@@ -1138,10 +1140,20 @@ def add_student():
         
         # Create user account for student, ensuring full name is stored for display
         student_username = create_student_username(name)
-        student_user = User(username=student_username, password=generate_password_hash(parent_phone or student_phone or '123456'), name=name, role='student')
+        # استخدام رقم الطالب ككلمة مرور أولاً، ثم رقم ولي الأمر
+        password = student_phone or parent_phone or '123456'
+        student_user = User(username=student_username, password=generate_password_hash(password), name=name, role='student')
         db.session.add(student_user)
 
+        # Link user to student via user_id
+        # We need to commit student_user first to get ID, but both are in session.
+        # SQLAlchemy handles foreign keys if objects are associated.
+        # But here Student has user_id FK to User.
+        # We need to add student_user, flush to get ID, then assign to student.
+
         try:
+            db.session.flush() # Get IDs
+            student.user_id = student_user.id
             db.session.commit()
             flash('تم إضافة الطالب بنجاح', 'success')
             if requires_approval():
@@ -3599,8 +3611,14 @@ def student_dashboard():
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('dashboard'))
 
-    user = db.session.get(User, session['user_id'])
-    student = Student.query.filter_by(name=user.name).first()
+    # Lookup by user_id first (new robust way)
+    student = Student.query.filter_by(user_id=session['user_id']).first()
+
+    # Fallback to name match (legacy way)
+    if not student:
+        user = db.session.get(User, session['user_id'])
+        student = Student.query.filter_by(name=user.name).first()
+
     if not student:
         flash('لم يتم العثور على بيانات الطالب', 'error')
         return redirect(url_for('logout'))
@@ -3908,6 +3926,19 @@ def setup_database():
                 pass
             else:
                 print(f"ERROR: Could not add 'event_date' column to 'announcement' table: {e}")
+
+        # 5. Add 'user_id' to 'student' table
+        try:
+            with db.engine.connect() as connection:
+                trans = connection.begin()
+                connection.execute(text("ALTER TABLE student ADD COLUMN user_id INTEGER REFERENCES user(id)"))
+                trans.commit()
+            print("INFO: Added 'user_id' column to 'student' table.")
+        except Exception as e:
+            if 'duplicate column' in str(e).lower():
+                pass
+            else:
+                print(f"ERROR: Could not add 'user_id' column to 'student' table: {e}")
 
         # Add social media columns to 'settings' table if they don't exist
         social_columns = ['social_instagram', 'social_facebook', 'social_whatsapp', 'social_telegram']
