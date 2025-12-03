@@ -1388,7 +1388,7 @@
     }
     </script>
 </head>
-<body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %} {% if session.role == 'parent' or session.role == 'teacher' or session.role == 'communication_officer' %}parent-view{% endif %}">
+<body class="{% if session.get('view_type') == 'mobile' %}mobile-view{% endif %} {% if session.role == 'parent' or session.role == 'teacher' or session.role == 'communication_officer' or session.role == 'student' %}parent-view{% endif %}">
     
     <!-- New Top Bar -->
     <div class="top-bar" onclick="toggleInfoCard()">
@@ -1809,6 +1809,12 @@
                 {% elif session.role == 'student' %}
                     <a href="{{ url_for('student_dashboard') }}" class="{{ 'active' if request.endpoint == 'student_dashboard' }}">
                         <i class="fas fa-user"></i><span>الرئيسية</span>
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
+                        <i class="fas fa-file-alt"></i><span>التقارير</span>
+                    </a>
+                    <a href="{{ url_for('activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
+                       <i class="fas fa-cubes"></i><span>الأنشطة</span>
                     </a>
                     <a href="{{ url_for('announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
                         <i class="fas fa-bullhorn"></i><span>الإعلانات</span>

@@ -577,7 +577,7 @@ def create_parent_username(full_name):
     return username
 
 def create_student_username(full_name):
-    username = full_name.strip().replace(' ', '_')
+    username = full_name.strip()
     base_username = username
     counter = 1
     while User.query.filter_by(username=username).first():
@@ -1635,6 +1635,13 @@ def reports():
         # I'll leave it as is, as it fetches ALL by default which covers Admin.
         # If Teacher restriction is needed, I'd add it here, but user didn't ask for that specifically in the context of "Admin bug".
         pass
+    elif session.get('role') == 'student':
+        # Students see only their reports
+        student = Student.query.filter_by(name=session.get('name')).first()
+        if student:
+            query = query.filter(Report.student_id == student.id)
+        else:
+             query = query.filter(Report.id == -1)
 
     # Strict Filtering: If dates are provided, use them.
     # If NOT provided, what is the default behavior? Show all?
@@ -2545,6 +2552,18 @@ def activities():
                  ~CenterActivity.target_circles.any()
             )
         )
+    elif session.get('role') == 'student':
+        student = Student.query.filter_by(name=session.get('name')).first()
+        if student:
+             query = query.outerjoin(ActivityApproval).outerjoin(activity_circles).filter(
+                or_(
+                    ActivityApproval.student_id == student.id,
+                    CenterActivity.target_circles.any(Circle.id == student.circle_id),
+                    ~CenterActivity.target_circles.any()
+                )
+            )
+        else:
+            query = query.filter(CenterActivity.id == -1)
 
     activities = query.order_by(CenterActivity.date.desc()).all()
     # Remove duplicates if any due to joins
