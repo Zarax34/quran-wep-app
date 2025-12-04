@@ -2422,6 +2422,41 @@ def users():
     users = User.query.filter(User.role.in_(['admin', 'teacher', 'support'])).all()
     return render_template('users.html', users=users)
 
+@app.route('/student_accounts')
+@require_role('admin')
+def student_accounts():
+    users = User.query.filter_by(role='student').all()
+    return render_template('student_accounts.html', users=users)
+
+@app.route('/update_student_account/<int:user_id>', methods=['POST'])
+@require_role('admin')
+def update_student_account(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.role != 'student':
+        flash('هذا المستخدم ليس طالباً', 'error')
+        return redirect(url_for('student_accounts'))
+
+    new_username = request.form.get('username')
+    new_password = request.form.get('password')
+
+    if new_username:
+        if User.query.filter(User.username == new_username, User.id != user.id).first():
+            flash('اسم المستخدم مستخدم بالفعل', 'error')
+            return redirect(url_for('student_accounts'))
+        user.username = new_username
+
+    if new_password:
+        user.password = generate_password_hash(new_password)
+
+    try:
+        db.session.commit()
+        flash('تم تحديث حساب الطالب بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ: {e}', 'error')
+
+    return redirect(url_for('student_accounts'))
+
 @app.route('/add_user', methods=['GET', 'POST'])
 @require_role('admin')
 def add_user():
