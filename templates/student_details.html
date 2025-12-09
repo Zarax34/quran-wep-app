@@ -484,6 +484,7 @@
                                         <i class="fas fa-award text-warning me-2"></i>
                                         <strong>{{ cert.course_info.name }}:</strong> {{ cert.reason }}
                                     </span>
+                                    {% if cert.certificate_file %}
                                     <a href="{{ url_for('uploaded_file', filename=cert.certificate_file) }}" target="_blank" style="text-decoration: none;">
                                         <div class="container">
                                             <label class="label">
@@ -499,6 +500,13 @@
                                             </label>
                                         </div>
                                     </a>
+                                    {% elif cert.certificate_url %}
+                                    <a href="{{ cert.certificate_url }}" target="_blank" class="btn btn-sm btn-info">
+                                        <i class="fas fa-external-link-alt"></i> فتح الرابط
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">لم يتم رفع الملف</span>
+                                    {% endif %}
                                 </li>
                             {% endfor %}
                         </ul>
