@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/auth_provider.dart';
+import 'services/sync_service.dart'; // Import to ensure provider is created
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
 
@@ -16,13 +17,16 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
 
+    // Watch sync service to initialize connectivity listener
+    ref.watch(syncServiceProvider);
+
     return MaterialApp(
       title: 'Quran Center',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2C5AA0)), // Primary Color from Flask App
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2C5AA0)),
         useMaterial3: true,
-        fontFamily: 'NotoNaskhArabic', // Assuming we add this font
+        // fontFamily: 'NotoNaskhArabic', // Ensure this font is added if used
       ),
       locale: const Locale('ar', ''),
       localizationsDelegates: const [

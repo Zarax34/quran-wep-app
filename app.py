@@ -233,6 +233,7 @@ class Report(db.Model):
     notes = db.Column(db.Text)
     academic_year = db.Column(db.String(10), default='2025')
     status = db.Column(db.String(20), default='Approved')
+    uuid = db.Column(db.String(36), unique=True, nullable=True)
     student = db.relationship('Student', backref='reports')
     teacher = db.relationship('User', backref='reports')
     circle = db.relationship('Circle', backref='reports')
@@ -3205,7 +3206,7 @@ def api_sync_pull():
         response_data['reports'] = [{
             'id': r.id, 'student_id': r.student_id, 'date': r.date.isoformat(),
             'surah': r.surah, 'from_verse': r.from_verse, 'to_verse': r.to_verse,
-            'grade': r.grade, 'type': r.type, 'status': r.status
+            'grade': r.grade, 'type': r.type, 'status': r.status, 'uuid': r.uuid
         } for r in reports]
 
     elif user.role == 'admin':
@@ -3218,7 +3219,7 @@ def api_sync_pull():
         reports = Report.query.filter(Report.date >= (datetime.now().date() - timedelta(days=7))).all()
         response_data['reports'] = [{
              'id': r.id, 'student_id': r.student_id, 'date': r.date.isoformat(),
-            'surah': r.surah, 'grade': r.grade
+            'surah': r.surah, 'grade': r.grade, 'uuid': r.uuid
         } for r in reports]
 
     return jsonify(response_data), 200
@@ -3245,8 +3246,16 @@ def api_sync_push():
                     type=r['type'],
                     grade=r['grade'],
                     notes=r.get('notes', ''),
-                    status='Pending' # Always pending from offline
+                    status='Pending', # Always pending from offline
+                    uuid=r.get('uuid')
                 )
+
+                # Check duplication by UUID
+                if r.get('uuid'):
+                    existing = Report.query.filter_by(uuid=r['uuid']).first()
+                    if existing:
+                        continue # Skip if already exists
+
                 db.session.add(new_report)
 
                 # Update student progress
@@ -4740,6 +4749,7 @@ def setup_database():
             "ALTER TABLE fee ADD COLUMN status VARCHAR(20) DEFAULT 'Paid'",
             "ALTER TABLE fee ADD COLUMN title VARCHAR(100)",
             "ALTER TABLE report ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'",
+            "ALTER TABLE report ADD COLUMN uuid VARCHAR(36) UNIQUE",
             "ALTER TABLE holiday ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'"
         ]
 

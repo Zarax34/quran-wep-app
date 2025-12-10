@@ -20,7 +20,16 @@ class SyncService {
   final ApiService api;
   final Logger logger = Logger();
 
-  SyncService(this.db, this.api);
+  SyncService(this.db, this.api) {
+    // Listen to connectivity changes
+    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      if (results.contains(ConnectivityResult.mobile) || results.contains(ConnectivityResult.wifi)) {
+        logger.i("Internet connected. Triggering sync.");
+        syncPush();
+        syncPull();
+      }
+    });
+  }
 
   Future<void> syncPull() async {
     final prefs = await SharedPreferences.getInstance();
@@ -59,16 +68,15 @@ class SyncService {
         }
 
         // Sync Reports
-        // The API returns 'reports' list. We should insert them.
-        // We use insertOnConflictUpdate assuming 'id' from server is primary key.
-        // However, our local Reports table has autoIncrement ID.
-        // We need a serverId column to map them correctly.
-        // If we get an ID from server, we check if we have a report with that serverId.
-
         if (data['reports'] != null) {
           for (var r in data['reports']) {
-            // Check if exists by serverId
-            final existing = await (db.select(db.reports)..where((tbl) => tbl.serverId.equals(r['id']))).getSingleOrNull();
+            // Logic to prevent duplication:
+            // 1. Try to find by UUID (best match)
+            // 2. Try to find by serverId
+
+            var existing = await (db.select(db.reports)
+              ..where((tbl) => r['uuid'] != null ? tbl.uuid.equals(r['uuid']) : tbl.serverId.equals(r['id']))
+            ).getSingleOrNull();
 
             final report = ReportsCompanion(
               serverId: drift.Value(r['id']),
@@ -80,13 +88,13 @@ class SyncService {
               grade: drift.Value(r['grade']),
               type: drift.Value(r['type'] ?? 'حفظ'),
               status: drift.Value(r['status'] ?? 'Approved'),
+              uuid: drift.Value(r['uuid']),
             );
 
             if (existing != null) {
-              // Update
-              await (db.update(db.reports)..where((tbl) => tbl.serverId.equals(r['id']))).write(report);
+              // Update existing local record (whether pending or synced) with server version
+              await (db.update(db.reports)..where((tbl) => tbl.id.equals(existing.id))).write(report);
             } else {
-              // Insert
               await db.into(db.reports).insert(report);
             }
           }
@@ -113,13 +121,17 @@ class SyncService {
     List<int> processedIds = [];
 
     for (var item in queue) {
-      final payload = jsonDecode(item.payload);
-      if (item.table == 'reports' && item.action == 'INSERT') {
-        reportsToPush.add(payload);
-        processedIds.add(item.id);
-      } else if (item.table == 'attendance') {
-        attendanceToPush.add(payload);
-        processedIds.add(item.id);
+      try {
+        final payload = jsonDecode(item.payload);
+        if (item.table == 'reports' && item.action == 'INSERT') {
+          reportsToPush.add(payload);
+          processedIds.add(item.id);
+        } else if (item.table == 'attendance') {
+          attendanceToPush.add(payload);
+          processedIds.add(item.id);
+        }
+      } catch (e) {
+        logger.e("Error parsing queue item ${item.id}", error: e);
       }
     }
 

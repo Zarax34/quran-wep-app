@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import '../../services/sync_service.dart';
 import '../../data/database/database.dart';
 
@@ -96,6 +97,7 @@ class _AddReportScreenState extends ConsumerState<AddReportScreen> {
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       final db = ref.read(databaseProvider);
+      final uuid = const Uuid().v4();
 
       final report = ReportsCompanion(
         studentId: drift.Value(_selectedStudent!.id),
@@ -106,6 +108,7 @@ class _AddReportScreenState extends ConsumerState<AddReportScreen> {
         type: drift.Value(_type),
         grade: drift.Value(_grade),
         status: const drift.Value('Pending'),
+        uuid: drift.Value(uuid),
       );
 
       // Save locally
@@ -121,6 +124,7 @@ class _AddReportScreenState extends ConsumerState<AddReportScreen> {
         'to_verse': int.parse(_toController.text),
         'type': _type,
         'grade': _grade,
+        'uuid': uuid,
       };
 
       await db.into(db.syncQueue).insert(SyncQueueCompanion(

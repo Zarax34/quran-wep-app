@@ -61,6 +61,7 @@ class Reports extends Table {
   TextColumn get type => text()(); // Hifz, Muraja'ah
   TextColumn get status => text().withDefault(const Constant('Pending'))(); // Pending, Synced
   TextColumn get notes => text().nullable()();
+  TextColumn get uuid => text().nullable()();
 }
 
 class Attendance extends Table {
