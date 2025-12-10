@@ -11,10 +11,14 @@ from fpdf import FPDF
 from flask_mail import Mail, Message as MailMessage
 from apscheduler.schedulers.background import BackgroundScheduler
 import json
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 # ---------- 2.  FLASK INIT  ----------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your-jwt-secret-key-here-dev-only')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
+jwt = JWTManager(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quran_center.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -3118,6 +3122,167 @@ def delete_work(work_id):
     db.session.commit()
     flash('تم حذف العمل بنجاح!', 'success')
     return redirect(url_for('manage_work'))
+
+# ---------- API ROUTES FOR MOBILE APP ----------
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    username = request.json.get('username', None)
+    password = request.json.get('password', None)
+
+    if not username or not password:
+        return jsonify({"msg": "Missing username or password"}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if user and check_password_hash(user.password, password):
+        if not user.is_active:
+             return jsonify({"msg": "Account disabled"}), 403
+
+        access_token = create_access_token(identity=user.id)
+
+        # Get additional user info
+        user_info = {
+            "id": user.id,
+            "username": user.username,
+            "name": user.name,
+            "role": user.role,
+            "email": user.email
+        }
+
+        return jsonify(access_token=access_token, user=user_info), 200
+    else:
+        return jsonify({"msg": "Bad username or password"}), 401
+
+@app.route('/api/sync', methods=['GET'])
+@jwt_required()
+def api_sync_pull():
+    current_user_id = get_jwt_identity()
+    user = db.session.get(User, current_user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # Fetch data based on role
+    response_data = {
+        "timestamp": datetime.now().isoformat(),
+        "students": [],
+        "circles": [],
+        "reports": [],
+        "attendance": [],
+        "settings": {}
+    }
+
+    # Common Data
+    circles = Circle.query.filter_by(is_active=True).all()
+    response_data['circles'] = [{
+        'id': c.id, 'name': c.name, 'teacher_id': c.teacher_id,
+        'category': c.category
+    } for c in circles]
+
+    # Settings
+    settings = Settings.query.first() or Settings()
+    response_data['settings'] = {
+        'site_name': settings.site_name,
+        'permissions': settings.permissions
+    }
+
+    if user.role == 'teacher':
+        teacher_circles = [c.id for c in Circle.query.filter_by(teacher_id=user.id).all()]
+
+        # Students in teacher's circles
+        students = Student.query.filter(Student.circle_id.in_(teacher_circles), Student.is_active==True).all()
+        response_data['students'] = [{
+            'id': s.id, 'name': s.name, 'circle_id': s.circle_id,
+            'student_phone': s.student_phone, 'total_verses': s.total_verses_since_year_start,
+            'last_surah': s.last_memorized_sura, 'last_ayah': s.last_memorized_ayah
+        } for s in students]
+
+        # Recent Reports (last 30 days)
+        start_date = datetime.now().date() - timedelta(days=30)
+        reports = Report.query.filter(Report.circle_id.in_(teacher_circles), Report.date >= start_date).all()
+        response_data['reports'] = [{
+            'id': r.id, 'student_id': r.student_id, 'date': r.date.isoformat(),
+            'surah': r.surah, 'from_verse': r.from_verse, 'to_verse': r.to_verse,
+            'grade': r.grade, 'type': r.type, 'status': r.status
+        } for r in reports]
+
+    elif user.role == 'admin':
+         # Admin gets everything (simplified for now, ideally pagination)
+        students = Student.query.filter_by(is_active=True).all()
+        response_data['students'] = [{
+            'id': s.id, 'name': s.name, 'circle_id': s.circle_id
+        } for s in students]
+        # Reports might be too large, sending last 7 days
+        reports = Report.query.filter(Report.date >= (datetime.now().date() - timedelta(days=7))).all()
+        response_data['reports'] = [{
+             'id': r.id, 'student_id': r.student_id, 'date': r.date.isoformat(),
+            'surah': r.surah, 'grade': r.grade
+        } for r in reports]
+
+    return jsonify(response_data), 200
+
+@app.route('/api/sync', methods=['POST'])
+@jwt_required()
+def api_sync_push():
+    current_user_id = get_jwt_identity()
+    data = request.json
+
+    # Process Reports
+    if 'reports' in data:
+        for r in data['reports']:
+            try:
+                date_obj = datetime.strptime(r['date'], '%Y-%m-%d').date()
+                new_report = Report(
+                    student_id=r['student_id'],
+                    teacher_id=current_user_id,
+                    circle_id=r['circle_id'],
+                    date=date_obj,
+                    surah=r['surah'],
+                    from_verse=r['from_verse'],
+                    to_verse=r['to_verse'],
+                    type=r['type'],
+                    grade=r['grade'],
+                    notes=r.get('notes', ''),
+                    status='Pending' # Always pending from offline
+                )
+                db.session.add(new_report)
+
+                # Update student progress
+                student = db.session.get(Student, r['student_id'])
+                if student and r['type'] == 'حفظ':
+                    student.total_verses_since_year_start += (r['to_verse'] - r['from_verse'] + 1)
+                    student.last_recitation_date = date_obj
+
+            except Exception as e:
+                print(f"Error syncing report: {e}")
+                continue
+
+    # Process Attendance
+    if 'attendance' in data:
+        for att in data['attendance']:
+            try:
+                date_obj = datetime.strptime(att['date'], '%Y-%m-%d').date()
+                existing = Attendance.query.filter_by(student_id=att['student_id'], date=date_obj).first()
+                if existing:
+                    existing.status = att['status']
+                else:
+                    new_att = Attendance(
+                        student_id=att['student_id'],
+                        date=date_obj,
+                        status=att['status']
+                    )
+                    db.session.add(new_att)
+            except Exception as e:
+                 print(f"Error syncing attendance: {e}")
+
+    try:
+        db.session.commit()
+        return jsonify({"msg": "Sync successful", "server_time": datetime.now().isoformat()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Sync failed: {str(e)}"}), 500
 
 @app.route('/api/get_page_number', methods=['GET'])
 def get_page_number():

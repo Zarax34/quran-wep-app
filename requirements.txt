@@ -7,3 +7,4 @@ APScheduler
 openpyxl
 pandas
 xlrd
+Flask-JWT-Extended==4.7.1
