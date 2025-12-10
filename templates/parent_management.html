@@ -18,7 +18,8 @@
         <h5 class="card-title mb-0"><i class="fas fa-users"></i> قائمة أولياء الأمور ({{ parents|length }})</h5>
     </div>
     <div class="card-body">
-        <div class="table-responsive">
+        <!-- Desktop Table -->
+        <div class="table-responsive d-none d-md-block">
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
@@ -59,6 +60,44 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Mobile Card View -->
+        <div class="d-md-none">
+            {% for parent, user in parents %}
+            <div class="card mb-3 shadow-sm border bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="card-title mb-0 fw-bold">{{ parent.name }}</h6>
+                        {% if user and user.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-danger">محظور</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-2 text-muted small">
+                        <i class="fas fa-user-tag me-1"></i> {{ user.username if user else 'N/A' }}
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-phone me-1 text-secondary"></i> {{ parent.phone }}
+                    </div>
+                    <div class="mb-3">
+                        <i class="fas fa-child me-1 text-info"></i> عدد الأبناء: <strong>{{ parent.students|length }}</strong>
+                    </div>
+                    <div class="d-flex gap-2">
+                        {% if user %}
+                        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-primary btn-sm flex-grow-1">
+                            <i class="fas fa-edit"></i> تعديل
+                        </a>
+                        <a href="{{ url_for('block_user', user_id=user.id) }}" class="btn btn-{{ 'warning' if user.is_active else 'secondary' }} btn-sm flex-grow-1">
+                            <i class="fas fa-{{ 'user-slash' if user.is_active else 'user-check' }}"></i> {{ 'حظر' if user.is_active else 'إلغاء الحظر' }}
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
         <p class="mt-3">إجمالي الطلاب المرتبطين بأولياء أمور: {{ total_linked_students }}</p>
     </div>
 </div>

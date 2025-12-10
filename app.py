@@ -4149,6 +4149,66 @@ def teacher_settings():
 
     return render_template('teacher_settings.html', user=user)
 
+@app.route('/student/settings', methods=['GET', 'POST'])
+@require_login
+def student_settings():
+    if session.get('role') != 'student':
+        flash('ليس لديك صلاحية', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(session['user_id'])
+
+    if request.method == 'POST':
+        new_username = request.form['username']
+
+        # Check username uniqueness if changed
+        if new_username != user.username:
+            if User.query.filter_by(username=new_username).first():
+                flash('اسم المستخدم هذا مستخدم بالفعل، يرجى اختيار اسم آخر.', 'error')
+                return redirect(url_for('student_settings'))
+            user.username = new_username
+
+        new_password = request.form.get('password')
+        if new_password:
+            user.password = generate_password_hash(new_password)
+
+        try:
+            db.session.commit()
+            flash('تم حفظ الإعدادات بنجاح', 'success')
+            session['username'] = user.username
+            return redirect(url_for('student_settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ: {e}', 'error')
+
+    return render_template('student_settings.html', user=user)
+
+@app.route('/student/courses')
+@require_login
+def student_courses():
+    if session.get('role') != 'student':
+        flash('ليس لديك صلاحية', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = db.session.get(User, session['user_id'])
+    student = Student.query.filter_by(name=user.name).first()
+
+    if not student:
+        flash('لم يتم العثور على ملف الطالب.', 'error')
+        return redirect(url_for('dashboard'))
+
+    enrollments = CourseEnrollment.query.filter_by(student_id=student.id).all()
+
+    return render_template('student_courses.html', enrollments=enrollments)
+
+@app.route('/student/messaging')
+@require_login
+def student_messaging():
+    if session.get('role') != 'student':
+        flash('ليس لديك صلاحية', 'error')
+        return redirect(url_for('dashboard'))
+    return render_template('messaging_under_construction.html')
+
 @app.route('/student_dashboard')
 @require_login
 def student_dashboard():

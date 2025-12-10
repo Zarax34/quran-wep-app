@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}دوراتي{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-book-open me-2"></i>دوراتي التدريبية</h2>
+    </div>
+
+    {% if enrollments %}
+        <div class="row">
+        {% for enrollment in enrollments %}
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h4 class="mb-0 card-title">{{ enrollment.course.name }}</h4>
+                        <p class="mb-0 text-muted">المعلم: {{ enrollment.course.teacher.name }}</p>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <p class="card-text">{{ enrollment.course.description or 'لا يوجد وصف لهذه الدورة.' }}</p>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted"><i class="fas fa-calendar-alt me-1"></i> تاريخ التسجيل: {{ enrollment.enrollment_date.strftime('%Y-%m-%d') }}</span>
+
+                                {% set certificate = enrollment.student.certificates | selectattr('course_id', 'equalto', enrollment.course_id) | first %}
+                                {% if certificate %}
+                                    {% if certificate.certificate_url %}
+                                        <a href="{{ certificate.certificate_url }}" class="btn btn-success btn-sm" target="_blank">
+                                            <i class="fas fa-download me-2"></i>الشهادة
+                                        </a>
+                                    {% elif certificate.certificate_file %}
+                                        <a href="{{ url_for('uploaded_file', filename=certificate.certificate_file) }}" class="btn btn-outline-success btn-sm" download>
+                                            <i class="fas fa-certificate me-2"></i>الشهادة
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">قيد الدراسة</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+    <div class="text-center p-5">
+        <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+        <h4>أنت غير مسجل في أي دورة حالياً.</h4>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

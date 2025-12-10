@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">تقارير الطالب: {{ student.name }}</h1>
-    {% if session.role != 'parent' %}
+    {% if session.role != 'parent' and session.role != 'student' %}
     <div>
         {% if session.role != 'teacher' or check_permission('teacher_send_report') %}
         <a href="{{ url_for('send_whatsapp_report', student_id=student.id, report_type='أسبوعي') }}" 
@@ -15,6 +15,13 @@
             <i class="fab fa-whatsapp"></i> إرسال شهري
         </a>
         {% endif %}
+        <a href="{{ url_for('export_student_report', student_id=student.id) }}" class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> تصدير PDF
+        </a>
+    </div>
+    {% endif %}
+    {% if session.role == 'student' %}
+    <div>
         <a href="{{ url_for('export_student_report', student_id=student.id) }}" class="btn btn-danger">
             <i class="fas fa-file-pdf"></i> تصدير PDF
         </a>
@@ -240,6 +247,7 @@
     </div>
 </div>
 
+{% if session.role != 'student' %}
 <div class="row mt-4">
     <div class="col-12">
         <div class="alert alert-info">
@@ -252,6 +260,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 {% if session.role in ['admin', 'teacher'] %}
 <div class="row mt-4">

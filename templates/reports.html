@@ -3,8 +3,8 @@
 {% block content %}
 <div class="page-transition">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">{% if session.role == 'parent' %}تقارير أبنائي{% else %}جميع التقارير{% endif %}</h1>
-        {% if session.role != 'parent' %}
+        <h1 class="h2">{% if session.role == 'parent' %}تقارير أبنائي{% elif session.role == 'student' %}تقاريري{% else %}جميع التقارير{% endif %}</h1>
+        {% if session.role != 'parent' and session.role != 'student' %}
         <div>
             <a href="{{ url_for('add_report') }}" class="btn btn-primary me-2 btn-hover">
                 <i class="fas fa-plus"></i> تقرير فردي
@@ -16,7 +16,7 @@
         {% endif %}
     </div>
 
-    {% if session.role != 'parent' %}
+    {% if session.role != 'parent' and session.role != 'student' %}
     <div class="card fade-in mb-3">
         <div class="card-header">
             <h5 class="card-title mb-0"><i class="fas fa-filter"></i> فلترة التقارير</h5>
@@ -173,7 +173,7 @@
                                                     <i class="fas fa-times"></i> رفض
                                                 </a>
                                             {% endif %}
-                                            {% if session.role != 'parent' %}
+                                            {% if session.role != 'parent' and session.role != 'student' %}
                                             <a href="{{ url_for('edit_report', report_id=report.id) }}" class="btn btn-outline-warning btn-sm w-100">
                                                 <i class="fas fa-edit"></i> تعديل
                                             </a>

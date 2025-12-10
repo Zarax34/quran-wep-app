@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">إعدادات الطالب</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-user-cog"></i> الملف الشخصي والإعدادات</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <h6 class="mb-3 text-muted">البيانات الشخصية</h6>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">الاسم</label>
+                        <input type="text" class="form-control" id="name" value="{{ user.name }}" disabled readonly>
+                        <div class="form-text">لا يمكن تغيير الاسم، يرجى مراجعة الإدارة.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">اسم المستخدم</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                        <div class="form-text">يجب أن يكون اسم المستخدم فريداً.</div>
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3 text-muted">تغيير كلمة المرور (اتركه فارغاً إذا كنت لا تريد التغيير)</h6>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">كلمة المرور الجديدة</label>
+                        <input type="password" class="form-control" id="password" name="password">
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3 text-muted">تفضيلات العرض</h6>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="darkModeToggle" onchange="toggleDarkModeAjax()">
+                        <label class="form-check-label" for="darkModeToggle">الوضع الليلي</label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check initial state
+        if (document.body.classList.contains('dark-mode')) {
+            document.getElementById('darkModeToggle').checked = true;
+        }
+    });
+
+    function toggleDarkModeAjax() {
+        // Trigger the existing toggle logic
+        window.location.href = "{{ url_for('toggle_dark_mode') }}";
+    }
+</script>
+{% endblock %}

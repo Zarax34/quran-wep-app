@@ -1819,11 +1819,20 @@
                     <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
                         <i class="fas fa-file-alt"></i><span>التقارير</span>
                     </a>
+                    <a href="{{ url_for('student_courses') }}" class="{{ 'active' if request.endpoint == 'student_courses' }}">
+                        <i class="fas fa-chalkboard-teacher"></i><span>الدورات</span>
+                    </a>
                     <a href="{{ url_for('activities') }}" class="{{ 'active' if request.endpoint == 'activities' }}">
                        <i class="fas fa-cubes"></i><span>الأنشطة</span>
                     </a>
                     <a href="{{ url_for('announcements') }}" class="{{ 'active' if request.endpoint == 'announcements' }}">
                         <i class="fas fa-bullhorn"></i><span>الإعلانات</span>
+                    </a>
+                    <a href="{{ url_for('student_messaging') }}" class="{{ 'active' if request.endpoint == 'student_messaging' }}">
+                        <i class="fas fa-comments"></i><span>المراسلة</span>
+                    </a>
+                    <a href="{{ url_for('student_settings') }}" class="{{ 'active' if request.endpoint == 'student_settings' }}">
+                        <i class="fas fa-cog"></i><span>الإعدادات</span>
                     </a>
                     <a href="{{ url_for('logout') }}">
                         <i class="fas fa-sign-out-alt"></i><span>الخروج</span>
