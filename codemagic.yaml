@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
     environment:
       flutter: stable
-      # groups:  # تم التعليق أو الإزالة
+      # groups:  # متروك كتعليق
       #   - keystore_credentials
     scripts:
       - name: Get dependencies
@@ -24,6 +24,5 @@ workflows:
     publishing:
       email:
         recipients:
-          - user@example.com  # استبدل بإيميلك
-        notify:
-          on: success  # تم التصحيح هنا
+          - your-email@domain.com  # ضع إيميلك هنا
+      # تم حذف قسم notify بالكامل
