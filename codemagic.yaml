@@ -4,8 +4,8 @@ workflows:
     max_build_duration: 60
     environment:
       flutter: stable
-      groups:
-        # - keystore_credentials # Uncomment if you have set up signing in Codemagic UI
+      # groups:  # تم التعليق أو الإزالة
+      #   - keystore_credentials
     scripts:
       - name: Get dependencies
         script: |
@@ -24,5 +24,6 @@ workflows:
     publishing:
       email:
         recipients:
-          - user@example.com # Replace with your email
-        notify: success
+          - user@example.com  # استبدل بإيميلك
+        notify:
+          on: success  # تم التصحيح هنا
