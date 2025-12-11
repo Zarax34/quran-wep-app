@@ -4,9 +4,14 @@ workflows:
     max_build_duration: 60
     environment:
       flutter: stable
-      # groups:  # متروك كتعليق
-      #   - keystore_credentials
+      groups:
+        # - keystore_credentials # Uncomment if you have set up signing in Codemagic UI
     scripts:
+      - name: Generate Platform Folders
+        script: |
+          cd mobile_app
+          # Generate android/ and ios/ folders since they are not in the repo
+          flutter create . --platforms android
       - name: Get dependencies
         script: |
           cd mobile_app
@@ -24,5 +29,5 @@ workflows:
     publishing:
       email:
         recipients:
-          - ahmedalslwy34@gmail.com  # ضع إيميلك هنا
-      # تم حذف قسم notify بالكامل
+          - user@example.com # Replace with your email
+        notify: success
