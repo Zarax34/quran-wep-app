@@ -1,0 +1,10 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Avoid print statements in production code
+    avoid_print: true
+    # Prefer const over final for immutable values
+    prefer_const_constructors: true
+    # Use proper naming conventions
+    camel_case_types: true

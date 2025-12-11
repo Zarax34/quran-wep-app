@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../../services/sync_service.dart';
 import 'reports_screen.dart';
 import 'students_screen.dart';
+import 'attendance_screen.dart';
+import 'fees_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -54,13 +56,13 @@ class DashboardScreen extends ConsumerWidget {
             icon: Icons.check_circle,
             title: 'الحضور',
             color: Colors.orange,
-            onTap: () {}, // To implement
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen())),
           ),
           _DashboardCard(
-            icon: Icons.settings,
-            title: 'الإعدادات',
-            color: Colors.grey,
-            onTap: () {}, // To implement
+            icon: Icons.attach_money,
+            title: 'الرسوم',
+            color: Colors.purple,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FeesScreen())),
           ),
         ],
       ),

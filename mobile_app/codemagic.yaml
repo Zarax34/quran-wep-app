@@ -1,0 +1,28 @@
+workflows:
+  android-workflow:
+    name: Android Release Build
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      groups:
+        # - keystore_credentials # Uncomment if you have set up signing in Codemagic UI
+    scripts:
+      - name: Get dependencies
+        script: |
+          cd mobile_app
+          flutter pub get
+      - name: Run code generation
+        script: |
+          cd mobile_app
+          dart run build_runner build --delete-conflicting-outputs
+      - name: Build APK with Flutter
+        script: |
+          cd mobile_app
+          flutter build apk --release
+    artifacts:
+      - mobile_app/build/app/outputs/flutter-apk/app-release.apk
+    publishing:
+      email:
+        recipients:
+          - user@example.com # Replace with your email
+        notify: success

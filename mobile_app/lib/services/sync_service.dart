@@ -70,10 +70,6 @@ class SyncService {
         // Sync Reports
         if (data['reports'] != null) {
           for (var r in data['reports']) {
-            // Logic to prevent duplication:
-            // 1. Try to find by UUID (best match)
-            // 2. Try to find by serverId
-
             var existing = await (db.select(db.reports)
               ..where((tbl) => r['uuid'] != null ? tbl.uuid.equals(r['uuid']) : tbl.serverId.equals(r['id']))
             ).getSingleOrNull();
@@ -92,11 +88,25 @@ class SyncService {
             );
 
             if (existing != null) {
-              // Update existing local record (whether pending or synced) with server version
               await (db.update(db.reports)..where((tbl) => tbl.id.equals(existing.id))).write(report);
             } else {
               await db.into(db.reports).insert(report);
             }
+          }
+        }
+
+        // Sync Fees
+        if (data['fees'] != null) {
+          for (var f in data['fees']) {
+            await db.into(db.fees).insertOnConflictUpdate(FeesCompanion(
+              serverId: drift.Value(f['id']),
+              studentId: drift.Value(f['student_id']),
+              amount: drift.Value(f['amount'].toDouble()),
+              datePaid: drift.Value(f['date_paid'] != null ? DateTime.parse(f['date_paid']) : null),
+              status: drift.Value(f['status']),
+              title: drift.Value(f['title']),
+              notes: drift.Value(f['notes']),
+            ));
           }
         }
       });

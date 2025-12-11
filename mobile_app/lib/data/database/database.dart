@@ -71,7 +71,18 @@ class Attendance extends Table {
   TextColumn get status => text()(); // Present, Absent, etc.
 }
 
-@DriftDatabase(tables: [SyncQueue, Users, Students, Circles, Reports, Attendance])
+class Fees extends Table {
+  IntColumn get id => integer().autoIncrement()(); // Local ID
+  IntColumn get serverId => integer().nullable()();
+  IntColumn get studentId => integer()();
+  RealColumn get amount => real()();
+  DateTimeColumn get datePaid => dateTime().nullable()();
+  TextColumn get status => text().withDefault(const Constant('Paid'))();
+  TextColumn get title => text().nullable()();
+  TextColumn get notes => text().nullable()();
+}
+
+@DriftDatabase(tables: [SyncQueue, Users, Students, Circles, Reports, Attendance, Fees])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 

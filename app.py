@@ -3209,6 +3209,13 @@ def api_sync_pull():
             'grade': r.grade, 'type': r.type, 'status': r.status, 'uuid': r.uuid
         } for r in reports]
 
+        # Recent Attendance (last 30 days)
+        attendance_records = Attendance.query.join(Student).filter(Student.circle_id.in_(teacher_circles), Attendance.date >= start_date).all()
+        response_data['attendance'] = [{
+            'id': a.id, 'student_id': a.student_id, 'date': a.date.isoformat(),
+            'status': a.status
+        } for a in attendance_records]
+
     elif user.role == 'admin':
          # Admin gets everything (simplified for now, ideally pagination)
         students = Student.query.filter_by(is_active=True).all()
@@ -3216,11 +3223,19 @@ def api_sync_pull():
             'id': s.id, 'name': s.name, 'circle_id': s.circle_id
         } for s in students]
         # Reports might be too large, sending last 7 days
-        reports = Report.query.filter(Report.date >= (datetime.now().date() - timedelta(days=7))).all()
+        start_date_admin = datetime.now().date() - timedelta(days=7)
+        reports = Report.query.filter(Report.date >= start_date_admin).all()
         response_data['reports'] = [{
              'id': r.id, 'student_id': r.student_id, 'date': r.date.isoformat(),
             'surah': r.surah, 'grade': r.grade, 'uuid': r.uuid
         } for r in reports]
+
+        # Attendance for Admin (last 7 days)
+        attendance_records = Attendance.query.filter(Attendance.date >= start_date_admin).all()
+        response_data['attendance'] = [{
+            'id': a.id, 'student_id': a.student_id, 'date': a.date.isoformat(),
+            'status': a.status
+        } for a in attendance_records]
 
     return jsonify(response_data), 200
 
@@ -4749,23 +4764,26 @@ def setup_database():
             "ALTER TABLE fee ADD COLUMN status VARCHAR(20) DEFAULT 'Paid'",
             "ALTER TABLE fee ADD COLUMN title VARCHAR(100)",
             "ALTER TABLE report ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'",
-            "ALTER TABLE report ADD COLUMN uuid VARCHAR(36) UNIQUE",
+            "ALTER TABLE report ADD COLUMN uuid VARCHAR(36)",
             "ALTER TABLE holiday ADD COLUMN status VARCHAR(20) DEFAULT 'Approved'"
         ]
 
         with db.engine.connect() as connection:
             for statement in migrations:
                 try:
-                    # Begin a nested transaction (savepoint) if supported, or just a transaction
-                    # But since we are looping, we want each execution to be atomic.
-                    # Using connection.begin() context manager handles commit/rollback automatically.
                     with connection.begin():
                         connection.execute(text(statement))
                     print(f"INFO: Executed migration: {statement}")
                 except Exception as e:
-                    # If the column already exists, we expect an error, which we can safely ignore.
-                    # However, printing it helps with debugging.
                     pass
+
+            # Create Unique Index for UUID separately (SQLite compat)
+            try:
+                with connection.begin():
+                    connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS idx_report_uuid ON report (uuid)"))
+                print("INFO: Created unique index on report(uuid)")
+            except Exception as e:
+                print(f"INFO: Index creation might have failed or exists: {e}")
 
         # Migrate Fee table to allow nullable date_paid (if needed)
         try:
