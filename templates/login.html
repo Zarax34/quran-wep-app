@@ -9,227 +9,141 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: {{ settings.primary_color or '#2c5aa0' }};
-            --secondary-color: {{ settings.secondary_color or '#28a745' }};
-            --background-color: {{ settings.background_color or '#f8f9fa' }};
-            --text-color: {{ settings.text_color or '#2c3e50' }};
+            --primary-color: {{ settings.primary_color or '#D32F2F' }}; /* Default to red */
+            --secondary-color: {{ settings.secondary_color or '#2E7D32' }}; /* Default to green */
+            --input-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #ffffff;
         }
 
         body {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background-color: var(--primary-color);
+            {% if settings.login_background_image %}
+            background-image: url("{{ url_for('uploaded_file', filename=settings.login_background_image) }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            {% else %}
+            background-image: repeating-linear-gradient(
+                45deg,
+                var(--secondary-color) 0,
+                var(--secondary-color) 5px,
+                transparent 5px,
+                transparent 10px
+            );
+            background-size: 15px 15px;
+            {% endif %}
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Tajawal', sans-serif;
             padding: 20px;
         }
 
         .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
             width: 100%;
-            max-width: 420px;
-            transition: all 0.3s ease;
-        }
-
-        .login-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .login-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
+            max-width: 400px;
             padding: 30px;
+            color: var(--text-color);
             text-align: center;
-            position: relative;
-        }
-
-        .login-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            transform: translate(30px, -30px);
-        }
-
-        .login-header::after {
-            content: '';
-            position: absolute;
-            bottom: -20px;
-            left: -20px;
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
         }
 
         .logo {
-            max-height: 70px;
+            max-height: 120px;
             max-width: 100%;
             border-radius: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 30px;
         }
 
-        .login-body {
-            padding: 40px 30px 30px;
+        .form-control, .btn {
+            border-radius: 50px;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            width: 100%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .form-control {
-            border-radius: 12px;
-            border: 2px solid #e9ecef;
-            padding: 15px 20px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
+            background-color: var(--input-bg);
+            color: #333;
         }
 
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(44, 90, 160, 0.25);
-            transform: translateY(-2px);
-        }
-
-        .input-group-text {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border: none;
-            color: white;
-            border-radius: 12px 0 0 12px;
+        .form-control::placeholder {
+            color: #999;
         }
 
         .btn-login {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border: none;
-            border-radius: 12px;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            width: 100%;
+            background-color: #fff;
+            color: var(--primary-color);
+            font-weight: bold;
+            transition: transform 0.2s;
         }
 
         .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: scale(1.05);
         }
 
-        .guest-btn {
-            background: transparent;
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            border-radius: 12px;
-            padding: 12px 25px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            width: 100%;
+        .login-links {
+            margin-top: 20px;
         }
 
-        .guest-btn:hover {
-            background: var(--primary-color);
-            color: white;
-            transform: translateY(-2px);
+        .login-links a {
+            color: #ffcdd2; /* Light red for visibility */
+            text-decoration: none;
+            margin: 0 10px;
+            transition: opacity 0.2s;
+        }
+
+        .login-links a:hover {
+            opacity: 0.8;
         }
 
         .alert {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .login-footer {
-            text-align: center;
-            padding: 20px;
-            border-top: 1px solid #e9ecef;
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.8s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            border-radius: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="login-container fade-in">
-        <div class="login-header">
-            {% if settings.logo %}
-            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo pulse" alt="{{ settings.site_name }}">
+    <div class="login-container">
+        {% if settings.logo %}
+            <img src="{{ url_for('uploaded_file', filename=settings.logo) }}" class="logo" alt="{{ settings.site_name }}">
+        {% else %}
+            <h1 class="mb-4">{{ settings.site_name }}</h1>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
             {% endif %}
-            <h4 class="mb-2">{{ settings.site_name }}</h4>
-            <p class="mb-0 opacity-75">{{ settings.site_description }}</p>
-        </div>
+        {% endwith %}
 
-        <div class="login-body">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show mb-4">
-                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <form method="POST">
-                <div class="mb-4">
-                    <label for="username" class="form-label fw-bold">اسم المستخدم</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-user"></i></span>
-                        <input type="text" class="form-control" id="username" name="username" 
-                               placeholder="أدخل اسم المستخدم" required>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label for="password" class="form-label fw-bold">كلمة المرور</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                        <input type="password" class="form-control" id="password" name="password" 
-                               placeholder="أدخل كلمة المرور" required>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-login mb-3">
-                    <i class="fas fa-sign-in-alt me-2"></i>تسجيل الدخول
-                </button>
-            </form>
-
-            <div class="text-center mb-3">
-                <a href="{{ url_for('guest_dashboard') }}" class="guest-btn btn">
-                    <i class="fas fa-eye me-2"></i>الدخول كضيف
-                </a>
+        <form method="POST">
+            <div class="mb-3">
+                <input type="text" class="form-control" name="username" placeholder="اسم المستخدم" required>
             </div>
-        </div>
+            <div class="mb-3">
+                <input type="password" class="form-control" name="password" placeholder="كلمة المرور" required>
+            </div>
+            <button type="submit" class="btn btn-login">تسجيل الدخول</button>
+        </form>
 
-        <div class="login-footer">
-            <p class="mb-0">نظام إدارة تقارير تسميع القرآن الكريم</p>
-            <small>جميع الحقوق محفوظة &copy; {{ current_year }}</small>
-        </div>
+        <div class="login-links">
+            <a href="{{ url_for('support') }}">نسيت كلمة المرور</a>
+            <span>|</span>
+            <a href="{{ url_for('guest_dashboard') }}">الدخول كضيف</a>
+	        </div>
+	        
+	        <div class="alert alert-info mt-4" role="alert" style="border-radius: 15px; font-size: 0.9rem; background-color: rgba(255, 255, 255, 0.9); color: #333;">
+	            <i class="fas fa-info-circle me-2"></i>
+	            <p class="mb-0">ملاحظة لأولياء الأمور: يتم إنشاء حسابك تلقائيًا عند تسجيل ابنك/ابنتك. اسم المستخدم وكلمة المرور هما رقم الهاتف المسجل. للتسجيل لأول مرة، يرجى التواصل مع إدارة المركز.</p>
+	        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
